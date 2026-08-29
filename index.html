@@ -1077,35 +1077,39 @@
       rawLabels.forEach((ticker, idx) => {
         const targetPct = targetWeights[ticker] || 0;
         const currPct = curW[ticker] !== undefined ? curW[ticker] : targetPct;
-        const delta = deltaWeights ? (deltaWeights[ticker] || 0) : 0;
         const ret = assetReturns ? (assetReturns[ticker] || 0) : 0;
+        const naturalDiff = Math.round((currPct - targetPct) * 10) / 10.0;
 
         let deltaBadgeHtml = '';
-        if (delta > 0.5) {
-          deltaBadgeHtml = `<span class="delta-badge delta-plus">+${delta.toFixed(1)}%p 확대</span>`;
-        } else if (delta < -0.5) {
-          deltaBadgeHtml = `<span class="delta-badge delta-minus">${delta.toFixed(1)}%p 축소</span>`;
+        if (naturalDiff > 0.3) {
+          deltaBadgeHtml = `<span class="delta-badge" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 700;">+${naturalDiff.toFixed(1)}%p 확대</span>`;
+        } else if (naturalDiff < -0.3) {
+          deltaBadgeHtml = `<span class="delta-badge" style="background: #f8fafc; color: var(--text-dim); border: 1px solid var(--border-color); font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 700;">${naturalDiff.toFixed(1)}%p 축소</span>`;
         } else {
-          deltaBadgeHtml = `<span class="delta-badge delta-same">유지 (적정)</span>`;
+          deltaBadgeHtml = `<span class="delta-badge delta-same" style="font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 700;">목표 일치</span>`;
         }
 
+        const isRetPlus = ret >= 0;
         const card = document.createElement('div');
         card.className = 'weight-item-card';
         card.innerHTML = `
           <div class="asset-info">
-            <div class="asset-color-dot" style="background: ${colors[idx]};"></div>
+            <div class="asset-color-dot" style="background: ${colors[idx]}; width: 12px; height: 12px;"></div>
             <div>
-              <div class="asset-ticker">${formatTickerDisplay(ticker)}</div>
-              <div class="asset-name" style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">
-                시작일 대비: <strong style="color: ${ret >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%</strong>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="asset-ticker" style="font-size: 15px; font-weight: 800;">${formatTickerDisplay(ticker)}</span>
+                <span style="font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 800; color: ${isRetPlus ? 'var(--emerald)' : 'var(--rose)'}; background: ${isRetPlus ? '#ecfdf5' : '#fff1f2'}; padding: 2px 8px; border-radius: 4px; border: 1px solid ${isRetPlus ? '#a7f3d0' : '#fecdd3'};">
+                  ${isRetPlus ? '+' : ''}${ret.toFixed(1)}%
+                </span>
               </div>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">시작일 대비 개별 수익률</div>
             </div>
           </div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-size: 11.5px; color: var(--text-dim);">현재 <strong>${currPct.toFixed(1)}%</strong></span>
-              <span style="font-size: 11px; color: var(--text-dim);">→</span>
-              <span class="asset-pct" style="font-size: 15px;">${targetPct.toFixed(1)}%</span>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-family: 'Outfit', sans-serif;">
+              <span style="font-size: 13px; color: var(--text-muted);">기준 <strong style="color: var(--text-main); font-size: 14px;">${targetPct.toFixed(1)}%</strong></span>
+              <span style="font-size: 12px; color: var(--text-dim);"><i class="fa-solid fa-arrow-right-long"></i></span>
+              <span style="font-size: 13px; color: var(--primary);">현재 <strong style="color: var(--primary); font-size: 15px;">${currPct.toFixed(1)}%</strong></span>
             </div>
             <div>
               ${deltaBadgeHtml}
