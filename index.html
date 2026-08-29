@@ -295,34 +295,63 @@
     /* Allocation Wheel & Cards */
     .allocation-wrapper {
       display: grid;
-      grid-template-columns: 180px 1fr;
-      gap: 20px;
+      grid-template-columns: 230px 1fr;
+      gap: 22px;
       align-items: center;
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
       .allocation-wrapper {
         grid-template-columns: 1fr;
+        justify-items: center;
       }
     }
 
     .chart-donut-container {
       position: relative;
-      width: 180px;
-      height: 180px;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .donut-center-label {
+      position: absolute;
+      text-align: center;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .donut-center-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .donut-center-val {
+      font-family: 'Outfit', sans-serif;
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--emerald);
+      margin-top: 1px;
     }
 
     .weights-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
+      width: 100%;
     }
 
     .weight-item-card {
-      background: #ffffff;
+      background: #f8fafc;
       border: 1px solid var(--border-color);
       border-radius: var(--radius-sm);
-      padding: 10px 14px;
+      padding: 13px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -330,7 +359,9 @@
     }
 
     .weight-item-card:hover {
-      background: #f8fafc;
+      background: #ffffff;
+      box-shadow: var(--card-shadow);
+      border-color: var(--border-subtle);
     }
 
     .asset-info {
@@ -722,14 +753,18 @@
         <div style="display: flex; flex-direction: column; gap: 16px;">
           <div class="card-header">
             <div class="card-title">
-              <i class="fa-solid fa-chart-pie text-primary"></i> 목표 자산 비중
+              <i class="fa-solid fa-chart-pie text-primary"></i> 자산 배분 현황
             </div>
-            <span class="text-dim" style="font-size: 12px;" id="signalUpdatedTime">오늘 기준</span>
+            <span class="text-dim" style="font-size: 12px;" id="signalUpdatedTime">현재 vs 목표</span>
           </div>
 
           <div class="allocation-wrapper">
             <div class="chart-donut-container">
               <canvas id="allocationDonutChart"></canvas>
+              <div class="donut-center-label">
+                <div class="donut-center-title">누적 수익률</div>
+                <div class="donut-center-val" id="donutCenterVal">+0.0%</div>
+              </div>
             </div>
             <div class="weights-list" id="weightsListContainer">
               <!-- Dynamic Allocation Cards -->
@@ -891,7 +926,6 @@
 
     let donutChartInstance = null;
     let liveSignalData = null;
-    let totalCapital = 50000000; // 5천만원 기본
 
     window.addEventListener('DOMContentLoaded', async () => {
       loadInitialData();
@@ -900,30 +934,36 @@
 
     function loadInitialData() {
       let initBase = { "SCHD": 60.0, "QQQ": 40.0 };
+      let bmTicker = "^NDX";
 
       try {
         const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
-        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
+        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "2", 10);
         if (storedSlots) {
           const slots = JSON.parse(storedSlots);
           const activeStrat = slots.find(s => s.id === activeId) || slots[0];
-          if (activeStrat && activeStrat.baseWeights) {
-            initBase = {};
-            Object.entries(activeStrat.baseWeights).forEach(([t, w]) => {
-              initBase[t] = Math.round(w * 100);
-            });
+          if (activeStrat) {
+            bmTicker = activeStrat.benchmark || "^NDX";
+            if (activeStrat.baseWeights) {
+              initBase = {};
+              Object.entries(activeStrat.baseWeights).forEach(([t, w]) => {
+                initBase[t] = Math.round(w * 100);
+              });
+            }
           }
         }
       } catch (e) {}
 
       liveSignalData = {
-        benchmark: "QQQ",
+        benchmark: bmTicker,
         benchmarkPrice: 721.11,
         benchmarkATH: 745.34,
         benchmarkMDD: -3.25,
         currentState: "기본 (정상 운용)",
         targetWeights: initBase,
+        currentWeights: initBase,
         deltaWeights: {},
+        assetReturns: {},
         advice: "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다."
       };
       syncActiveStrategySpecs();
@@ -932,7 +972,6 @@
     }
 
     async function fetchLiveDashboardData() {
-      // 1. Sync Active Strategy Slot Specs (from LocalStorage or GAS)
       syncActiveStrategySpecs();
 
       try {
@@ -944,23 +983,6 @@
               localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
               syncActiveStrategySpecs();
             }
-            if (data.portfolioSignals && data.portfolioSignals.length > 0) {
-              const latest = data.portfolioSignals[0];
-              let state = latest.CurrentState || "기본 (정상 운용)";
-              if (state.includes("평시")) state = "기본 (정상 운용)";
-
-              liveSignalData = {
-                benchmark: latest.Benchmark || "QQQ",
-                benchmarkPrice: parseFloat(latest.BenchmarkPrice || 720),
-                benchmarkATH: parseFloat(latest.BenchmarkATH || 745),
-                benchmarkMDD: parseFloat(latest.BenchmarkMDD || -3.2),
-                currentState: state,
-                targetWeights: typeof latest.TargetWeights === 'string' ? JSON.parse(latest.TargetWeights) : latest.TargetWeights,
-                deltaWeights: typeof latest.DeltaWeights === 'string' ? JSON.parse(latest.DeltaWeights) : latest.DeltaWeights,
-                advice: latest.Advice || ""
-              };
-            }
-            renderDashboardUI();
             if (data.executionLogs) {
               renderHistoryLogs(data.executionLogs);
             }
@@ -969,12 +991,14 @@
       } catch (err) {
         console.warn("[WARN] GAS fetch error:", err);
       }
+
+      await calculateAndRenderLiveReturn();
     }
 
     function syncActiveStrategySpecs() {
       try {
         const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
-        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
+        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "2", 10);
         if (storedSlots) {
           const slots = JSON.parse(storedSlots);
           const activeStrat = slots.find(s => s.id === activeId) || slots[0];
@@ -1045,6 +1069,7 @@
       container.innerHTML = '';
 
       const rawLabels = Object.keys(targetWeights || {});
+      const displayLabels = rawLabels.map(t => formatTickerDisplay(t));
       const curW = currentWeights || targetWeights || {};
       const values = rawLabels.map(t => curW[t] !== undefined ? curW[t] : targetWeights[t]);
       const colors = rawLabels.map((_, i) => COLOR_PALETTE[i % COLOR_PALETTE.length]);
@@ -1071,16 +1096,16 @@
             <div class="asset-color-dot" style="background: ${colors[idx]};"></div>
             <div>
               <div class="asset-ticker">${formatTickerDisplay(ticker)}</div>
-              <div class="asset-name" style="font-size: 11px; color: var(--text-dim); margin-top: 1px;">
+              <div class="asset-name" style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">
                 시작일 대비: <strong style="color: ${ret >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%</strong>
               </div>
             </div>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
-            <div style="display: flex; align-items: center; gap: 5px;">
-              <span style="font-size: 11px; color: var(--text-dim);">현재 <strong>${currPct.toFixed(1)}%</strong></span>
-              <span style="font-size: 10.5px; color: var(--text-dim);">→</span>
-              <span class="asset-pct" style="font-size: 14.5px;">${targetPct.toFixed(1)}%</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11.5px; color: var(--text-dim);">현재 <strong>${currPct.toFixed(1)}%</strong></span>
+              <span style="font-size: 11px; color: var(--text-dim);">→</span>
+              <span class="asset-pct" style="font-size: 15px;">${targetPct.toFixed(1)}%</span>
             </div>
             <div>
               ${deltaBadgeHtml}
@@ -1096,7 +1121,7 @@
       donutChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: rawLabels.map(t => formatTickerDisplay(t)),
+          labels: displayLabels,
           datasets: [{
             data: values,
             backgroundColor: colors,
@@ -1107,7 +1132,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '72%',
+          cutout: '70%',
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -1198,7 +1223,8 @@
     let userStartDateStr = "";
 
     function onStartDateChange() {
-      const dateVal = document.getElementById('userStartDate').value;
+      const inputEl = document.getElementById('userStartDate');
+      const dateVal = inputEl ? inputEl.value : "";
       if (dateVal) {
         userStartDateStr = dateVal;
         localStorage.setItem("asset_user_start_date", dateVal);
@@ -1226,21 +1252,25 @@
       const ds = await loadEtfDatasetForReturn();
       if (!ds || !ds.dates || !ds.universe) return;
 
-      let sDate = userStartDateStr || localStorage.getItem("asset_user_start_date");
-      if (!sDate) {
-        const curYear = new Date().getFullYear();
-        sDate = `${curYear}-01-02`;
-        userStartDateStr = sDate;
+      const dateInput = document.getElementById('userStartDate');
+      let sDate = (dateInput && dateInput.value) ? dateInput.value : (userStartDateStr || localStorage.getItem("asset_user_start_date") || "2024-01-02");
+      userStartDateStr = sDate;
+      localStorage.setItem("asset_user_start_date", sDate);
+      if (dateInput) {
+        dateInput.value = sDate;
       }
-      document.getElementById('userStartDate').value = sDate;
 
+      // Find closest date index in dataset
       let sIdx = ds.dates.findIndex(d => d >= sDate);
-      if (sIdx === -1) sIdx = 0;
+      if (sIdx === -1) {
+        sIdx = ds.dates.length > 0 ? ds.dates.length - 1 : 0;
+      }
 
+      // Get active strategy slot specs
       let activeStrat = { baseWeights: { "SCHD": 0.60, "QQQ": 0.40 }, dropStages: [] };
       try {
         const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
-        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
+        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "2", 10);
         if (storedSlots) {
           const slots = JSON.parse(storedSlots);
           const found = slots.find(s => s.id === activeId) || slots[0];
@@ -1251,6 +1281,7 @@
       const baseWeights = activeStrat.baseWeights || { "SCHD": 0.60, "QQQ": 0.40 };
       const dropStages = activeStrat.dropStages || [];
 
+      // 1. Calculate Individual Asset Returns and Drifted Current Weights
       let assetReturns = {};
       let driftedValues = {};
       let totalValue = 0.0;
@@ -1260,9 +1291,9 @@
         if (asset && asset.close && asset.close.length > 0) {
           const startPrice = asset.close[sIdx] || asset.close[0];
           const latestPrice = asset.close[asset.close.length - 1] || asset.latestPrice || startPrice;
-          const ret = ((latestPrice - startPrice) / startPrice) * 100.0;
+          const ret = startPrice > 0 ? ((latestPrice - startPrice) / startPrice) * 100.0 : 0.0;
           assetReturns[ticker] = ret;
-          const val = w * (1 + ret / 100.0);
+          const val = w * (1.0 + ret / 100.0);
           driftedValues[ticker] = val;
           totalValue += val;
         } else {
@@ -1324,10 +1355,9 @@
 
       // Calculate Delta Weights ONLY on Strategic Regime Changes (Drop stage or Take-Profit)
       let deltaWeights = {};
-      const isTakeProfit = (totalReturn >= gainThreshold);
+      const isTakeProfit = (totalReturn >= (activeStrat.gainThresholdPct || 20.0));
 
       if (isTakeProfit) {
-        // Take-Profit: Rebalance back to Base Weights
         const allTickers = new Set([...Object.keys(targetWeights), ...Object.keys(currentWeights)]);
         allTickers.forEach(t => {
           const tgt = targetWeights[t] || 0.0;
@@ -1338,7 +1368,6 @@
           }
         });
       } else if (currentDropStage) {
-        // Drop Stage Entry: Rebalance to Drop Stage Weights
         const baseW = activeStrat.baseWeights || { "SCHD": 0.60, "QQQ": 0.40 };
         const stageW = currentDropStage.weights || {};
         const allTickers = new Set([...Object.keys(baseW), ...Object.keys(stageW)]);
@@ -1351,7 +1380,6 @@
           }
         });
       } else {
-        // Normal State: No strategic orders (Hold steady)
         deltaWeights = {};
       }
 
@@ -1359,6 +1387,13 @@
       returnEl.textContent = `${isPlus ? '+' : ''}${totalReturn.toFixed(1)}%`;
       returnEl.style.color = isPlus ? 'var(--emerald)' : 'var(--rose)';
 
+      const donutCenterEl = document.getElementById('donutCenterVal');
+      if (donutCenterEl) {
+        donutCenterEl.textContent = `${isPlus ? '+' : ''}${totalReturn.toFixed(1)}%`;
+        donutCenterEl.style.color = isPlus ? 'var(--emerald)' : 'var(--rose)';
+      }
+
+      const gainThreshold = activeStrat.gainThresholdPct || 20.0;
       if (isTakeProfit) {
         badgeEl.textContent = `+${gainThreshold}% 이익실현 달성`;
         badgeEl.style.background = '#dcfce7';

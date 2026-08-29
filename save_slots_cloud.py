@@ -55,7 +55,7 @@ for i in range(3, 11):
 payload = {
     "action": "save_strategy_slots",
     "slots": slots,
-    "activeSlotId": 1
+    "activeSlotId": 2
 }
 
 resp = requests.post(GAS_WEBAPP_URL, json=payload, timeout=15)
