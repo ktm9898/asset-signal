@@ -2249,9 +2249,10 @@
           for (let j = 0; j < sortedRecs.length; j++) {
             const rec = sortedRecs[j];
             const recLevel = j + 1;
-            const minDropRequired = rec.fromDrop !== undefined ? rec.fromDrop : (rec.recovery - 3.0);
+            const recTarget = rec.recovery !== undefined ? rec.recovery : 0;
+            const minDropRequired = rec.fromDrop !== undefined ? rec.fromDrop : (recTarget - 3.0);
 
-            if (!executedRecLevels.has(recLevel) && deepestDrop <= minDropRequired && currentBM_DD >= rec.recovery && (daysSinceRebal >= cooldownDays || executedRecLevels.size === 0)) {
+            if (!executedRecLevels.has(recLevel) && deepestDrop <= minDropRequired && currentBM_DD >= (recTarget - 0.2) && (daysSinceRebal >= cooldownDays || executedRecLevels.size === 0)) {
               targetWeights = normalizeWeights(rec.weights);
               triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}%`;
               nextState = rec.name || `${recLevel}단계 반등`;
