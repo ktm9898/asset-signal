@@ -1976,6 +1976,14 @@
       } else {
         strategySlots = JSON.parse(JSON.stringify(DEFAULT_PRESETS));
       }
+
+      // Sync activeSlotId from LocalStorage
+      const savedActive = localStorage.getItem("asset_active_slot_id");
+      if (savedActive) {
+        activeSlotId = parseInt(savedActive, 10);
+      }
+      currentSlotId = activeSlotId;
+
       updateSavedSnapshots();
     }
 
@@ -2019,6 +2027,7 @@
             });
             if (data.activeSlotId) {
               activeSlotId = data.activeSlotId;
+              localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
             }
             saveLocalSlots();
             updateSavedSnapshots();

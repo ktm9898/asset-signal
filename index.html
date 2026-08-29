@@ -595,6 +595,52 @@
       font-weight: 700;
     }
 
+    /* Strategy Selection Bar (StockSignal Style) */
+    .strategy-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 4px 14px 4px 4px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+      user-select: none;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .strategy-bar:hover {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      transform: translateY(-1px);
+    }
+    .btn-strategy-pill {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 6px 13px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(37, 99, 235, 0.22);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-strategy-pill:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+    .strategy-bar-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+    }
+
     .toast {
       position: fixed;
       bottom: 24px;
@@ -794,16 +840,17 @@
   <!-- Main Container -->
   <div class="container">
 
+    <!-- Dedicated Sleek Strategy Bar (StockSignal Style) -->
+    <div class="strategy-bar" onclick="openStrategySelectModal()" title="클릭하여 전략 선택 및 조건 확인">
+      <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
+      <span class="strategy-bar-name" id="currentStrategyNameDisplay">#1. 전략 로딩중...</span>
+    </div>
+
     <!-- Hero Banner: Market State & Benchmark Signal -->
     <div class="hero-banner">
       <div class="hero-left">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin-bottom: 6px;">
-          <div class="state-badge" id="heroStrategyBadge" style="cursor: pointer; background: #eff6ff; color: var(--primary); border-color: #bfdbfe; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;" onclick="openStrategySelectModal()" title="클릭하여 전략 변경">
-            <i class="fa-solid fa-layer-group text-primary"></i> <span id="heroStrategyText">#1. 전략 로딩중...</span>
-          </div>
-          <button class="nav-btn btn-sm btn-primary" id="btnOpenStrategyModal" onclick="openStrategySelectModal()" title="전략 선택" style="cursor: pointer;">
-            <i class="fa-solid fa-folder-open"></i> <span class="nav-text">전략선택</span>
-          </button>
+        <div class="state-badge" id="heroStateBadge">
+          <i class="fa-solid fa-circle-check"></i> <span id="heroStateText">기본 (정상 운용)</span>
         </div>
         <div class="hero-title" id="heroAdviceTitle">
           기준 지표 : 나스닥 100
@@ -1105,8 +1152,8 @@
           const slots = JSON.parse(storedSlots);
           const activeStrat = slots.find(s => s.id === activeId) || slots[0];
           if (activeStrat) {
-            const heroStratEl = document.getElementById('heroStrategyText');
-            if (heroStratEl) heroStratEl.textContent = `#${activeStrat.id}. ${activeStrat.name || `전략 ${activeStrat.id}`}`;
+            const stratDisplay = document.getElementById('currentStrategyNameDisplay');
+            if (stratDisplay) stratDisplay.textContent = `#${activeStrat.id}. ${activeStrat.name || `전략 ${activeStrat.id}`}`;
             
             document.getElementById('metaStratName').textContent = activeStrat.name || `전략 ${activeStrat.id}`;
             
@@ -1141,6 +1188,17 @@
       const mdd = liveSignalData.benchmarkMDD;
       const isDrop = mdd <= -20.0;
       const isRecovery = liveSignalData.currentState.includes("반등") || liveSignalData.currentState.includes("복귀");
+
+      let stateDisplay = liveSignalData.currentState || "기본 (정상 운용)";
+      if (stateDisplay.includes("평시")) stateDisplay = "기본 (정상 운용)";
+
+      const badge = document.getElementById('heroStateBadge');
+      if (badge) {
+        badge.innerHTML = `<i class="fa-solid fa-circle-${isDrop ? 'exclamation' : 'check'}"></i> <span>${stateDisplay}</span>`;
+        badge.style.background = isDrop ? '#fee2e2' : (isRecovery ? '#e0f2fe' : '#dcfce7');
+        badge.style.color = isDrop ? 'var(--rose)' : (isRecovery ? 'var(--primary)' : 'var(--emerald)');
+        badge.style.borderColor = isDrop ? '#fca5a5' : (isRecovery ? '#bae6fd' : '#bbf7d0');
+      }
 
       const isIndex = String(liveSignalData.benchmark || '').startsWith('^');
       const prefix = isIndex ? '' : '$';
