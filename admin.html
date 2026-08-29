@@ -879,14 +879,14 @@
           <!-- Baseline Allocation -->
           <div class="form-group">
             <div class="form-label">
-              <span>평시 기본 자산 비중</span>
+              <span>기본 자산 비중</span>
               <span id="baseWeightSumBadge" class="weight-sum-badge weight-sum-ok">합계 100%</span>
             </div>
             <table class="weight-table" id="baseWeightsTable">
               <!-- Dynamic Base Weight rows -->
             </table>
             <button class="nav-btn" style="margin-top: 6px; font-size: 11px;" onclick="addBaseWeightRow()">
-              <i class="fa-solid fa-plus"></i> 기본 자산 추가
+              <i class="fa-solid fa-plus"></i> 자산 추가
             </button>
           </div>
 
@@ -895,7 +895,7 @@
             <div class="form-label">
               <span>낙폭 진입 국면</span>
               <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addDropStage()">
-                <i class="fa-solid fa-plus"></i> 하락 단계 추가
+                <i class="fa-solid fa-plus"></i> 하락단계
               </button>
             </div>
             <div id="dropStagesContainer">
@@ -908,7 +908,7 @@
             <div class="form-label">
               <span>계단식 복귀 국면</span>
               <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addRecoveryStage()">
-                <i class="fa-solid fa-plus"></i> 복귀 단계 추가
+                <i class="fa-solid fa-plus"></i> 복귀단계
               </button>
             </div>
             <div id="recoveryStagesContainer">
@@ -1578,8 +1578,49 @@
     }
 
     // ==========================================
-    // Base Weights Matrix UI
+    // Base Weights Matrix UI (Auto-balancing to 100%)
     // ==========================================
+    function autoNormalizeBaseWeights(weights, editedTicker, newPct) {
+      const tickers = Object.keys(weights);
+      if (tickers.length === 0) return {};
+      if (tickers.length === 1) {
+        return { [tickers[0]]: 1.0 };
+      }
+
+      newPct = Math.max(0, Math.min(100, Math.round(newPct)));
+      const otherTickers = tickers.filter(t => t !== editedTicker);
+      const remainPct = 100 - newPct;
+
+      const currentOtherSum = otherTickers.reduce((sum, t) => sum + Math.max(0, Math.round((weights[t] || 0) * 100)), 0);
+
+      const result = {};
+      result[editedTicker] = newPct / 100.0;
+
+      if (currentOtherSum > 0) {
+        let allocated = 0;
+        otherTickers.forEach((t, i) => {
+          if (i === otherTickers.length - 1) {
+            const finalOtherPct = Math.max(0, remainPct - allocated);
+            result[t] = finalOtherPct / 100.0;
+          } else {
+            const currentPct = Math.max(0, Math.round((weights[t] || 0) * 100));
+            const calculatedPct = Math.round((currentPct / currentOtherSum) * remainPct);
+            result[t] = calculatedPct / 100.0;
+            allocated += calculatedPct;
+          }
+        });
+      } else {
+        const equalShare = Math.floor(remainPct / otherTickers.length);
+        const remainder = remainPct % otherTickers.length;
+        otherTickers.forEach((t, i) => {
+          const share = equalShare + (i < remainder ? 1 : 0);
+          result[t] = share / 100.0;
+        });
+      }
+
+      return result;
+    }
+
     function renderBaseWeightsTable(weights) {
       const tbody = document.getElementById('baseWeightsTable');
       tbody.innerHTML = '';
@@ -1611,7 +1652,8 @@
     function updateBaseWeight(ticker, val) {
       const s = getCurrentSlot();
       if (!s.baseWeights) s.baseWeights = {};
-      s.baseWeights[ticker] = parseFloat(val) / 100.0;
+      const numVal = parseFloat(val) || 0;
+      s.baseWeights = autoNormalizeBaseWeights(s.baseWeights, ticker, numVal);
       saveLocalSlots();
       renderBaseWeightsTable(s.baseWeights);
       runInteractiveBacktest();
@@ -1619,8 +1661,30 @@
 
     function deleteBaseWeight(ticker) {
       const s = getCurrentSlot();
-      if (s.baseWeights && s.baseWeights[ticker]) {
+      if (s.baseWeights && s.baseWeights[ticker] !== undefined) {
         delete s.baseWeights[ticker];
+        const remaining = Object.keys(s.baseWeights);
+        if (remaining.length > 0) {
+          const currentSum = remaining.reduce((sum, t) => sum + Math.max(0, Math.round((s.baseWeights[t] || 0) * 100)), 0);
+          if (currentSum > 0) {
+            let allocated = 0;
+            remaining.forEach((t, i) => {
+              if (i === remaining.length - 1) {
+                s.baseWeights[t] = (100 - allocated) / 100.0;
+              } else {
+                const p = Math.round((Math.round(s.baseWeights[t] * 100) / currentSum) * 100);
+                s.baseWeights[t] = p / 100.0;
+                allocated += p;
+              }
+            });
+          } else {
+            const equalShare = Math.floor(100 / remaining.length);
+            const remainder = 100 % remaining.length;
+            remaining.forEach((t, i) => {
+              s.baseWeights[t] = (equalShare + (i < remainder ? 1 : 0)) / 100.0;
+            });
+          }
+        }
         saveLocalSlots();
         renderBaseWeightsTable(s.baseWeights);
         runInteractiveBacktest();
@@ -1642,11 +1706,31 @@
     function selectUniverseItem(ticker) {
       const s = getCurrentSlot();
       if (!s.baseWeights) s.baseWeights = {};
-      s.baseWeights[ticker] = 0.20;
-      saveLocalSlots();
-      renderBaseWeightsTable(s.baseWeights);
+      if (!s.baseWeights[ticker]) {
+        const existingKeys = Object.keys(s.baseWeights);
+        if (existingKeys.length === 0) {
+          s.baseWeights[ticker] = 1.0;
+        } else {
+          const newAssetPct = 20; // Default new asset 20%
+          const factor = (100 - newAssetPct) / 100.0;
+          let allocated = 0;
+          existingKeys.forEach((k, idx) => {
+            if (idx === existingKeys.length - 1) {
+              const finalP = Math.max(0, (100 - newAssetPct) - allocated);
+              s.baseWeights[k] = finalP / 100.0;
+            } else {
+              const p = Math.round(Math.round((s.baseWeights[k] || 0) * 100) * factor);
+              s.baseWeights[k] = p / 100.0;
+              allocated += p;
+            }
+          });
+          s.baseWeights[ticker] = newAssetPct / 100.0;
+        }
+        saveLocalSlots();
+        renderBaseWeightsTable(s.baseWeights);
+        runInteractiveBacktest();
+      }
       closeEtfSelectModal();
-      runInteractiveBacktest();
     }
 
     // ==========================================
