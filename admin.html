@@ -155,6 +155,14 @@
       background: rgba(255, 255, 255, 0.08);
     }
 
+    .btn-sm {
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      gap: 5px;
+    }
+
     .btn-primary {
       background: linear-gradient(135deg, var(--primary), var(--indigo));
       border: none;
@@ -770,13 +778,13 @@
             <i class="fa-solid fa-layer-group text-primary"></i> 전략 슬롯
           </div>
           <div class="slot-actions-bar">
-            <button class="nav-btn btn-primary" onclick="saveSlotsToGAS()">
+            <button class="nav-btn btn-sm btn-primary" onclick="saveSlotsToGAS()">
               <i class="fa-solid fa-floppy-disk"></i> 저장
             </button>
-            <button class="nav-btn btn-danger" onclick="resetCurrentSlot()">
+            <button class="nav-btn btn-sm btn-danger" onclick="resetCurrentSlot()">
               <i class="fa-solid fa-trash-can"></i> 삭제
             </button>
-            <button class="nav-btn btn-success" onclick="activateCurrentSlot()">
+            <button class="nav-btn btn-sm btn-success" onclick="activateCurrentSlot()">
               <i class="fa-solid fa-bolt"></i> 전략적용
             </button>
           </div>
@@ -2189,6 +2197,17 @@
 
       const currencyStr = asset.currency === 'KRW' ? `${Math.round(latestClose).toLocaleString()}원` : `$${latestClose.toFixed(2)}`;
 
+      let mddSummaryColor = 'var(--text-muted)';
+      let mddSummaryBadge = '';
+      if (latestMDD >= -0.01) {
+        mddSummaryColor = 'var(--emerald)';
+        mddSummaryBadge = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(16,185,129,0.15); color: var(--emerald); font-weight: 700; margin-left: 6px;">신고가 (ATH)</span>';
+      } else if (latestMDD <= -20.0) {
+        mddSummaryColor = 'var(--rose)';
+      } else if (latestMDD <= -10.0) {
+        mddSummaryColor = 'var(--amber)';
+      }
+
       const summaryBar = document.getElementById('dataSummaryBar');
       summaryBar.innerHTML = `
         <div class="data-summary-card">
@@ -2201,7 +2220,7 @@
         </div>
         <div class="data-summary-card">
           <span class="data-summary-lbl">고점 대비 낙폭 (MDD)</span>
-          <span class="data-summary-val" style="color: var(--rose);">${latestMDD.toFixed(2)}%</span>
+          <span class="data-summary-val" style="color: ${mddSummaryColor};">${latestMDD >= -0.01 ? '0.00%' : latestMDD.toFixed(2) + '%'}${mddSummaryBadge}</span>
         </div>
         <div class="data-summary-card">
           <span class="data-summary-lbl">RSI (14)</span>
@@ -2236,6 +2255,16 @@
         const macd = macdObj.macd[i];
         const sig = macdObj.signal[i];
 
+        // Meaningful MDD Color Grading
+        let mddHtml = `<span style="color: var(--text-muted);">${mdd.toFixed(2)}%</span>`;
+        if (mdd >= -0.01) {
+          mddHtml = `<span style="color: var(--emerald); font-weight: 700;">0.00%</span>`;
+        } else if (mdd <= -20.0) {
+          mddHtml = `<span style="color: var(--rose); font-weight: 700;">${mdd.toFixed(2)}%</span>`;
+        } else if (mdd <= -10.0) {
+          mddHtml = `<span style="color: var(--amber); font-weight: 600;">${mdd.toFixed(2)}%</span>`;
+        }
+
         // 52-Week High / Low at index i
         const lookbackStart = Math.max(0, i - 252);
         let wHigh = -Infinity, wLow = Infinity;
@@ -2252,7 +2281,7 @@
           <td>${dates[i]}</td>
           <td style="font-weight: 700;">${asset.currency === 'KRW' ? Math.round(c).toLocaleString() : c.toFixed(2)}</td>
           <td style="color: ${cColor}; font-weight: 700;">${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%</td>
-          <td style="color: var(--rose);">${mdd.toFixed(2)}%</td>
+          <td>${mddHtml}</td>
           <td class="${rsiClass}">${rsi.toFixed(1)}</td>
           <td>${sma20 > 0 ? (asset.currency === 'KRW' ? Math.round(sma20).toLocaleString() : sma20.toFixed(2)) : '-'}</td>
           <td>${sma60 > 0 ? (asset.currency === 'KRW' ? Math.round(sma60).toLocaleString() : sma60.toFixed(2)) : '-'}</td>
