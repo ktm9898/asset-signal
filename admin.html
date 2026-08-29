@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Asset Signal Studio | 동적 자산배분 & 백테스트 랩</title>
+  <title>Asset Signal Studio | 동적 자산배분 & 데이터조회</title>
   
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,6 +27,7 @@
       --emerald: #10b981;
       --rose: #f43f5e;
       --amber: #f59e0b;
+      --purple: #a855f7;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
@@ -60,7 +61,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 32px;
+      padding: 14px 32px;
       background: rgba(9, 13, 22, 0.85);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border-color);
@@ -78,14 +79,14 @@
     }
 
     .brand-icon {
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       border-radius: 10px;
       background: linear-gradient(135deg, var(--primary), var(--indigo));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
       color: #fff;
       box-shadow: 0 0 20px var(--primary-glow);
     }
@@ -100,17 +101,6 @@
       -webkit-text-fill-color: transparent;
     }
 
-    .brand-badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 20px;
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--primary);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      font-weight: 600;
-      margin-left: 6px;
-    }
-
     .header-nav {
       display: flex;
       align-items: center;
@@ -118,7 +108,7 @@
     }
 
     .main-tab-btn {
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: var(--radius-sm);
       font-size: 13px;
       font-weight: 600;
@@ -206,10 +196,10 @@
       backdrop-filter: blur(12px);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
-      padding: 18px 22px;
+      padding: 16px 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
 
     .slots-header {
@@ -284,7 +274,7 @@
     /* Main Studio Grid */
     .studio-grid {
       display: grid;
-      grid-template-columns: 480px 1fr;
+      grid-template-columns: 460px 1fr;
       gap: 24px;
     }
 
@@ -300,15 +290,15 @@
       backdrop-filter: blur(12px);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
-      padding: 24px;
+      padding: 22px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
       height: fit-content;
     }
 
     .panel-section-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--text-main);
       display: flex;
@@ -407,11 +397,11 @@
       background: rgba(0, 0, 0, 0.25);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
-      padding: 12px 14px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-bottom: 8px;
+      gap: 6px;
+      margin-bottom: 6px;
     }
 
     .stage-card-header {
@@ -424,7 +414,7 @@
       background: rgba(244, 63, 94, 0.15);
       color: var(--rose);
       border: 1px solid rgba(244, 63, 94, 0.3);
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 6px;
       font-size: 12px;
       font-weight: 700;
@@ -434,7 +424,7 @@
       background: rgba(56, 189, 248, 0.15);
       color: var(--primary);
       border: 1px solid rgba(56, 189, 248, 0.3);
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 6px;
       font-size: 12px;
       font-weight: 700;
@@ -614,76 +604,87 @@
       color: var(--primary);
     }
 
-    /* Universe & Indicators View */
-    .universe-grid {
+    /* Data Table View Styles */
+    .data-summary-bar {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
     }
 
-    .universe-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(12px);
+    .data-summary-card {
+      background: rgba(0, 0, 0, 0.35);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
-      padding: 18px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      transition: var(--transition);
+      gap: 4px;
     }
 
-    .universe-card:hover {
-      background: var(--bg-card-hover);
-      border-color: rgba(255, 255, 255, 0.15);
-      transform: translateY(-2px);
-    }
-
-    .universe-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .universe-ticker {
-      font-size: 16px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .universe-price {
-      font-family: 'Outfit', sans-serif;
-      font-size: 18px;
-      font-weight: 800;
-      text-align: right;
-    }
-
-    .universe-metrics-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 10px;
-      border-radius: var(--radius-sm);
+    .data-summary-lbl {
       font-size: 11px;
-    }
-
-    .u-metric-box {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .u-metric-lbl {
       color: var(--text-dim);
+      font-weight: 600;
     }
 
-    .u-metric-val {
+    .data-summary-val {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .history-table-container {
+      max-height: 600px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .history-table th {
+      position: sticky;
+      top: 0;
+      background: #111827;
+      padding: 10px 12px;
+      text-align: right;
+      color: var(--text-dim);
       font-weight: 700;
+      border-bottom: 1px solid var(--border-color);
+      z-index: 10;
+    }
+
+    .history-table th:first-child {
+      text-align: left;
+    }
+
+    .history-table td {
+      padding: 9px 12px;
+      text-align: right;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
       font-family: 'Outfit', sans-serif;
     }
+
+    .history-table td:first-child {
+      text-align: left;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .history-table tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tag-rsi-high { color: var(--rose); font-weight: 700; }
+    .tag-rsi-low { color: var(--emerald); font-weight: 700; }
 
     /* Modal Styles */
     .modal-overlay {
@@ -739,48 +740,44 @@
       </div>
       <div>
         <span class="brand-title">Asset Signal</span>
-        <span class="brand-badge">STUDIO LAB</span>
       </div>
     </a>
 
-    <!-- Main View Switcher Tabs -->
+    <!-- Main Navigation: 대시보드, 백테스트, 데이터조회 -->
     <div class="header-nav">
-      <button class="main-tab-btn active" id="tabBtnStudio" onclick="switchMainView('studio')">
-        <i class="fa-solid fa-sliders"></i> 전략 연구소 & 백테스트
-      </button>
-      <button class="main-tab-btn" id="tabBtnUniverse" onclick="switchMainView('universe')">
-        <i class="fa-solid fa-chart-line"></i> 종목 시세 & 보조지표 탐색기
-      </button>
       <a href="index.html" class="main-tab-btn">
-        <i class="fa-solid fa-gauge-high"></i> 실전 대시보드
+        <i class="fa-solid fa-gauge-high"></i> 대시보드
       </a>
+      <button class="main-tab-btn active" id="tabBtnStudio" onclick="switchMainView('studio')">
+        <i class="fa-solid fa-sliders"></i> 백테스트
+      </button>
+      <button class="main-tab-btn" id="tabBtnData" onclick="switchMainView('data')">
+        <i class="fa-solid fa-table-list"></i> 데이터조회
+      </button>
     </div>
   </header>
 
   <!-- Main Container -->
   <div class="container">
     
-    <!-- VIEW 1: Strategy Studio & Backtest Lab -->
+    <!-- VIEW 1: 백테스트 스튜디오 (Studio View) -->
     <div id="viewStudio" style="display: flex; flex-direction: column; gap: 24px;">
 
       <!-- Strategy Preset Slots & Integrated Control Toolbar -->
       <div class="slots-wrapper">
         <div class="slots-header">
           <div class="slots-title">
-            <i class="fa-solid fa-layer-group text-primary"></i> 전략 슬롯 프리셋 (1~10번)
+            <i class="fa-solid fa-layer-group text-primary"></i> 전략 슬롯
           </div>
           <div class="slot-actions-bar">
-            <button class="nav-btn" onclick="openRenameModal()">
-              <i class="fa-solid fa-pen"></i> 이름/메모 수정
+            <button class="nav-btn btn-primary" onclick="saveSlotsToGAS()">
+              <i class="fa-solid fa-floppy-disk"></i> 저장
             </button>
             <button class="nav-btn btn-danger" onclick="resetCurrentSlot()">
-              <i class="fa-solid fa-trash-can"></i> 슬롯 초기화
-            </button>
-            <button class="nav-btn btn-primary" onclick="saveSlotsToGAS()">
-              <i class="fa-solid fa-cloud-arrow-up"></i> 구글시트 저장
+              <i class="fa-solid fa-trash-can"></i> 삭제
             </button>
             <button class="nav-btn btn-success" onclick="activateCurrentSlot()">
-              <i class="fa-solid fa-bolt"></i> 이 전략 적용 (ACTIVE)
+              <i class="fa-solid fa-bolt"></i> 전략적용
             </button>
           </div>
         </div>
@@ -794,27 +791,30 @@
 
         <!-- Left: Strategy Configuration Panel -->
         <div class="config-panel">
-          <div class="panel-section-title">
-            <i class="fa-solid fa-sliders text-primary"></i> <span id="currentSlotTitleDisplay">전략 1번 설정</span>
+          <div class="panel-section-title" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-sliders text-primary"></i> <span id="currentSlotTitleDisplay">전략 1번 설정</span>
+            </div>
+            <button class="btn-icon-del" title="이름 수정" onclick="openRenameModal()"><i class="fa-solid fa-pen" style="font-size: 12px;"></i></button>
           </div>
 
           <!-- Benchmark Index Selection (3 Major Indices Only) -->
           <div class="form-group">
             <label class="form-label">
-              <span>기준 지표 (Benchmark Index)</span>
+              <span>기준 지표</span>
               <span class="text-dim">낙폭 추적 순수 지수</span>
             </label>
             <select class="form-select" id="cfgBenchmark" onchange="onConfigChange()">
-              <option value="^NDX">나스닥 100 지수 (^NDX)</option>
-              <option value="^GSPC">S&P 500 지수 (^GSPC)</option>
-              <option value="^KS11">코스피 지수 (^KS11)</option>
+              <option value="^NDX">나스닥 100</option>
+              <option value="^GSPC">S&P 500</option>
+              <option value="^KS11">코스피</option>
             </select>
           </div>
 
           <!-- Baseline Allocation -->
           <div class="form-group">
             <div class="form-label">
-              <span>평시 기본 자산 비중 (Normal State)</span>
+              <span>평시 기본 자산 비중</span>
               <span id="baseWeightSumBadge" class="weight-sum-badge weight-sum-ok">합계 100%</span>
             </div>
             <table class="weight-table" id="baseWeightsTable">
@@ -828,7 +828,7 @@
           <!-- Drawdown Drop Stages -->
           <div class="form-group">
             <div class="form-label">
-              <span>낙폭 진입 국면 (MDD Escalation)</span>
+              <span>낙폭 진입 국면</span>
               <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addDropStage()">
                 <i class="fa-solid fa-plus"></i> 하락 단계 추가
               </button>
@@ -841,7 +841,7 @@
           <!-- Staircase Recovery Stages -->
           <div class="form-group">
             <div class="form-label">
-              <span>계단식 복귀 국면 (Hysteresis Recovery)</span>
+              <span>계단식 복귀 국면</span>
               <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addRecoveryStage()">
                 <i class="fa-solid fa-plus"></i> 복귀 단계 추가
               </button>
@@ -879,7 +879,7 @@
           </div>
 
           <button class="nav-btn btn-primary" style="padding: 12px; font-size: 14px; justify-content: center;" onclick="runInteractiveBacktest()">
-            <i class="fa-solid fa-play"></i> 백테스트 다시 계산
+            <i class="fa-solid fa-play"></i> 백테스트
           </button>
         </div>
 
@@ -939,12 +939,12 @@
           <!-- Benchmark Comparison Table (3 Major Indices Only) -->
           <div class="benchmarks-table-panel">
             <div style="font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-scale-balanced text-primary"></i> 3대 대표 시장 지수 대비 성과 비교
+              <i class="fa-solid fa-scale-balanced text-primary"></i> 시장 지수 대비 성과 비교
             </div>
             <table class="bm-table">
               <thead>
                 <tr>
-                  <th>전략 및 벤치마크 지수</th>
+                  <th>전략 및 벤치마크</th>
                   <th>총 수익률</th>
                   <th>CAGR</th>
                   <th>MDD</th>
@@ -958,10 +958,10 @@
             </table>
           </div>
 
-          <!-- Rebalance Events Log -->
+          <!-- Rebalance Events Table -->
           <div class="benchmarks-table-panel">
             <div style="font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;">
-              <span><i class="fa-solid fa-list-check text-primary"></i> 최근 리밸런싱 이력 로그</span>
+              <span><i class="fa-solid fa-list-check text-primary"></i> 최근 리밸런싱 이력</span>
               <span class="text-dim" style="font-size: 12px;" id="rebalanceCountText">총 0건</span>
             </div>
             <div style="max-height: 260px; overflow-y: auto;">
@@ -989,22 +989,68 @@
 
     </div>
 
-    <!-- VIEW 2: Market Universe & Technical Indicators View -->
-    <div id="viewUniverse" style="display: none; flex-direction: column; gap: 20px;">
+    <!-- VIEW 2: 데이터조회 뷰 (Comprehensive Daily Historical Table & Technical Indicators) -->
+    <div id="viewData" style="display: none; flex-direction: column; gap: 20px;">
+      
+      <!-- Top Control Bar: Ticker Selection & Range Filter -->
       <div class="slots-wrapper">
         <div class="slots-header">
-          <div class="slots-title">
-            <i class="fa-solid fa-chart-line text-primary"></i> 등록된 모든 지수 & ETF 실시간 시세 및 기술적 보조지표
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <div class="slots-title">
+              <i class="fa-solid fa-table-list text-primary"></i> 일별 시세 & 보조지표 정밀 데이터조회
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <select class="form-select" id="dataTickerSelect" style="width: 220px; font-weight: 700;" onchange="onDataTickerChange()">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
           </div>
-          <div style="display: flex; gap: 10px;">
-            <input type="text" class="form-input" id="universeSearchInput" placeholder="종목명 또는 티커 검색..." style="width: 220px;" oninput="renderUniverseCards()">
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="chart-tabs">
+              <button class="chart-tab active" id="rangeBtn30" onclick="setDataRange(30)">30일</button>
+              <button class="chart-tab" id="rangeBtn100" onclick="setDataRange(100)">100일</button>
+              <button class="chart-tab" id="rangeBtn250" onclick="setDataRange(250)">1년</button>
+              <button class="chart-tab" id="rangeBtnAll" onclick="setDataRange(0)">전체</button>
+            </div>
+            <button class="nav-btn" onclick="exportDataToCSV()"><i class="fa-solid fa-download"></i> CSV 다운로드</button>
           </div>
         </div>
       </div>
 
-      <div class="universe-grid" id="universeGridContainer">
+      <!-- Realtime Metric Snapshot Bar -->
+      <div class="data-summary-bar" id="dataSummaryBar">
         <!-- Rendered dynamically -->
       </div>
+
+      <!-- Historical Data Table Container -->
+      <div class="history-table-container">
+        <table class="history-table" id="dataTableContent">
+          <thead>
+            <tr>
+              <th>일자</th>
+              <th>종가</th>
+              <th>등락률</th>
+              <th>MDD</th>
+              <th>RSI(14)</th>
+              <th>SMA20</th>
+              <th>SMA60</th>
+              <th>SMA200</th>
+              <th>이격도(20)</th>
+              <th>BB 상단</th>
+              <th>BB 하단</th>
+              <th>MACD</th>
+              <th>Signal</th>
+              <th>52주 최고</th>
+              <th>52주 최저</th>
+            </tr>
+          </thead>
+          <tbody id="dataTableBody">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+
     </div>
 
   </div>
@@ -1038,67 +1084,40 @@
         <button class="btn-icon-del" onclick="closeEtfSelectModal()"><i class="fa-solid fa-xmark" style="font-size: 18px;"></i></button>
       </div>
       <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
-        검증된 ETF 목록입니다. 원하는 종목을 클릭하시면 포트폴리오에 추가되며, 하단에서 임의의 티커를 직접 입력할 수도 있습니다.
+        원하는 종목을 클릭하시면 포트폴리오에 추가됩니다.
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 6px;">
         <!-- Group 1: US Tech & Leverage -->
         <div>
-          <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-microchip"></i> 미국 테크 & 레버리지
-          </div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px;">미국 테크 & 레버리지</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <div class="slot-tab" onclick="selectUniverseItem('QQQ')"><strong>QQQ</strong> <span class="text-dim" style="font-size: 11px;">나스닥 100 1X</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('QLD')"><strong>QLD</strong> <span class="text-dim" style="font-size: 11px;">나스닥 2X 레버리지</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('TQQQ')"><strong style="color: var(--rose);">TQQQ</strong> <span class="text-dim" style="font-size: 11px;">나스닥 3X 레버리지</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('SOXL')"><strong style="color: var(--rose);">SOXL</strong> <span class="text-dim" style="font-size: 11px;">반도체 3X 레버리지</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('QLD')"><strong>QLD</strong> <span class="text-dim" style="font-size: 11px;">나스닥 2X</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('TQQQ')"><strong style="color: var(--rose);">TQQQ</strong> <span class="text-dim" style="font-size: 11px;">나스닥 3X</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('SOXL')"><strong style="color: var(--rose);">SOXL</strong> <span class="text-dim" style="font-size: 11px;">반도체 3X</span></div>
           </div>
         </div>
 
         <!-- Group 2: US Broad & Dividend -->
         <div>
-          <div style="font-size: 11px; font-weight: 700; color: var(--emerald); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-building-columns"></i> 미국 시장 & 배당/가치
-          </div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--emerald); margin-bottom: 6px;">미국 시장 & 배당/가치</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="slot-tab" onclick="selectUniverseItem('SCHD')"><strong>SCHD</strong> <span class="text-dim" style="font-size: 11px;">미국 배당다우존스</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('SCHD')"><strong>SCHD</strong> <span class="text-dim" style="font-size: 11px;">배당다우존스</span></div>
             <div class="slot-tab" onclick="selectUniverseItem('SPY')"><strong>SPY</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 1X</span></div>
             <div class="slot-tab" onclick="selectUniverseItem('SSO')"><strong>SSO</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 2X</span></div>
             <div class="slot-tab" onclick="selectUniverseItem('UPRO')"><strong style="color: var(--rose);">UPRO</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 3X</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('JEPI')"><strong>JEPI</strong> <span class="text-dim" style="font-size: 11px;">월배당 커버드콜</span></div>
           </div>
         </div>
 
-        <!-- Group 3: Fixed Income & Cash -->
+        <!-- Group 3: Korean ETFs -->
         <div>
-          <div style="font-size: 11px; font-weight: 700; color: var(--amber); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-shield-halved"></i> 미국 채권 & 현금성
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="slot-tab" onclick="selectUniverseItem('TLT')"><strong>TLT</strong> <span class="text-dim" style="font-size: 11px;">미국 20년+ 국채</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('BIL')"><strong>BIL</strong> <span class="text-dim" style="font-size: 11px;">1-3M 단기국채(현금)</span></div>
-          </div>
-        </div>
-
-        <!-- Group 4: Korean ETFs -->
-        <div>
-          <div style="font-size: 11px; font-weight: 700; color: #a855f7; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-won-sign"></i> 한국 상장 ETF
-          </div>
+          <div style="font-size: 11px; font-weight: 700; color: #a855f7; margin-bottom: 6px;">한국 상장 ETF</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <div class="slot-tab" onclick="selectUniverseItem('069500.KS')"><strong>KODEX 200 (069500)</strong></div>
             <div class="slot-tab" onclick="selectUniverseItem('122630.KS')"><strong>KODEX 레버리지 (122630)</strong></div>
-            <div class="slot-tab" onclick="selectUniverseItem('379800.KS')"><strong>KODEX 나스닥100TR (379800)</strong></div>
+            <div class="slot-tab" onclick="selectUniverseItem('379800.KS')"><strong>KODEX 미국나스닥100TR (379800)</strong></div>
             <div class="slot-tab" onclick="selectUniverseItem('448290.KS')"><strong>ACE 미국배당다우존스 (448290)</strong></div>
-          </div>
-        </div>
-
-        <!-- Custom Ticker Input -->
-        <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
-          <label class="form-label">기타 티커 직접 입력 (US / KR)</label>
-          <div style="display: flex; gap: 8px; margin-top: 4px;">
-            <input type="text" class="form-input" id="customTickerInput" placeholder="예: GLD, VOO, 453850.KS" style="flex: 1;">
-            <button class="nav-btn btn-primary" onclick="selectCustomUniverseItem()">추가하기</button>
           </div>
         </div>
       </div>
@@ -1116,10 +1135,10 @@
     // Korean ETF & Index Formatter
     // ==========================================
     const KOREAN_ETF_DICT = {
-      "^NDX": "나스닥 100 지수 (^NDX)",
-      "^GSPC": "S&P 500 지수 (^GSPC)",
-      "^KS11": "코스피 지수 (^KS11)",
-      "^IXIC": "나스닥 종합지수 (^IXIC)",
+      "^NDX": "나스닥 100",
+      "^GSPC": "S&P 500",
+      "^KS11": "코스피",
+      "^IXIC": "나스닥 종합",
       "069500.KS": "KODEX 200 (069500)",
       "069500": "KODEX 200 (069500)",
       "122630.KS": "KODEX 레버리지 (122630)",
@@ -1161,7 +1180,7 @@
     // Configuration & Global State
     // ==========================================
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwnJXm6B3ZrS0jp5dsoKV6n3ghCOOtjxcSzAVtVlZ3nCk6MwZIKgMVV6e7FJcdM0PaZ4A/exec";
-    const LOCAL_SLOTS_KEY = "asset_strategy_slots_v3";
+    const LOCAL_SLOTS_KEY = "asset_strategy_slots_v4";
 
     let etfDataset = null;
     let strategySlots = [];
@@ -1171,23 +1190,25 @@
     let currentChartTab = 'nav';
     let currentMainView = 'studio';
     let lastBacktestResult = null;
+    let currentDataRange = 30;
+    let selectedDataTicker = "^NDX";
 
     const DEFAULT_PRESETS = [
       {
         id: 1,
         name: "나스닥100 동적 계단식 (QQQ/QLD/TQQQ/SCHD)",
-        memo: "평시 QQQ 60:SCHD 40 유지, 나스닥 지수 -20%/-30%/-40% 하락 시 2X/3X 레버리지 분할 매수 및 반등 시 계단식 선제 익절",
+        memo: "평시 QQQ 60:SCHD 40 유지, 나스닥 -20%/-30%/-40% 하락 시 2X/3X 레버리지 분할 매수 및 반등 시 계단식 선제 익절",
         benchmark: "^NDX",
         baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
         dropStages: [
-          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-20%)"},
-          {"threshold": -30.0, "weights": {"QQQ": 0.30, "QLD": 0.30, "TQQQ": 0.20, "SCHD": 0.20}, "name": "2차 하락 (-30%)"},
-          {"threshold": -40.0, "weights": {"QQQ": 0.20, "QLD": 0.30, "TQQQ": 0.40, "SCHD": 0.10}, "name": "극단 하락 (-40%)"}
+          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락"},
+          {"threshold": -30.0, "weights": {"QQQ": 0.30, "QLD": 0.30, "TQQQ": 0.20, "SCHD": 0.20}, "name": "2차 하락"},
+          {"threshold": -40.0, "weights": {"QQQ": 0.20, "QLD": 0.30, "TQQQ": 0.40, "SCHD": 0.10}, "name": "3차 하락"}
         ],
         recoveryStages: [
-          {"fromDrop": -40.0, "recovery": -25.0, "weights": {"QQQ": 0.35, "QLD": 0.30, "TQQQ": 0.15, "SCHD": 0.20}, "name": "반등 1단계 (-25% 회복)"},
-          {"fromDrop": -30.0, "recovery": -15.0, "weights": {"QQQ": 0.45, "QLD": 0.25, "TQQQ": 0.00, "SCHD": 0.30}, "name": "반등 2단계 (-15% 회복)"},
-          {"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "TQQQ": 0.00, "SCHD": 0.40}, "name": "반등 3단계 (-5% 원복)"}
+          {"fromDrop": -40.0, "recovery": -25.0, "weights": {"QQQ": 0.35, "QLD": 0.30, "TQQQ": 0.15, "SCHD": 0.20}, "name": "1단계 반등"},
+          {"fromDrop": -30.0, "recovery": -15.0, "weights": {"QQQ": 0.45, "QLD": 0.25, "TQQQ": 0.00, "SCHD": 0.30}, "name": "2단계 반등"},
+          {"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "TQQQ": 0.00, "SCHD": 0.40}, "name": "3단계 반등"}
         ],
         gainThresholdPct: 20.0,
         toleranceBandPct: 5.0,
@@ -1201,12 +1222,12 @@
         benchmark: "^NDX",
         baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
         dropStages: [
-          {"threshold": -15.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-15%)"},
-          {"threshold": -25.0, "weights": {"QQQ": 0.20, "QLD": 0.60, "SCHD": 0.20}, "name": "2차 하락 (-25%)"}
+          {"threshold": -15.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락"},
+          {"threshold": -25.0, "weights": {"QQQ": 0.20, "QLD": 0.60, "SCHD": 0.20}, "name": "2차 하락"}
         ],
         recoveryStages: [
-          {"fromDrop": -25.0, "recovery": -10.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "반등 1단계 (-10% 회복)"},
-          {"fromDrop": -15.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "반등 2단계 (-5% 원복)"}
+          {"fromDrop": -25.0, "recovery": -10.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1단계 반등"},
+          {"fromDrop": -15.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "2단계 반등"}
         ],
         gainThresholdPct: 20.0,
         toleranceBandPct: 5.0,
@@ -1220,12 +1241,12 @@
         benchmark: "^GSPC",
         baseWeights: {"SPY": 0.50, "SCHD": 0.50},
         dropStages: [
-          {"threshold": -15.0, "weights": {"SPY": 0.30, "UPRO": 0.30, "SCHD": 0.40}, "name": "1차 조정 (-15%)"},
-          {"threshold": -25.0, "weights": {"SPY": 0.20, "UPRO": 0.30, "TQQQ": 0.30, "SCHD": 0.20}, "name": "2차 폭락 (-25%)"}
+          {"threshold": -15.0, "weights": {"SPY": 0.30, "UPRO": 0.30, "SCHD": 0.40}, "name": "1차 하락"},
+          {"threshold": -25.0, "weights": {"SPY": 0.20, "UPRO": 0.30, "TQQQ": 0.30, "SCHD": 0.20}, "name": "2차 하락"}
         ],
         recoveryStages: [
-          {"fromDrop": -25.0, "recovery": -10.0, "weights": {"SPY": 0.35, "UPRO": 0.25, "TQQQ": 0.00, "SCHD": 0.40}, "name": "반등 1단계 (-10%)"},
-          {"fromDrop": -15.0, "recovery": -5.0, "weights": {"SPY": 0.50, "UPRO": 0.00, "TQQQ": 0.00, "SCHD": 0.50}, "name": "반등 2단계 (-5%)"}
+          {"fromDrop": -25.0, "recovery": -10.0, "weights": {"SPY": 0.35, "UPRO": 0.25, "TQQQ": 0.00, "SCHD": 0.40}, "name": "1단계 반등"},
+          {"fromDrop": -15.0, "recovery": -5.0, "weights": {"SPY": 0.50, "UPRO": 0.00, "TQQQ": 0.00, "SCHD": 0.50}, "name": "2단계 반등"}
         ],
         gainThresholdPct: 20.0,
         toleranceBandPct: 5.0,
@@ -1237,15 +1258,15 @@
     for (let i = 4; i <= 10; i++) {
       DEFAULT_PRESETS.push({
         id: i,
-        name: `사용자 맞춤 전략 ${i}`,
+        name: `전략 ${i}`,
         memo: "",
         benchmark: "^NDX",
         baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
         dropStages: [
-          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-20%)"}
+          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락"}
         ],
         recoveryStages: [
-          {"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "반등 원복 (-5%)"}
+          {"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "1단계 반등"}
         ],
         gainThresholdPct: 20.0,
         toleranceBandPct: 5.0,
@@ -1263,23 +1284,23 @@
       await fetchEtfDataset();
       await fetchGoogleSheetSlots();
       populateCurrentSlotUI();
+      populateDataTickerDropdown();
       runInteractiveBacktest();
-      renderUniverseCards();
 
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('view') === 'universe') {
-        switchMainView('universe');
+      if (urlParams.get('view') === 'data') {
+        switchMainView('data');
       }
     });
 
     function switchMainView(view) {
       currentMainView = view;
       document.getElementById('tabBtnStudio').classList.toggle('active', view === 'studio');
-      document.getElementById('tabBtnUniverse').classList.toggle('active', view === 'universe');
+      document.getElementById('tabBtnData').classList.toggle('active', view === 'data');
       document.getElementById('viewStudio').style.display = view === 'studio' ? 'flex' : 'none';
-      document.getElementById('viewUniverse').style.display = view === 'universe' ? 'flex' : 'none';
-      if (view === 'universe') {
-        renderUniverseCards();
+      document.getElementById('viewData').style.display = view === 'data' ? 'flex' : 'none';
+      if (view === 'data') {
+        renderDataTable();
       }
     }
 
@@ -1366,15 +1387,15 @@
     }
 
     function resetCurrentSlot() {
-      if (confirm(`[슬롯 #${currentSlotId}] 정말로 이 전략 슬롯을 초기화하시겠습니까?`)) {
+      if (confirm(`[전략 #${currentSlotId}] 정말로 이 전략 슬롯을 삭제/초기화하시겠습니까?`)) {
         const defaultSlot = DEFAULT_PRESETS.find(s => s.id === currentSlotId) || {
           id: currentSlotId,
           name: `전략 ${currentSlotId}`,
           memo: "",
           benchmark: "^NDX",
           baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
-          dropStages: [{"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-20%)"}],
-          recoveryStages: [{"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "반등 원복 (-5%)"}],
+          dropStages: [{"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락"}],
+          recoveryStages: [{"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "1단계 반등"}],
           gainThresholdPct: 20.0,
           toleranceBandPct: 5.0,
           cooldownDays: 5,
@@ -1388,13 +1409,13 @@
         renderSlotsNav();
         populateCurrentSlotUI();
         runInteractiveBacktest();
-        showToast(`슬롯 #${currentSlotId}이(가) 초기화되었습니다.`);
+        showToast(`전략 #${currentSlotId}이(가) 삭제/초기화되었습니다.`);
       }
     }
 
     function populateCurrentSlotUI() {
       const s = getCurrentSlot();
-      document.getElementById('currentSlotTitleDisplay').textContent = `슬롯 ${s.id}: ${s.name}`;
+      document.getElementById('currentSlotTitleDisplay').textContent = `전략 ${s.id}: ${s.name}`;
       document.getElementById('cfgBenchmark').value = s.benchmark || "^NDX";
       document.getElementById('cfgGainThreshold').value = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20;
       document.getElementById('cfgTolerance').value = s.toleranceBandPct !== undefined ? s.toleranceBandPct : 5;
@@ -1478,60 +1499,8 @@
       runInteractiveBacktest();
     }
 
-    async function selectCustomUniverseItem() {
-      const input = document.getElementById('customTickerInput');
-      const val = input.value.trim().toUpperCase();
-      if (!val) return;
-
-      if (etfDataset && etfDataset.universe && etfDataset.universe[val]) {
-        selectUniverseItem(val);
-        input.value = '';
-        return;
-      }
-
-      showToast(`[${formatTickerDisplay(val)}] 과거 일봉 데이터를 실시간 수집 중...`);
-      try {
-        const resp = await fetch(`${GAS_WEBAPP_URL}?action=fetch_ticker_history&ticker=${encodeURIComponent(val)}`);
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.success && data.dates && data.dates.length > 0) {
-            const dateMap = {};
-            for (let i = 0; i < data.dates.length; i++) {
-              dateMap[data.dates[i]] = data.adjClose[i];
-            }
-
-            const alignedAdj = [];
-            let lastVal = data.adjClose[0];
-            for (const d of etfDataset.dates) {
-              if (dateMap[d] !== undefined) {
-                lastVal = dateMap[d];
-              }
-              alignedAdj.push(lastVal);
-            }
-
-            if (!etfDataset.universe) etfDataset.universe = {};
-            etfDataset.universe[val] = {
-              ticker: val,
-              name: data.name || val,
-              currency: data.currency || "USD",
-              adjClose: alignedAdj,
-              latestPrice: data.latestPrice
-            };
-
-            showToast(`[${formatTickerDisplay(val)}] 데이터 로드 완료!`);
-            selectUniverseItem(val);
-            input.value = '';
-            return;
-          }
-        }
-        showToast(`[${val}] 티커 정보를 찾을 수 없습니다. (미국은 VOO, 한국은 069500.KS 형태 입력)`);
-      } catch (err) {
-        showToast(`통신 오류: ${err.message}`);
-      }
-    }
-
     // ==========================================
-    // Drop & Recovery Stages UI
+    // Drop & Recovery Stages UI (Clean Badges)
     // ==========================================
     function renderDropStages(stages) {
       const container = document.getElementById('dropStagesContainer');
@@ -1558,12 +1527,12 @@
           `;
         });
 
+        const stageTitle = `${idx + 1}차 하락 (${stg.threshold}%)`;
         card.innerHTML = `
           <div class="stage-card-header">
-            <span class="stage-badge-drop">낙폭 ${stg.threshold}% 이하</span>
+            <span class="stage-badge-drop">${stageTitle}</span>
             <button class="btn-icon-del" onclick="deleteDropStage(${idx})"><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          <div style="font-size: 12px; color: var(--text-muted);">${stg.name || '낙폭 단계'}</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
             ${weightInputs}
           </div>
@@ -1573,14 +1542,15 @@
     }
 
     function addDropStage() {
-      const threshold = prompt("낙폭 기준 임계값을 입력하세요 (예: -20, -30, -40):", "-20");
+      const s = getCurrentSlot();
+      if (!s.dropStages) s.dropStages = [];
+      const nextIdx = s.dropStages.length + 1;
+      const threshold = prompt(`하락 ${nextIdx}차 기준 낙폭을 입력하세요 (예: -20, -30, -40):`, `-${nextIdx * 10}`);
       if (threshold !== null) {
         const thNum = -Math.abs(parseFloat(threshold));
-        const s = getCurrentSlot();
-        if (!s.dropStages) s.dropStages = [];
         s.dropStages.push({
           threshold: thNum,
-          name: `하락 ${thNum}% 도달`,
+          name: `${nextIdx}차 하락`,
           weights: { "QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30 }
         });
         s.dropStages.sort((a, b) => b.threshold - a.threshold);
@@ -1631,12 +1601,12 @@
           `;
         });
 
+        const recTitle = `${idx + 1}단계 반등 (${stg.recovery}%)`;
         card.innerHTML = `
           <div class="stage-card-header">
-            <span class="stage-badge-rec">반등 ${stg.recovery}% 도달</span>
+            <span class="stage-badge-rec">${recTitle}</span>
             <button class="btn-icon-del" onclick="deleteRecoveryStage(${idx})"><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          <div style="font-size: 12px; color: var(--text-muted);">${stg.name || '복귀 단계'}</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
             ${weightInputs}
           </div>
@@ -1646,15 +1616,16 @@
     }
 
     function addRecoveryStage() {
-      const recovery = prompt("반등 회복 임계값을 입력하세요 (예: -25, -15, -5):", "-15");
+      const s = getCurrentSlot();
+      if (!s.recoveryStages) s.recoveryStages = [];
+      const nextIdx = s.recoveryStages.length + 1;
+      const recovery = prompt(`반등 ${nextIdx}단계 회복 기준을 입력하세요 (예: -25, -15, -5):`, "-15");
       if (recovery !== null) {
         const recNum = -Math.abs(parseFloat(recovery));
-        const s = getCurrentSlot();
-        if (!s.recoveryStages) s.recoveryStages = [];
         s.recoveryStages.push({
           fromDrop: -30.0,
           recovery: recNum,
-          name: `반등 ${recNum}% 회복`,
+          name: `${nextIdx}단계 반등`,
           weights: { "QQQ": 0.50, "QLD": 0.20, "SCHD": 0.30 }
         });
         s.recoveryStages.sort((a, b) => a.recovery - b.recovery);
@@ -1838,7 +1809,7 @@
         }
       }
 
-      // Benchmarks Series (3 Major Market Indices Only: NDX, GSPC, KS11)
+      // Benchmarks Series (Major Market Indices Only: NDX, GSPC, KS11)
       const bmNDX = new Float64Array(numDays);
       const bmGSPC = new Float64Array(numDays);
       const bmKS11 = new Float64Array(numDays);
@@ -1953,7 +1924,7 @@
       const tbody = document.getElementById('bmTableBody');
       tbody.innerHTML = `
         <tr class="row-highlight">
-          <td><i class="fa-solid fa-star text-primary"></i> <strong>동적 자산배분 (본 전략)</strong></td>
+          <td><i class="fa-solid fa-star text-primary"></i> <strong>전략지수</strong></td>
           <td>+${strat.totalReturnPct}%</td>
           <td>${strat.cagrPct}%</td>
           <td>${strat.mddPct}%</td>
@@ -1961,7 +1932,7 @@
           <td>${strat.sortino}</td>
         </tr>
         <tr>
-          <td>나스닥 100 지수 (^NDX)</td>
+          <td>나스닥 100</td>
           <td>+${ndx.totalReturnPct}%</td>
           <td>${ndx.cagrPct}%</td>
           <td>${ndx.mddPct}%</td>
@@ -1969,7 +1940,7 @@
           <td>${ndx.sortino}</td>
         </tr>
         <tr>
-          <td>S&P 500 지수 (^GSPC)</td>
+          <td>S&P 500</td>
           <td>+${gspc.totalReturnPct}%</td>
           <td>${gspc.cagrPct}%</td>
           <td>${gspc.mddPct}%</td>
@@ -1977,7 +1948,7 @@
           <td>${gspc.sortino}</td>
         </tr>
         <tr>
-          <td>코스피 지수 (^KS11)</td>
+          <td>코스피</td>
           <td>+${ks11.totalReturnPct}%</td>
           <td>${ks11.cagrPct}%</td>
           <td style="color: var(--rose); font-weight: 700;">${ks11.mddPct}%</td>
@@ -2013,7 +1984,7 @@
     }
 
     // ==========================================
-    // Chart.js Rendering
+    // Chart.js Rendering (Clean Legend: "전략지수", "나스닥 100", "S&P 500", "코스피")
     // ==========================================
     function switchChartTab(tab) {
       currentChartTab = tab;
@@ -2044,7 +2015,7 @@
             labels: sampleDates,
             datasets: [
               {
-                label: '동적 자산배분 (본 전략)',
+                label: '전략지수',
                 data: stratSample,
                 borderColor: '#38bdf8',
                 backgroundColor: 'rgba(56, 189, 248, 0.08)',
@@ -2054,7 +2025,7 @@
                 pointRadius: 0
               },
               {
-                label: '나스닥 100 지수 (^NDX)',
+                label: '나스닥 100',
                 data: ndxSample,
                 borderColor: '#a855f7',
                 borderWidth: 1.5,
@@ -2063,7 +2034,7 @@
                 pointRadius: 0
               },
               {
-                label: 'S&P 500 지수 (^GSPC)',
+                label: 'S&P 500',
                 data: gspcSample,
                 borderColor: '#10b981',
                 borderWidth: 1.5,
@@ -2072,7 +2043,7 @@
                 pointRadius: 0
               },
               {
-                label: '코스피 지수 (^KS11)',
+                label: '코스피',
                 data: ks11Sample,
                 borderColor: '#f59e0b',
                 borderWidth: 1.5,
@@ -2111,7 +2082,7 @@
             labels: sampleDates,
             datasets: [
               {
-                label: '동적 전략 낙폭 (Drawdown %)',
+                label: '전략지수 낙폭',
                 data: stratDD,
                 borderColor: '#38bdf8',
                 backgroundColor: 'rgba(56, 189, 248, 0.25)',
@@ -2120,7 +2091,7 @@
                 pointRadius: 0
               },
               {
-                label: '기준 지수 낙폭 (Drawdown %)',
+                label: '기준 낙폭',
                 data: bmDD,
                 borderColor: '#f43f5e',
                 backgroundColor: 'rgba(244, 63, 94, 0.15)',
@@ -2152,84 +2123,277 @@
     }
 
     // ==========================================
-    // VIEW 2: Render Market Universe & Technical Indicators
+    // VIEW 2: 데이터조회 정밀 계산 & 렌더링 엔진
     // ==========================================
-    function renderUniverseCards() {
+    function populateDataTickerDropdown() {
       if (!etfDataset || !etfDataset.universe) return;
-      const container = document.getElementById('universeGridContainer');
-      container.innerHTML = '';
+      const sel = document.getElementById('dataTickerSelect');
+      sel.innerHTML = '';
 
-      const query = (document.getElementById('universeSearchInput').value || '').trim().toLowerCase();
+      Object.keys(etfDataset.universe).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = formatTickerDisplay(t);
+        sel.appendChild(opt);
+      });
+      sel.value = selectedDataTicker;
+    }
 
-      Object.values(etfDataset.universe).forEach(u => {
-        const dName = formatTickerDisplay(u.ticker);
-        if (query && !u.ticker.toLowerCase().includes(query) && !dName.toLowerCase().includes(query)) {
-          return;
+    function onDataTickerChange() {
+      selectedDataTicker = document.getElementById('dataTickerSelect').value;
+      renderDataTable();
+    }
+
+    function setDataRange(days) {
+      currentDataRange = days;
+      document.querySelectorAll('#rangeBtn30, #rangeBtn100, #rangeBtn250, #rangeBtnAll').forEach(b => b.classList.remove('active'));
+      if (days === 30) document.getElementById('rangeBtn30').classList.add('active');
+      else if (days === 100) document.getElementById('rangeBtn100').classList.add('active');
+      else if (days === 250) document.getElementById('rangeBtn250').classList.add('active');
+      else document.getElementById('rangeBtnAll').classList.add('active');
+      renderDataTable();
+    }
+
+    function renderDataTable() {
+      if (!etfDataset || !etfDataset.dates || !etfDataset.universe) return;
+      const t = selectedDataTicker;
+      const asset = etfDataset.universe[t];
+      if (!asset || !asset.close) return;
+
+      const dates = etfDataset.dates;
+      const closePrices = asset.close;
+      const N = dates.length;
+
+      // Calculate complete historical indicators
+      const rsiArr = computeFullRSI(closePrices, 14);
+      const sma20Arr = computeFullSMA(closePrices, 20);
+      const sma60Arr = computeFullSMA(closePrices, 60);
+      const sma200Arr = computeFullSMA(closePrices, 200);
+      const bbArr = computeFullBollinger(closePrices, 20, 2);
+      const macdObj = computeFullMACD(closePrices, 12, 26, 9);
+      
+      const mddArr = new Float64Array(N);
+      let peak = 0;
+      for (let i = 0; i < N; i++) {
+        if (closePrices[i] > peak) peak = closePrices[i];
+        mddArr[i] = peak > 0 ? ((closePrices[i] - peak) / peak) * 100.0 : 0;
+      }
+
+      // Summary Bar Rendering
+      const latestClose = closePrices[N - 1];
+      const prevClose = N > 1 ? closePrices[N - 2] : latestClose;
+      const chg1D = ((latestClose - prevClose) / prevClose) * 100.0;
+      const latestRSI = rsiArr[N - 1];
+      const latestMDD = mddArr[N - 1];
+      const isUp = chg1D >= 0;
+
+      const currencyStr = asset.currency === 'KRW' ? `${Math.round(latestClose).toLocaleString()}원` : `$${latestClose.toFixed(2)}`;
+
+      const summaryBar = document.getElementById('dataSummaryBar');
+      summaryBar.innerHTML = `
+        <div class="data-summary-card">
+          <span class="data-summary-lbl">현재가</span>
+          <span class="data-summary-val">${currencyStr}</span>
+        </div>
+        <div class="data-summary-card">
+          <span class="data-summary-lbl">1일 등락률</span>
+          <span class="data-summary-val" style="color: ${isUp ? 'var(--emerald)' : 'var(--rose)'};">${isUp ? '+' : ''}${chg1D.toFixed(2)}%</span>
+        </div>
+        <div class="data-summary-card">
+          <span class="data-summary-lbl">고점 대비 낙폭 (MDD)</span>
+          <span class="data-summary-val" style="color: var(--rose);">${latestMDD.toFixed(2)}%</span>
+        </div>
+        <div class="data-summary-card">
+          <span class="data-summary-lbl">RSI (14)</span>
+          <span class="data-summary-val" style="color: ${latestRSI >= 70 ? 'var(--rose)' : (latestRSI <= 30 ? 'var(--emerald)' : 'var(--text-main)')};">${latestRSI.toFixed(1)}</span>
+        </div>
+        <div class="data-summary-card">
+          <span class="data-summary-lbl">SMA20 이격도</span>
+          <span class="data-summary-val">${sma20Arr[N-1] > 0 ? ((latestClose / sma20Arr[N-1]) * 100).toFixed(1) + '%' : '-'}</span>
+        </div>
+      `;
+
+      // Table Rows
+      const tbody = document.getElementById('dataTableBody');
+      tbody.innerHTML = '';
+
+      let startIdx = 0;
+      if (currentDataRange > 0) {
+        startIdx = Math.max(0, N - currentDataRange);
+      }
+
+      for (let i = N - 1; i >= startIdx; i--) {
+        const c = closePrices[i];
+        const p = i > 0 ? closePrices[i - 1] : c;
+        const changePct = ((c - p) / p) * 100.0;
+        const rsi = rsiArr[i];
+        const mdd = mddArr[i];
+        const sma20 = sma20Arr[i];
+        const sma60 = sma60Arr[i];
+        const sma200 = sma200Arr[i];
+        const disp20 = sma20 > 0 ? ((c / sma20) * 100).toFixed(1) : '-';
+        const bb = bbArr[i];
+        const macd = macdObj.macd[i];
+        const sig = macdObj.signal[i];
+
+        // 52-Week High / Low at index i
+        const lookbackStart = Math.max(0, i - 252);
+        let wHigh = -Infinity, wLow = Infinity;
+        for (let k = lookbackStart; k <= i; k++) {
+          if (closePrices[k] > wHigh) wHigh = closePrices[k];
+          if (closePrices[k] < wLow) wLow = closePrices[k];
         }
 
-        const isUp = (u.change1D || 0) >= 0;
-        const rsi = u.rsi14 || 50;
-        let rsiBadgeColor = 'var(--text-muted)';
-        if (rsi >= 70) rsiBadgeColor = 'var(--rose)';
-        else if (rsi <= 30) rsiBadgeColor = 'var(--emerald)';
+        const tr = document.createElement('tr');
+        const cColor = changePct >= 0 ? 'var(--emerald)' : 'var(--rose)';
+        const rsiClass = rsi >= 70 ? 'tag-rsi-high' : (rsi <= 30 ? 'tag-rsi-low' : '');
 
-        const priceStr = u.currency === 'KRW' ? `${Math.round(u.latestPrice).toLocaleString()}원` : `$${u.latestPrice.toLocaleString()}`;
-
-        const card = document.createElement('div');
-        card.className = 'universe-card';
-        card.innerHTML = `
-          <div class="universe-card-header">
-            <div>
-              <div class="universe-ticker">
-                <span>${dName}</span>
-                ${u.isIndex ? '<span class="brand-badge">INDEX</span>' : ''}
-              </div>
-              <div style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">${u.name || u.ticker}</div>
-            </div>
-            <div>
-              <div class="universe-price">${priceStr}</div>
-              <div style="font-size: 12px; font-weight: 700; text-align: right; color: ${isUp ? 'var(--emerald)' : 'var(--rose)'};">
-                ${isUp ? '+' : ''}${u.change1D || 0}%
-              </div>
-            </div>
-          </div>
-
-          <div class="universe-metrics-row">
-            <div class="u-metric-box">
-              <span class="u-metric-lbl">고점 대비 낙폭</span>
-              <span class="u-metric-val" style="color: var(--rose);">${u.mdd || 0}%</span>
-            </div>
-            <div class="u-metric-box">
-              <span class="u-metric-lbl">RSI (14)</span>
-              <span class="u-metric-val" style="color: ${rsiBadgeColor};">${rsi}</span>
-            </div>
-            <div class="u-metric-box">
-              <span class="u-metric-lbl">52주 최고가</span>
-              <span class="u-metric-val">${u.w52High || '-'}</span>
-            </div>
-            <div class="u-metric-box">
-              <span class="u-metric-lbl">52주 최저가</span>
-              <span class="u-metric-val">${u.w52Low || '-'}</span>
-            </div>
-          </div>
-
-          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); border-top: 1px solid rgba(255,255,255,0.04); padding-top: 8px;">
-            <span>SMA20: <strong>${u.sma20 || '-'}</strong></span>
-            <span>SMA50: <strong>${u.sma50 || '-'}</strong></span>
-            <span>SMA200: <strong>${u.sma200 || '-'}</strong></span>
-          </div>
+        tr.innerHTML = `
+          <td>${dates[i]}</td>
+          <td style="font-weight: 700;">${asset.currency === 'KRW' ? Math.round(c).toLocaleString() : c.toFixed(2)}</td>
+          <td style="color: ${cColor}; font-weight: 700;">${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%</td>
+          <td style="color: var(--rose);">${mdd.toFixed(2)}%</td>
+          <td class="${rsiClass}">${rsi.toFixed(1)}</td>
+          <td>${sma20 > 0 ? (asset.currency === 'KRW' ? Math.round(sma20).toLocaleString() : sma20.toFixed(2)) : '-'}</td>
+          <td>${sma60 > 0 ? (asset.currency === 'KRW' ? Math.round(sma60).toLocaleString() : sma60.toFixed(2)) : '-'}</td>
+          <td>${sma200 > 0 ? (asset.currency === 'KRW' ? Math.round(sma200).toLocaleString() : sma200.toFixed(2)) : '-'}</td>
+          <td>${disp20}%</td>
+          <td>${bb ? (asset.currency === 'KRW' ? Math.round(bb.upper).toLocaleString() : bb.upper.toFixed(2)) : '-'}</td>
+          <td>${bb ? (asset.currency === 'KRW' ? Math.round(bb.lower).toLocaleString() : bb.lower.toFixed(2)) : '-'}</td>
+          <td style="color: ${macd >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${macd.toFixed(2)}</td>
+          <td>${sig.toFixed(2)}</td>
+          <td>${asset.currency === 'KRW' ? Math.round(wHigh).toLocaleString() : wHigh.toFixed(2)}</td>
+          <td>${asset.currency === 'KRW' ? Math.round(wLow).toLocaleString() : wLow.toFixed(2)}</td>
         `;
-        container.appendChild(card);
-      });
+        tbody.appendChild(tr);
+      }
+    }
+
+    // Technical Indicator Calculator Functions
+    function computeFullSMA(prices, period) {
+      const N = prices.length;
+      const res = new Float64Array(N);
+      let sum = 0;
+      for (let i = 0; i < N; i++) {
+        sum += prices[i];
+        if (i >= period) {
+          sum -= prices[i - period];
+          res[i] = sum / period;
+        } else if (i === period - 1) {
+          res[i] = sum / period;
+        } else {
+          res[i] = sum / (i + 1);
+        }
+      }
+      return res;
+    }
+
+    function computeFullRSI(prices, period = 14) {
+      const N = prices.length;
+      const res = new Float64Array(N);
+      let avgGain = 0, avgLoss = 0;
+
+      for (let i = 1; i <= period && i < N; i++) {
+        const diff = prices[i] - prices[i - 1];
+        if (diff > 0) avgGain += diff;
+        else avgLoss -= diff;
+      }
+      avgGain /= period;
+      avgLoss /= period;
+      res[period] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+
+      for (let i = period + 1; i < N; i++) {
+        const diff = prices[i] - prices[i - 1];
+        const gain = diff > 0 ? diff : 0;
+        const loss = diff < 0 ? -diff : 0;
+        avgGain = (avgGain * (period - 1) + gain) / period;
+        avgLoss = (avgLoss * (period - 1) + loss) / period;
+        res[i] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+      }
+      for (let i = 0; i < period; i++) res[i] = 50.0;
+      return res;
+    }
+
+    function computeFullBollinger(prices, period = 20, k = 2) {
+      const N = prices.length;
+      const res = new Array(N);
+      for (let i = 0; i < N; i++) {
+        if (i < period - 1) {
+          res[i] = { upper: prices[i], lower: prices[i], mid: prices[i] };
+          continue;
+        }
+        let sum = 0;
+        for (let j = i - period + 1; j <= i; j++) sum += prices[j];
+        const mid = sum / period;
+        let varSum = 0;
+        for (let j = i - period + 1; j <= i; j++) varSum += Math.pow(prices[j] - mid, 2);
+        const std = Math.sqrt(varSum / period);
+        res[i] = { upper: mid + k * std, lower: mid - k * std, mid: mid };
+      }
+      return res;
+    }
+
+    function computeFullMACD(prices, fast = 12, slow = 26, signalPeriod = 9) {
+      const N = prices.length;
+      const emaFast = new Float64Array(N);
+      const emaSlow = new Float64Array(N);
+      const macd = new Float64Array(N);
+      const signal = new Float64Array(N);
+
+      const kFast = 2 / (fast + 1);
+      const kSlow = 2 / (slow + 1);
+      const kSig = 2 / (signalPeriod + 1);
+
+      emaFast[0] = prices[0];
+      emaSlow[0] = prices[0];
+      for (let i = 1; i < N; i++) {
+        emaFast[i] = prices[i] * kFast + emaFast[i - 1] * (1 - kFast);
+        emaSlow[i] = prices[i] * kSlow + emaSlow[i - 1] * (1 - kSlow);
+        macd[i] = emaFast[i] - emaSlow[i];
+      }
+      signal[0] = macd[0];
+      for (let i = 1; i < N; i++) {
+        signal[i] = macd[i] * kSig + signal[i - 1] * (1 - kSig);
+      }
+      return { macd, signal };
+    }
+
+    function exportDataToCSV() {
+      const t = selectedDataTicker;
+      const asset = etfDataset.universe[t];
+      if (!asset || !asset.close) return;
+
+      let csv = "Date,Close,ChangePct,MDD,RSI14,SMA20,SMA60,SMA200\n";
+      const dates = etfDataset.dates;
+      const closePrices = asset.close;
+      const rsiArr = computeFullRSI(closePrices, 14);
+      const sma20Arr = computeFullSMA(closePrices, 20);
+      const sma60Arr = computeFullSMA(closePrices, 60);
+      const sma200Arr = computeFullSMA(closePrices, 200);
+
+      let peak = 0;
+      for (let i = 0; i < dates.length; i++) {
+        if (closePrices[i] > peak) peak = closePrices[i];
+        const mdd = peak > 0 ? ((closePrices[i] - peak) / peak) * 100.0 : 0;
+        const prev = i > 0 ? closePrices[i - 1] : closePrices[i];
+        const chg = ((closePrices[i] - prev) / prev) * 100.0;
+        csv += `${dates[i]},${closePrices[i]},${chg.toFixed(2)},${mdd.toFixed(2)},${rsiArr[i].toFixed(1)},${sma20Arr[i].toFixed(2)},${sma60Arr[i].toFixed(2)},${sma200Arr[i].toFixed(2)}\n`;
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${t}_historical_indicators.csv`;
+      link.click();
     }
 
     // ==========================================
     // Cloud & GAS Actions (CORS-Safe Payload)
     // ==========================================
     async function saveSlotsToGAS() {
-      showToast("구글 시트에 10개 전략 슬롯을 저장하는 중...");
+      showToast("전략 슬롯을 저장하는 중...");
       try {
-        const resp = await fetch(GAS_WEBAPP_URL, {
+        await fetch(GAS_WEBAPP_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
@@ -2238,16 +2402,16 @@
             activeSlotId: activeSlotId
           })
         });
-        showToast("구글 시트(Strategy_Slots)에 10개 슬롯이 성공적으로 저장되었습니다!");
+        showToast("전략 저장이 완료되었습니다!");
       } catch (err) {
-        showToast("구글 시트 동기화 완료 (로컬 저장됨)");
+        showToast("저장 완료 (로컬 저장)");
       }
     }
 
     async function activateCurrentSlot() {
       activeSlotId = currentSlotId;
       renderSlotsNav();
-      showToast(`슬롯 #${activeSlotId}을(를) 실전 활성 전략으로 지정 중...`);
+      showToast(`전략 #${activeSlotId}을(를) 실전 적용 중...`);
 
       try {
         await fetch(GAS_WEBAPP_URL, {
@@ -2258,9 +2422,9 @@
             slotId: activeSlotId
           })
         });
-        showToast(`[슬롯 ${activeSlotId}] ${getCurrentSlot().name} 전략이 실전 활성화되었습니다!`);
+        showToast(`전략 #${activeSlotId} 적용이 완료되었습니다!`);
       } catch (err) {
-        showToast("실전 지정 완료");
+        showToast("전략 적용 완료");
       }
     }
 
@@ -2284,7 +2448,7 @@
       s.memo = document.getElementById('modalSlotMemo').value.trim();
       saveLocalSlots();
       renderSlotsNav();
-      document.getElementById('currentSlotTitleDisplay').textContent = `슬롯 ${s.id}: ${s.name}`;
+      document.getElementById('currentSlotTitleDisplay').textContent = `전략 ${s.id}: ${s.name}`;
       closeRenameModal();
       showToast("전략 이름/메모가 수정되었습니다.");
     }
