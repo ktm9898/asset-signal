@@ -663,6 +663,29 @@
       width: 100%;
     }
 
+    .data-control-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .data-control-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 280px;
+    }
+    .data-control-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
     /* Benchmark Comparison Table */
     .benchmarks-table-panel {
       background: var(--bg-card);
@@ -1095,6 +1118,49 @@
         grid-template-columns: 1fr !important;
         gap: 6px;
       }
+
+      .data-control-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .data-control-left {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+      }
+      .data-control-left .chart-tabs {
+        flex-shrink: 0 !important;
+      }
+      .data-control-left #dataTickerSelect {
+        flex: 1 !important;
+        min-width: 0 !important;
+        width: auto !important;
+        font-size: 11.5px !important;
+        height: 32px !important;
+        padding: 4px 6px !important;
+      }
+      .data-control-right {
+        width: 100% !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
+        border-top: 1px dashed var(--border-color) !important;
+        padding-top: 8px !important;
+        flex-wrap: nowrap !important;
+      }
+      .data-control-right .chart-tabs {
+        flex-shrink: 0 !important;
+      }
+      .data-control-right .nav-btn {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 13px !important;
+      }
     }
   </style>
 </head>
@@ -1407,34 +1473,30 @@
       
       <!-- Top Control Bar: Market Filter, Ticker Selection & Range Filter -->
       <div class="slots-wrapper">
-        <div class="slots-header">
-          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <div class="slots-title">
-              <i class="fa-solid fa-table-list text-primary"></i> 일별 시세 & 보조지표 정밀 데이터조회
-            </div>
-            
-            <!-- Market Selection Tabs: 전체, 미국, 한국 -->
+        <div class="data-control-bar">
+          <!-- Left / Row 1 on Mobile: Market Selection Tabs (전체/미국/한국) + Ticker Dropdown -->
+          <div class="data-control-left">
             <div class="chart-tabs">
               <button class="chart-tab active" id="marketBtnAll" onclick="setDataMarketFilter('ALL')">전체</button>
               <button class="chart-tab" id="marketBtnUS" onclick="setDataMarketFilter('US')">미국</button>
               <button class="chart-tab" id="marketBtnKR" onclick="setDataMarketFilter('KR')">한국</button>
             </div>
-
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <select class="form-select" id="dataTickerSelect" style="width: 250px; font-weight: 700;" onchange="onDataTickerChange()">
-                <!-- Populated dynamically -->
-              </select>
-            </div>
+            <select class="form-select" id="dataTickerSelect" style="width: 250px; font-weight: 700;" onchange="onDataTickerChange()">
+              <!-- Populated dynamically -->
+            </select>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <!-- Right / Row 2 on Mobile: Range Tabs (30일/100일/1년/전체) + CSV Download Button -->
+          <div class="data-control-right">
             <div class="chart-tabs">
               <button class="chart-tab active" id="rangeBtn30" onclick="setDataRange(30)">30일</button>
               <button class="chart-tab" id="rangeBtn100" onclick="setDataRange(100)">100일</button>
               <button class="chart-tab" id="rangeBtn250" onclick="setDataRange(250)">1년</button>
               <button class="chart-tab" id="rangeBtnAll" onclick="setDataRange(0)">전체</button>
             </div>
-            <button class="nav-btn" onclick="exportDataToCSV()"><i class="fa-solid fa-download"></i> CSV 다운로드</button>
+            <button class="nav-btn btn-sm" onclick="exportDataToCSV()" title="CSV 다운로드">
+              <i class="fa-solid fa-download"></i> <span class="nav-text">CSV 다운로드</span>
+            </button>
           </div>
         </div>
       </div>
