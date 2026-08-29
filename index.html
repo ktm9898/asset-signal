@@ -547,6 +547,51 @@
       background: #f8fafc;
     }
 
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+
+    .modal-content {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-icon-del {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: var(--transition);
+    }
+    .btn-icon-del:hover {
+      color: var(--rose);
+    }
+
+    .slot-badge-active {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #dcfce7;
+      color: #059669;
+      border: 1px solid #bbf7d0;
+      font-weight: 700;
+    }
+
     .toast {
       position: fixed;
       bottom: 24px;
@@ -749,8 +794,13 @@
     <!-- Hero Banner: Market State & Benchmark Signal -->
     <div class="hero-banner">
       <div class="hero-left">
-        <div class="state-badge" id="heroStateBadge">
-          <i class="fa-solid fa-circle-check"></i> <span id="heroStateText">기본 (정상 운용)</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+          <div class="state-badge" id="heroStrategyBadge" style="cursor: pointer; background: #eff6ff; color: var(--primary); border-color: #bfdbfe; font-size: 13px; font-weight: 700;" onclick="openStrategySelectModal()">
+            <i class="fa-solid fa-layer-group text-primary"></i> <span id="heroStrategyText">#1. 전략 로딩중...</span>
+          </div>
+          <button class="nav-btn btn-sm btn-primary" onclick="openStrategySelectModal()" title="전략 선택">
+            <i class="fa-solid fa-folder-open"></i> <span class="nav-text">전략선택</span>
+          </button>
         </div>
         <div class="hero-title" id="heroAdviceTitle">
           기준 지표 : 나스닥 100
@@ -903,6 +953,24 @@
 
   </div>
 
+  <!-- Strategy Selection Modal -->
+  <div class="modal-overlay" id="strategySelectModal">
+    <div class="modal-content" style="max-width: 520px; width: 92vw; max-height: 85vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 18px 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-folder-open text-primary"></i> 실전 운용 전략 선택
+        </div>
+        <button class="btn-icon-del" onclick="closeStrategySelectModal()"><i class="fa-solid fa-xmark" style="font-size: 18px;"></i></button>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+        메인 대시보드 및 일일 리밸런싱 감시 봇에 적용할 전략을 선택합니다.
+      </div>
+      <div id="strategySelectListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Dynamically rendered slot cards -->
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toastMessage">
     <i class="fa-solid fa-circle-check text-emerald"></i>
@@ -1034,6 +1102,9 @@
           const slots = JSON.parse(storedSlots);
           const activeStrat = slots.find(s => s.id === activeId) || slots[0];
           if (activeStrat) {
+            const heroStratEl = document.getElementById('heroStrategyText');
+            if (heroStratEl) heroStratEl.textContent = `#${activeStrat.id}. ${activeStrat.name || `전략 ${activeStrat.id}`}`;
+            
             document.getElementById('metaStratName').textContent = activeStrat.name || `전략 ${activeStrat.id}`;
             
             // Format Base Weights
@@ -1067,15 +1138,6 @@
       const mdd = liveSignalData.benchmarkMDD;
       const isDrop = mdd <= -20.0;
       const isRecovery = liveSignalData.currentState.includes("반등") || liveSignalData.currentState.includes("복귀");
-
-      let stateDisplay = liveSignalData.currentState || "기본 (정상 운용)";
-      if (stateDisplay.includes("평시")) stateDisplay = "기본 (정상 운용)";
-
-      const badge = document.getElementById('heroStateBadge');
-      badge.innerHTML = `<i class="fa-solid fa-circle-${isDrop ? 'exclamation' : 'check'}"></i> <span>${stateDisplay}</span>`;
-      badge.style.background = isDrop ? '#fee2e2' : (isRecovery ? '#e0f2fe' : '#dcfce7');
-      badge.style.color = isDrop ? 'var(--rose)' : (isRecovery ? 'var(--primary)' : 'var(--emerald)');
-      badge.style.borderColor = isDrop ? '#fca5a5' : (isRecovery ? '#bae6fd' : '#bbf7d0');
 
       const isIndex = String(liveSignalData.benchmark || '').startsWith('^');
       const prefix = isIndex ? '' : '$';
@@ -1480,6 +1542,97 @@
       document.getElementById('toastText').textContent = msg;
       toast.style.display = 'flex';
       setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+
+    // ==========================================
+    // Dashboard Strategy Selector Modal & Activation
+    // ==========================================
+    function openStrategySelectModal() {
+      renderStrategySelectList();
+      document.getElementById('strategySelectModal').style.display = 'flex';
+    }
+
+    function closeStrategySelectModal() {
+      document.getElementById('strategySelectModal').style.display = 'none';
+    }
+
+    function renderStrategySelectList() {
+      const container = document.getElementById('strategySelectListContainer');
+      container.innerHTML = '';
+
+      let slots = [];
+      const stored = localStorage.getItem("asset_strategy_slots_v4");
+      if (stored) {
+        try { slots = JSON.parse(stored); } catch(e){}
+      }
+      if (!slots || slots.length === 0) {
+        slots = [
+          { id: 1, name: "나스닥100 동적 계단식", benchmark: "^NDX", baseWeights: { "QQQ": 0.4, "SCHD": 0.4, "TLT": 0.2 }, dropStages: [{ threshold: -20, weights: { "TQQQ": 0.3, "QLD": 0.3, "SCHD": 0.2, "TLT": 0.2 } }] },
+          { id: 2, name: "레버리지 조기투입", benchmark: "^NDX", baseWeights: { "QQQ": 0.3, "SCHD": 0.4, "SGOV": 0.3 }, dropStages: [{ threshold: -15, weights: { "TQQQ": 0.4, "QLD": 0.3, "SCHD": 0.3 } }] },
+          { id: 3, name: "한국형 코스피 동적배분", benchmark: "^KS11", baseWeights: { "069500.KS": 0.5, "TLT": 0.5 }, dropStages: [{ threshold: -15, weights: { "122630.KS": 0.6, "069500.KS": 0.4 } }] }
+        ];
+      }
+
+      const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "2", 10);
+
+      slots.forEach(s => {
+        const isActive = (s.id === activeId);
+        const card = document.createElement('div');
+        card.style.background = isActive ? '#f0fdf4' : '#f8fafc';
+        card.style.border = `1px solid ${isActive ? '#86efac' : 'var(--border-color)'}`;
+        card.style.borderRadius = 'var(--radius-sm)';
+        card.style.padding = '12px 14px';
+        card.style.display = 'flex';
+        card.style.justifyContent = 'space-between';
+        card.style.alignItems = 'center';
+        card.style.gap = '10px';
+
+        const baseSummary = Object.entries(s.baseWeights || {})
+          .map(([t, w]) => `${formatTickerDisplay(t)} ${Math.round(w * 100)}%`)
+          .join(', ') || '비중 미설정';
+
+        const bmName = formatTickerDisplay(s.benchmark || "^NDX");
+
+        card.innerHTML = `
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+              <span style="font-weight: 800; font-size: 13.5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                #${s.id}. ${s.name || `전략 ${s.id}`}
+              </span>
+              ${isActive ? '<span class="slot-badge-active">ACTIVE</span>' : ''}
+            </div>
+            <div style="font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              기준 지표: <strong>${bmName}</strong> · 기본: ${baseSummary}
+            </div>
+          </div>
+          <div style="flex-shrink: 0;">
+            ${isActive 
+              ? '<button class="nav-btn btn-sm" disabled style="background: #e2e8f0; color: #64748b; border: none; cursor: default;"><i class="fa-solid fa-check"></i> 적용중</button>' 
+              : `<button class="nav-btn btn-sm btn-primary" onclick="activateStrategyFromDashboard(${s.id})"><i class="fa-solid fa-bolt"></i> 실전 적용</button>`
+            }
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function activateStrategyFromDashboard(slotId) {
+      localStorage.setItem("asset_active_slot_id", String(slotId));
+      
+      // Auto sync active slot ID to Google Apps Script
+      try {
+        await fetch(`${GAS_WEBAPP_URL}?action=saveActiveSlot&activeSlotId=${slotId}`);
+      } catch (err) {
+        console.warn("[WARN] Failed to sync active slot to GAS:", err);
+      }
+
+      initDefaultOrLiveState();
+      syncActiveStrategySpecs();
+      renderDashboardUI();
+      calculateAndRenderLiveReturn();
+
+      closeStrategySelectModal();
+      showToast(`전략 #${slotId}이(가) 실전 대시보드 전략으로 적용되었습니다.`);
     }
   </script>
 </body>
