@@ -846,7 +846,7 @@
         <div class="strategy-bar" onclick="openStrategySelectModal()" title="클릭하여 전략 선택 및 조건 확인" style="margin-bottom: 10px;">
           <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
           <span class="strategy-bar-name" id="currentStrategyNameDisplay">#1. 전략 로딩중...</span>
-          <span id="heroBenchmarkTag" style="font-size: 11px; color: var(--text-dim); font-weight: 500; padding-left: 4px; white-space: nowrap;">(나스닥100)</span>
+          <span id="heroBenchmarkTag" style="font-size: 13px; color: var(--text-dim); font-weight: 500; padding-left: 6px; white-space: nowrap;">(기준지표 : 나스닥100)</span>
         </div>
         <!-- Advice text -->
         <div class="hero-desc" id="heroAdviceDesc" style="font-size: 13px; color: var(--text-dim); line-height: 1.5;">
@@ -1200,14 +1200,14 @@
 
       // Update benchmark tag (inline) and advice desc
       const bmTag = document.getElementById('heroBenchmarkTag');
-      if (bmTag) bmTag.textContent = `(${formatTickerDisplay(liveSignalData.benchmark)})`;
+      if (bmTag) bmTag.textContent = `(기준지표 : ${formatTickerDisplay(liveSignalData.benchmark)})`;
 
       const adviceDesc = document.getElementById('heroAdviceDesc');
       if (adviceDesc) {
         const isDrop = mdd <= -20.0;
         const isRecovery = liveSignalData.currentState && (liveSignalData.currentState.includes('반등') || liveSignalData.currentState.includes('복귀'));
         if (isDrop) {
-          adviceDesc.textContent = '하락국면 무게 적용 중입니다. 사전 정의된 하락 비중으로 전환하여 수익 및 위험 관리를 진행합니다.';
+          adviceDesc.textContent = '하락국면 비중 적용 중입니다. 사전 정의된 하락 비중으로 전환하여 수익 및 위험 관리를 진행합니다.';
           adviceDesc.style.color = 'var(--rose)';
         } else if (isRecovery) {
           adviceDesc.textContent = '시장이 회복 국면에 있습니다. 복구 비중을 유지하며 리밸런싱 시점을 모니터링합니다.';
