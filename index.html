@@ -607,7 +607,6 @@
       border: 1px solid #e2e8f0;
       transition: all 0.2s ease;
       user-select: none;
-      margin-bottom: 12px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
     .strategy-bar:hover {
@@ -840,23 +839,17 @@
   <!-- Main Container -->
   <div class="container">
 
-    <!-- Dedicated Sleek Strategy Bar (StockSignal Style) -->
-    <div class="strategy-bar" onclick="openStrategySelectModal()" title="클릭하여 전략 선택 및 조건 확인">
-      <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
-      <span class="strategy-bar-name" id="currentStrategyNameDisplay">#1. 전략 로딩중...</span>
-    </div>
-
-    <!-- Hero Banner: Market State & Benchmark Signal -->
+    <!-- Hero Banner -->
     <div class="hero-banner">
       <div class="hero-left">
-        <div class="state-badge" id="heroStateBadge">
-          <i class="fa-solid fa-circle-check"></i> <span id="heroStateText">기본 (정상 운용)</span>
+        <!-- Strategy Bar inside hero (replaces state-badge + title) -->
+        <div class="strategy-bar" onclick="openStrategySelectModal()" title="클릭하여 전략 선택 및 조건 확인" style="margin-bottom: 8px;">
+          <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
+          <span class="strategy-bar-name" id="currentStrategyNameDisplay">#1. 전략 로딩중...</span>
         </div>
-        <div class="hero-title" id="heroAdviceTitle">
+        <!-- Benchmark display (replaces advice desc) -->
+        <div class="hero-desc" id="heroBenchmarkDesc" style="font-size: 13px; color: var(--text-dim); font-weight: 600;">
           기준 지표 : 나스닥 100
-        </div>
-        <div class="hero-desc" id="heroAdviceDesc">
-          현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.
         </div>
       </div>
 
@@ -1187,18 +1180,6 @@
 
       const mdd = liveSignalData.benchmarkMDD;
       const isDrop = mdd <= -20.0;
-      const isRecovery = liveSignalData.currentState.includes("반등") || liveSignalData.currentState.includes("복귀");
-
-      let stateDisplay = liveSignalData.currentState || "기본 (정상 운용)";
-      if (stateDisplay.includes("평시")) stateDisplay = "기본 (정상 운용)";
-
-      const badge = document.getElementById('heroStateBadge');
-      if (badge) {
-        badge.innerHTML = `<i class="fa-solid fa-circle-${isDrop ? 'exclamation' : 'check'}"></i> <span>${stateDisplay}</span>`;
-        badge.style.background = isDrop ? '#fee2e2' : (isRecovery ? '#e0f2fe' : '#dcfce7');
-        badge.style.color = isDrop ? 'var(--rose)' : (isRecovery ? 'var(--primary)' : 'var(--emerald)');
-        badge.style.borderColor = isDrop ? '#fca5a5' : (isRecovery ? '#bae6fd' : '#bbf7d0');
-      }
 
       const isIndex = String(liveSignalData.benchmark || '').startsWith('^');
       const prefix = isIndex ? '' : '$';
@@ -1216,8 +1197,10 @@
       mddEl.textContent = `${mdd.toFixed(2)}%`;
       mddEl.style.color = isDrop ? 'var(--rose)' : 'var(--emerald)';
 
-      document.getElementById('heroAdviceTitle').textContent = `기준 지표 : ${formatTickerDisplay(liveSignalData.benchmark)}`;
-      document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice || "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.";
+      // Show benchmark name in desc slot
+      const bmDesc = document.getElementById('heroBenchmarkDesc');
+      if (bmDesc) bmDesc.textContent = `기준 지표 : ${formatTickerDisplay(liveSignalData.benchmark)}`;
+      bmDesc.style.color = isDrop ? 'var(--rose)' : 'var(--text-dim)';
 
       renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.currentWeights, liveSignalData.deltaWeights, liveSignalData.assetReturns);
       renderOrdersList(liveSignalData.targetWeights, liveSignalData.deltaWeights);
@@ -1608,33 +1591,55 @@
     // ==========================================
     // Dashboard Strategy Selector Modal & Activation
     // ==========================================
-    function openStrategySelectModal() {
-      renderStrategySelectList();
+    async function openStrategySelectModal() {
+      // Show modal immediately with loading state
       document.getElementById('strategySelectModal').style.display = 'flex';
+      await renderStrategySelectList();
     }
 
     function closeStrategySelectModal() {
       document.getElementById('strategySelectModal').style.display = 'none';
     }
 
-    function renderStrategySelectList() {
+    async function renderStrategySelectList() {
       const container = document.getElementById('strategySelectListContainer');
-      container.innerHTML = '';
+      container.innerHTML = '<div style="text-align:center; color: var(--text-dim); padding: 24px; font-size: 13px;"><i class="fa-solid fa-spinner fa-spin"></i> 전략 목록 불러오는 중...</div>';
 
+      // Always fetch fresh from GAS (online-first strategy storage)
       let slots = [];
-      const stored = localStorage.getItem("asset_strategy_slots_v4");
-      if (stored) {
-        try { slots = JSON.parse(stored); } catch(e){}
-      }
-      if (!slots || slots.length === 0) {
-        slots = [
-          { id: 1, name: "나스닥100 동적 계단식", benchmark: "^NDX", baseWeights: { "QQQ": 0.4, "SCHD": 0.4, "TLT": 0.2 }, dropStages: [{ threshold: -20, weights: { "TQQQ": 0.3, "QLD": 0.3, "SCHD": 0.2, "TLT": 0.2 } }] },
-          { id: 2, name: "레버리지 조기투입", benchmark: "^NDX", baseWeights: { "QQQ": 0.3, "SCHD": 0.4, "SGOV": 0.3 }, dropStages: [{ threshold: -15, weights: { "TQQQ": 0.4, "QLD": 0.3, "SCHD": 0.3 } }] },
-          { id: 3, name: "한국형 코스피 동적배분", benchmark: "^KS11", baseWeights: { "069500.KS": 0.5, "TLT": 0.5 }, dropStages: [{ threshold: -15, weights: { "122630.KS": 0.6, "069500.KS": 0.4 } }] }
-        ];
+      let activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
+      try {
+        const resp = await fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.success && Array.isArray(data.slots) && data.slots.length > 0) {
+            slots = data.slots.filter(s => s.baseWeights && Object.keys(s.baseWeights).length > 0);
+            if (data.activeSlotId) {
+              activeId = data.activeSlotId;
+              localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
+            }
+          }
+        }
+      } catch(e) {
+        console.warn("[WARN] GAS fetch failed, falling back to localStorage:", e);
       }
 
-      const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "2", 10);
+      // Fallback to localStorage if GAS is unreachable
+      if (!slots || slots.length === 0) {
+        const stored = localStorage.getItem("asset_strategy_slots_v4");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            slots = parsed.filter(s => s.baseWeights && Object.keys(s.baseWeights).length > 0);
+          } catch(e){}
+        }
+      }
+
+      container.innerHTML = '';
+      if (!slots || slots.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color: var(--text-dim); padding: 24px; font-size: 13px;">저장된 전략이 없습니다. 백테스트 스튜디오에서 전략을 먼저 저장해주세요.</div>';
+        return;
+      }
 
       slots.forEach(s => {
         const isActive = (s.id === activeId);
@@ -1678,15 +1683,32 @@
     }
 
     async function activateStrategyFromDashboard(slotId) {
+      // 1. Persist activeSlotId locally as fast cache
       localStorage.setItem("asset_active_slot_id", String(slotId));
-      
-      // Auto sync active slot ID to Google Apps Script
+
+      // 2. Save to GAS (primary/online storage) — await so it's confirmed
       try {
-        fetch(`${GAS_WEBAPP_URL}?action=saveActiveSlot&activeSlotId=${slotId}`).catch(() => {});
+        showToast("전략 적용 중...");
+        await fetch(`${GAS_WEBAPP_URL}?action=saveActiveSlot&activeSlotId=${slotId}`);
       } catch (err) {
         console.warn("[WARN] Failed to sync active slot to GAS:", err);
       }
 
+      // 3. Reload from GAS to get the confirmed active strategy data
+      try {
+        const resp = await fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.success && Array.isArray(data.slots)) {
+            localStorage.setItem("asset_strategy_slots_v4", JSON.stringify(data.slots));
+            if (data.activeSlotId) {
+              localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
+            }
+          }
+        }
+      } catch(e) {}
+
+      // 4. Refresh dashboard
       loadInitialData();
       syncActiveStrategySpecs();
       renderDashboardUI();
@@ -1696,10 +1718,10 @@
       showToast(`전략 #${slotId}이(가) 실전 대시보드 전략으로 적용되었습니다.`);
     }
 
-    // Wire strategy bar onclick on load
+    // Wire strategy bar onclick on load (backup — HTML already has onclick)
     window.addEventListener('DOMContentLoaded', () => {
       const bar = document.querySelector('.strategy-bar');
-      if (bar) bar.onclick = openStrategySelectModal;
+      if (bar && !bar.onclick) bar.onclick = openStrategySelectModal;
     });
   </script>
 </body>
