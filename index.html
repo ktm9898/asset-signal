@@ -587,17 +587,20 @@
         font-size: 14px;
       }
       .header-actions {
-        gap: 6px;
+        gap: 4px;
       }
       .header-actions .nav-btn {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        font-size: 13px;
         border-radius: var(--radius-sm);
+      }
+      .nav-text {
+        display: none !important;
       }
       .container {
         padding: 8px 12px 60px;
@@ -725,16 +728,16 @@
       <!-- Top Navigation: 새로고침, 대시보드, 백테스트, 데이터조회 -->
       <div class="header-actions">
         <button class="nav-btn" onclick="triggerManualScreening()" title="새로고침">
-          <i class="fa-solid fa-arrows-rotate"></i>
+          <i class="fa-solid fa-arrows-rotate"></i> <span class="nav-text">새로고침</span>
         </button>
         <a href="index.html" class="nav-btn btn-primary" title="실전 대시보드">
-          <i class="fa-solid fa-gauge-high"></i>
+          <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">대시보드</span>
         </a>
         <a href="admin.html" class="nav-btn" title="백테스트 스튜디오">
-          <i class="fa-solid fa-sliders"></i>
+          <i class="fa-solid fa-sliders"></i> <span class="nav-text">백테스트</span>
         </a>
         <a href="admin.html?view=data" class="nav-btn" title="데이터조회">
-          <i class="fa-solid fa-table-list"></i>
+          <i class="fa-solid fa-table-list"></i> <span class="nav-text">데이터조회</span>
         </a>
       </div>
     </div>

@@ -886,6 +886,9 @@
         font-size: 13px;
         border-radius: var(--radius-sm);
       }
+      .nav-text {
+        display: none !important;
+      }
       
       .container {
         padding: 6px 10px 60px;
@@ -1038,13 +1041,13 @@
       <!-- Main Navigation: 대시보드, 백테스트, 데이터조회 -->
       <div class="header-actions">
         <a href="index.html" class="nav-btn" title="실전 대시보드">
-          <i class="fa-solid fa-gauge-high"></i>
+          <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">대시보드</span>
         </a>
         <button class="nav-btn btn-primary" id="tabBtnStudio" onclick="switchMainView('studio')" title="백테스트 스튜디오">
-          <i class="fa-solid fa-sliders"></i>
+          <i class="fa-solid fa-sliders"></i> <span class="nav-text">백테스트</span>
         </button>
         <button class="nav-btn" id="tabBtnData" onclick="switchMainView('data')" title="데이터조회">
-          <i class="fa-solid fa-table-list"></i>
+          <i class="fa-solid fa-table-list"></i> <span class="nav-text">데이터조회</span>
         </button>
       </div>
     </div>
@@ -1064,25 +1067,25 @@
           </div>
           <div class="slot-actions-bar" style="display: flex; align-items: center; gap: 6px;">
             <button class="nav-btn btn-sm btn-primary" onclick="openSaveStrategyModal()" title="저장">
-              <i class="fa-solid fa-floppy-disk"></i>
+              <i class="fa-solid fa-floppy-disk"></i> <span class="nav-text">저장</span>
             </button>
             <button class="nav-btn btn-sm" onclick="openLoadStrategyModal()" title="불러오기">
-              <i class="fa-solid fa-folder-open"></i>
+              <i class="fa-solid fa-folder-open"></i> <span class="nav-text">불러오기</span>
             </button>
             <button class="nav-btn btn-sm" style="background: #475569; color: #fff; border: 1px solid #475569;" onclick="openCompareModal()" title="전략비교">
-              <i class="fa-solid fa-code-compare"></i>
+              <i class="fa-solid fa-code-compare"></i> <span class="nav-text">전략비교</span>
             </button>
             <button class="nav-btn btn-sm btn-success" onclick="activateCurrentSlot()" title="전략적용 (실전 활성화)">
-              <i class="fa-solid fa-bolt"></i>
+              <i class="fa-solid fa-bolt"></i> <span class="nav-text">전략적용</span>
             </button>
           </div>
         </div>
         <!-- Current Strategy Row -->
-        <div id="currentSlotOverviewRow" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 4px;">
-          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            <span id="overviewSlotNumberBadge" class="brand-badge" style="background: #eff6ff; color: var(--primary); border: 1px solid #bfdbfe; font-size: 11px; padding: 2px 6px; font-weight: 800;">#1</span>
-            <span id="overviewSlotNameText" style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">나스닥100 동적 계단식</span>
-            <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none;">ACTIVE</span>
+        <div id="currentSlotOverviewRow" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 4px; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; overflow: hidden;">
+            <span id="overviewSlotNumberBadge" class="brand-badge" style="background: #eff6ff; color: var(--primary); border: 1px solid #bfdbfe; font-size: 11px; padding: 2px 6px; font-weight: 800; flex-shrink: 0;">#1</span>
+            <span id="overviewSlotNameText" style="font-weight: 700; font-size: 13.5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">나스닥100 동적 계단식</span>
+            <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none; flex-shrink: 0;">ACTIVE</span>
           </div>
           <button class="nav-btn btn-sm" onclick="openLoadStrategyModal()" style="font-size: 11px; padding: 3px 8px; flex-shrink: 0;">
             슬롯 변경 <i class="fa-solid fa-chevron-right" style="font-size: 9px;"></i>
@@ -1216,10 +1219,10 @@
                 </div>
                 <div class="chart-tabs" style="display: flex; align-items: center; gap: 4px;">
                   <button class="chart-tab active" id="chartTabBtnNav" onclick="switchChartTab('nav')" title="자산 성장 곡선">
-                    <i class="fa-solid fa-chart-line"></i>
+                    <i class="fa-solid fa-chart-line"></i> <span class="nav-text">자산 성장 곡선</span>
                   </button>
                   <button class="chart-tab" id="chartTabBtnDd" onclick="switchChartTab('drawdown')" title="고점 대비 낙폭">
-                    <i class="fa-solid fa-chart-area"></i>
+                    <i class="fa-solid fa-chart-area"></i> <span class="nav-text">고점 대비 낙폭</span>
                   </button>
                   <button class="chart-tab" onclick="openFullscreenChartModal()" title="전체화면 확대">
                     <i class="fa-solid fa-expand"></i>
