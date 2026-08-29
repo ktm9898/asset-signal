@@ -1055,6 +1055,11 @@
       .data-summary-val {
         font-size: 15px;
       }
+
+      .etf-grid {
+        grid-template-columns: 1fr !important;
+        gap: 6px;
+      }
     }
   </style>
 </head>
@@ -1497,42 +1502,84 @@
         <!-- Group 1: US Tech & Leverage -->
         <div>
           <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px;">미국 테크 & 레버리지</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="slot-tab" onclick="selectUniverseItem('QQQ')"><strong>QQQ</strong> <span class="text-dim" style="font-size: 11px;">나스닥 100 1X</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('QLD')"><strong>QLD</strong> <span class="text-dim" style="font-size: 11px;">나스닥 2X</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('TQQQ')"><strong style="color: var(--rose);">TQQQ</strong> <span class="text-dim" style="font-size: 11px;">나스닥 3X</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('SOXL')"><strong style="color: var(--rose);">SOXL</strong> <span class="text-dim" style="font-size: 11px;">반도체 3X</span></div>
+          <div class="etf-grid">
+            <div class="etf-select-card" onclick="selectUniverseItem('QQQ')">
+              <strong style="color: var(--text-main); font-size: 13px;">QQQ</strong>
+              <span class="text-dim" style="font-size: 11px;">나스닥 100 1X</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('QLD')">
+              <strong style="color: var(--text-main); font-size: 13px;">QLD</strong>
+              <span class="text-dim" style="font-size: 11px;">나스닥 2X</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('TQQQ')">
+              <strong style="color: var(--rose); font-size: 13px;">TQQQ</strong>
+              <span class="text-dim" style="font-size: 11px;">나스닥 3X</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('SOXL')">
+              <strong style="color: var(--rose); font-size: 13px;">SOXL</strong>
+              <span class="text-dim" style="font-size: 11px;">반도체 3X</span>
+            </div>
           </div>
         </div>
 
         <!-- Group 2: US Broad & Dividend -->
         <div>
           <div style="font-size: 11px; font-weight: 700; color: var(--emerald); margin-bottom: 6px;">미국 시장 & 배당/가치</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="slot-tab" onclick="selectUniverseItem('SCHD')"><strong>SCHD</strong> <span class="text-dim" style="font-size: 11px;">배당다우존스</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('SPY')"><strong>SPY</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 1X</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('SSO')"><strong>SSO</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 2X</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('UPRO')"><strong style="color: var(--rose);">UPRO</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 3X</span></div>
+          <div class="etf-grid">
+            <div class="etf-select-card" onclick="selectUniverseItem('SCHD')">
+              <strong style="color: var(--text-main); font-size: 13px;">SCHD</strong>
+              <span class="text-dim" style="font-size: 11px;">배당다우존스</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('SPY')">
+              <strong style="color: var(--text-main); font-size: 13px;">SPY</strong>
+              <span class="text-dim" style="font-size: 11px;">S&P 500 1X</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('SSO')">
+              <strong style="color: var(--text-main); font-size: 13px;">SSO</strong>
+              <span class="text-dim" style="font-size: 11px;">S&P 500 2X</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('UPRO')">
+              <strong style="color: var(--rose); font-size: 13px;">UPRO</strong>
+              <span class="text-dim" style="font-size: 11px;">S&P 500 3X</span>
+            </div>
           </div>
         </div>
 
         <!-- Group 3: US Treasuries & Cash -->
         <div>
           <div style="font-size: 11px; font-weight: 700; color: #0284c7; margin-bottom: 6px;">미국 국채 & 현금성 자산</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="slot-tab" onclick="selectUniverseItem('TLT')"><strong>TLT</strong> <span class="text-dim" style="font-size: 11px;">미국 20년+ 장기국채</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('SGOV')"><strong>SGOV</strong> <span class="text-dim" style="font-size: 11px;">미국 0-3개월 초단기국채</span></div>
+          <div class="etf-grid">
+            <div class="etf-select-card" onclick="selectUniverseItem('TLT')">
+              <strong style="color: var(--text-main); font-size: 13px;">TLT</strong>
+              <span class="text-dim" style="font-size: 11px;">미국 20년+ 장기국채</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('SGOV')">
+              <strong style="color: var(--text-main); font-size: 13px;">SGOV</strong>
+              <span class="text-dim" style="font-size: 11px;">미국 0-3개월 초단기국채</span>
+            </div>
           </div>
         </div>
 
         <!-- Group 4: Korean ETFs -->
         <div>
           <div style="font-size: 11px; font-weight: 700; color: #a855f7; margin-bottom: 6px;">한국 상장 ETF</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="slot-tab" onclick="selectUniverseItem('069500.KS')"><strong>KODEX 200 (069500)</strong></div>
-            <div class="slot-tab" onclick="selectUniverseItem('122630.KS')"><strong>KODEX 레버리지 (122630)</strong></div>
-            <div class="slot-tab" onclick="selectUniverseItem('379800.KS')"><strong>KODEX 미국나스닥100TR (379800)</strong></div>
-            <div class="slot-tab" onclick="selectUniverseItem('448290.KS')"><strong>ACE 미국배당다우존스 (448290)</strong></div>
+          <div class="etf-grid">
+            <div class="etf-select-card" onclick="selectUniverseItem('069500.KS')">
+              <strong style="color: var(--text-main); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">KODEX 200</strong>
+              <span class="text-dim" style="font-size: 11px; flex-shrink: 0;">069500.KS</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('122630.KS')">
+              <strong style="color: var(--text-main); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">KODEX 레버리지</strong>
+              <span class="text-dim" style="font-size: 11px; flex-shrink: 0;">122630.KS</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('379800.KS')">
+              <strong style="color: var(--text-main); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">KODEX 미국나스닥100TR</strong>
+              <span class="text-dim" style="font-size: 11px; flex-shrink: 0;">379800.KS</span>
+            </div>
+            <div class="etf-select-card" onclick="selectUniverseItem('448290.KS')">
+              <strong style="color: var(--text-main); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">ACE 미국배당다우존스</strong>
+              <span class="text-dim" style="font-size: 11px; flex-shrink: 0;">448290.KS</span>
+            </div>
           </div>
         </div>
       </div>
