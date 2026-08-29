@@ -1898,8 +1898,8 @@
         if (isNaN(num)) num = -20;
         if (num > 0) num = -num;
         s.dropStages[idx].threshold = num;
-        s.dropStages[idx].name = `${idx + 1}차 하락`;
         s.dropStages.sort((a, b) => b.threshold - a.threshold);
+        s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락`);
         saveLocalSlots();
         renderDropStages(s.dropStages);
       }
@@ -1919,6 +1919,7 @@
           weights: initWeights
         });
         s.dropStages.sort((a, b) => b.threshold - a.threshold);
+        s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락`);
         saveLocalSlots();
         renderDropStages(s.dropStages);
       }
@@ -1927,6 +1928,7 @@
     function deleteDropStage(idx) {
       const s = getCurrentSlot();
       s.dropStages.splice(idx, 1);
+      s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락`);
       saveLocalSlots();
       renderDropStages(s.dropStages);
     }
@@ -2003,8 +2005,8 @@
         if (isNaN(num)) num = -15;
         if (num > 0) num = -num;
         s.recoveryStages[idx].recovery = num;
-        s.recoveryStages[idx].name = `${idx + 1}단계 반등`;
         s.recoveryStages.sort((a, b) => a.recovery - b.recovery);
+        s.recoveryStages.forEach((stg, i) => stg.name = `${i + 1}단계 반등`);
         saveLocalSlots();
         renderRecoveryStages(s.recoveryStages);
       }
@@ -2019,12 +2021,12 @@
         const recNum = -Math.abs(parseFloat(recovery));
         const initWeights = Object.keys(s.baseWeights || {}).length > 0 ? { ...s.baseWeights } : { "QQQ": 0.50, "QLD": 0.20, "SCHD": 0.30 };
         s.recoveryStages.push({
-          fromDrop: -30.0,
           recovery: recNum,
           name: `${nextIdx}단계 반등`,
           weights: initWeights
         });
         s.recoveryStages.sort((a, b) => a.recovery - b.recovery);
+        s.recoveryStages.forEach((stg, i) => stg.name = `${i + 1}단계 반등`);
         saveLocalSlots();
         renderRecoveryStages(s.recoveryStages);
       }
@@ -2033,6 +2035,7 @@
     function deleteRecoveryStage(idx) {
       const s = getCurrentSlot();
       s.recoveryStages.splice(idx, 1);
+      s.recoveryStages.forEach((stg, i) => stg.name = `${i + 1}단계 반등`);
       saveLocalSlots();
       renderRecoveryStages(s.recoveryStages);
     }
@@ -2201,10 +2204,14 @@
       const stratNAV = new Float64Array(numDays);
       const rebalanceEvents = [];
       let currentState = "기본 (정상 운용)";
-      let deepestDrop = 0.0;
+      let currentDropLevel = 0;
+      let currentRecLevel = 0;
       let lastRebalanceDay = 0;
       let lastRebalanceNAV = initialCapital;
-      const cooldownDays = s.cooldownDays || 5;
+      const cooldownDays = 5;
+
+      const sortedDrops = [...(s.dropStages || [])].sort((a, b) => b.threshold - a.threshold); // e.g. -15%, -25%, -35%
+      const sortedRecs = [...(s.recoveryStages || [])].sort((a, b) => a.recovery - b.recovery); // e.g. -10%, -5%
 
       for (let day = 0; day < numDays; day++) {
         let currentNAV = 0;
@@ -2214,52 +2221,52 @@
         stratNAV[day] = currentNAV;
 
         const currentBM_DD = bmDrawdowns[day];
-        if (currentBM_DD < deepestDrop) deepestDrop = currentBM_DD;
-        if (currentBM_DD >= -0.5) deepestDrop = 0.0;
 
         let targetWeights = null;
         let triggerReason = null;
         let nextState = currentState;
         const daysSinceRebal = day - lastRebalanceDay;
 
-        // Check Drop Stages
-        let matchedDrop = null;
-        const sortedDrops = [...(s.dropStages || [])].sort((a, b) => a.threshold - b.threshold);
-        for (const drop of sortedDrops) {
-          if (currentBM_DD <= drop.threshold) {
-            matchedDrop = drop;
-            break;
+        // 1. Check Progressive Drop Stages (Escalation)
+        let nextDropLevel = 0;
+        for (let i = 0; i < sortedDrops.length; i++) {
+          if (currentBM_DD <= sortedDrops[i].threshold) {
+            nextDropLevel = i + 1;
           }
         }
 
-        if (matchedDrop) {
-          const candidate = matchedDrop.name || `하락 ${matchedDrop.threshold}%`;
-          if (candidate !== currentState && (daysSinceRebal >= cooldownDays || currentState === "기본 (정상 운용)")) {
-            targetWeights = normalizeWeights(matchedDrop.weights);
-            triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}%`;
-            nextState = candidate;
-          }
-        } else if (deepestDrop <= -15.0 && currentState !== "기본 (정상 운용)") {
-          for (const rec of (s.recoveryStages || [])) {
-            if (currentBM_DD >= rec.recovery && deepestDrop <= (rec.fromDrop || -20)) {
-              const candidate = rec.name || `반등 ${rec.recovery}%`;
-              if (candidate !== currentState && daysSinceRebal >= cooldownDays) {
-                targetWeights = normalizeWeights(rec.weights);
-                triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}%`;
-                nextState = candidate;
-                break;
-              }
+        if (nextDropLevel > currentDropLevel) {
+          const drop = sortedDrops[nextDropLevel - 1];
+          targetWeights = normalizeWeights(drop.weights);
+          triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}%`;
+          nextState = drop.name || `${nextDropLevel}차 하락`;
+          currentDropLevel = nextDropLevel;
+          currentRecLevel = 0;
+        } else if (currentDropLevel > 0) {
+          // 2. Check Progressive Recovery Stages (De-escalation)
+          let nextRecLevel = currentRecLevel;
+          for (let j = currentRecLevel; j < sortedRecs.length; j++) {
+            if (currentBM_DD >= sortedRecs[j].recovery) {
+              nextRecLevel = j + 1;
             }
           }
-          if (currentBM_DD >= -5.0 && currentState !== "기본 (정상 운용)") {
+
+          if (nextRecLevel > currentRecLevel && (daysSinceRebal >= cooldownDays || currentRecLevel === 0)) {
+            const rec = sortedRecs[nextRecLevel - 1];
+            targetWeights = normalizeWeights(rec.weights);
+            triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}%`;
+            nextState = rec.name || `${nextRecLevel}단계 반등`;
+            currentRecLevel = nextRecLevel;
+          } else if (currentBM_DD >= -2.0 && currentState !== "기본 (정상 운용)") {
             targetWeights = normalizeWeights(s.baseWeights);
             triggerReason = `[기본 복귀] ${currentBM_DD.toFixed(1)}%`;
             nextState = "기본 (정상 운용)";
-            deepestDrop = 0.0;
+            currentDropLevel = 0;
+            currentRecLevel = 0;
           }
         }
 
-        // Check Gain Rebalance
+        // 3. Check Gain Rebalance (Only in Base Normal State)
         if (!targetWeights && currentState === "기본 (정상 운용)" && daysSinceRebal >= 20) {
           const navGainPct = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
           if (s.gainThresholdPct > 0 && navGainPct >= s.gainThresholdPct) {

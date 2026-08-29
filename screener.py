@@ -150,14 +150,15 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
     print(f" - 고점 대비 하락률 (MDD): {bm_mdd_pct:.2f}%")
 
     # 4. State Machine Evaluation
-    current_state = "평시 (Normal)"
+    current_state = "기본 (정상 운용)"
     target_weights = {k: float(v) for k, v in base_weights.items()}
     advice_msg = ""
 
-    # Check Drop Stages
+    # 4-1. Check Progressive Drop Stages (Escalation)
     matched_drop = None
-    for stage in sorted(drop_stages, key=lambda x: x["threshold"]):
-        if bm_mdd_pct <= stage["threshold"]:
+    sorted_drops = sorted(drop_stages, key=lambda x: x.get("threshold", 0.0)) # -40, -30, -20
+    for stage in sorted_drops:
+        if bm_mdd_pct <= stage.get("threshold", 0.0):
             matched_drop = stage
             break
 
@@ -166,20 +167,21 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
         target_weights = {k: float(v) for k, v in matched_drop.get("weights", {}).items()}
         advice_msg = f"[낙폭 국면 진입] {benchmark_ticker} 고점 대비 {bm_mdd_pct:.1f}% 하락. {current_state} 비중으로 리밸런싱 실행 권장."
     else:
-        # Check if recently recovered from deep drop (last 60 days min MDD)
-        recent_60d_min_dd = float(bm_series.tail(60).apply(lambda p: (p - bm_ath) / bm_ath * 100.0).min())
-        if recent_60d_min_dd <= -15.0 and bm_mdd_pct < -5.0:
-            for rec in recovery_stages:
-                if bm_mdd_pct >= rec.get("recovery", -10.0) and recent_60d_min_dd <= rec.get("fromDrop", -20.0):
-                    current_state = rec.get("name", f"반등 회복 ({rec.get('recovery')}%)")
-                    target_weights = {k: float(v) for k, v in rec.get("weights", {}).items()}
-                    advice_msg = f"[반등 계단식 복귀] {benchmark_ticker} 낙폭 {bm_mdd_pct:.1f}%로 회복 (최근 저점 {recent_60d_min_dd:.1f}%). 레버리지 비중 선제 축소."
-                    break
+        # 4-2. Check Progressive Recovery Stages (De-escalation)
+        sorted_recs = sorted(recovery_stages, key=lambda x: x.get("recovery", 0.0)) # -25, -15, -5
+        matched_rec = None
+        for rec in sorted_recs:
+            if bm_mdd_pct >= rec.get("recovery", -10.0):
+                matched_rec = rec
         
-        if not advice_msg:
-            current_state = "평시 (Normal)"
+        if matched_rec is not None and bm_mdd_pct < -2.0:
+            current_state = matched_rec.get("name", f"반등 회복 ({matched_rec.get('recovery')}%)")
+            target_weights = {k: float(v) for k, v in matched_rec.get("weights", {}).items()}
+            advice_msg = f"[반등 계단식 복귀] {benchmark_ticker} 낙폭 {bm_mdd_pct:.1f}%로 회복. {current_state} 비중 적용."
+        else:
+            current_state = "기본 (정상 운용)"
             target_weights = {k: float(v) for k, v in base_weights.items()}
-            advice_msg = f"[평시 정상 운용] {benchmark_ticker} 고점 대비 {bm_mdd_pct:.1f}%로 안정권 유지. 기본 자산 배분 비중 유지."
+            advice_msg = f"[정상 운용] {benchmark_ticker} 정상 범위 (MDD {bm_mdd_pct:.1f}%). 기본 포트폴리오 비중 유지."
 
     # Normalize target weights to 100%
     tot_w = sum(target_weights.values())
