@@ -1177,21 +1177,14 @@
   <!-- Multi-Strategy Comparison Modal -->
   <div class="modal-overlay" id="compareModal">
     <div class="modal-content" style="max-width: 580px; max-height: 85vh; overflow-y: auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <div style="font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div style="font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-code-compare text-primary"></i> 전략 슬롯 멀티 비교
         </div>
-        <button class="btn-icon-del" onclick="closeCompareModal()"><i class="fa-solid fa-xmark" style="font-size: 18px;"></i></button>
-      </div>
-      <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
-        비교할 전략 슬롯들을 체크하고 <strong>[비교실행]</strong> 버튼을 누르면 성과 및 자산 성장 곡선을 한눈에 비교할 수 있습니다.
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <span style="font-size: 12px; font-weight: 700; color: var(--text-dim);">비교할 전략 선택</span>
-        <div style="display: flex; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
           <button class="nav-btn btn-sm" onclick="toggleAllCompareSlots(true)">전체 선택</button>
           <button class="nav-btn btn-sm" onclick="toggleAllCompareSlots(false)">선택 해제</button>
+          <button class="btn-icon-del" onclick="closeCompareModal()" style="margin-left: 4px;"><i class="fa-solid fa-xmark" style="font-size: 18px;"></i></button>
         </div>
       </div>
 
