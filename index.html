@@ -753,7 +753,7 @@
           <i class="fa-solid fa-circle-check"></i> <span id="heroStateText">기본 (정상 운용)</span>
         </div>
         <div class="hero-title" id="heroAdviceTitle">
-          지표 : 나스닥 100 - 기본(정상운용)
+          지표 : 나스닥 100
         </div>
         <div class="hero-desc" id="heroAdviceDesc">
           현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.
@@ -1093,7 +1093,7 @@
       mddEl.textContent = `${mdd.toFixed(2)}%`;
       mddEl.style.color = isDrop ? 'var(--rose)' : 'var(--emerald)';
 
-      document.getElementById('heroAdviceTitle').textContent = `지표 : ${formatTickerDisplay(liveSignalData.benchmark)} - ${stateDisplay}`;
+      document.getElementById('heroAdviceTitle').textContent = `지표 : ${formatTickerDisplay(liveSignalData.benchmark)}`;
       document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice || "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.";
 
       renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.currentWeights, liveSignalData.deltaWeights, liveSignalData.assetReturns);
