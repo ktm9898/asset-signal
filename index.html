@@ -38,6 +38,11 @@
       --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    html {
+      overflow-y: scroll;
+      scrollbar-gutter: stable;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -61,10 +66,13 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      padding: 10px 0;
+      height: 60px;
+      display: flex;
+      align-items: center;
     }
 
     .header-inner {
+      width: 100%;
       max-width: 1400px;
       margin: 0 auto;
       padding: 0 20px;
@@ -538,8 +546,11 @@
         </div>
       </a>
 
-      <!-- Top Navigation: 대시보드, 백테스트, 데이터조회, 새로고침 -->
+      <!-- Top Navigation: 새로고침, 대시보드, 백테스트, 데이터조회 -->
       <div class="header-actions">
+        <button class="nav-btn" onclick="triggerManualScreening()" title="최신 데이터 및 포트폴리오 신호 새로고침">
+          <i class="fa-solid fa-arrows-rotate"></i> 새로고침
+        </button>
         <a href="index.html" class="nav-btn btn-primary">
           <i class="fa-solid fa-gauge-high"></i> 대시보드
         </a>
@@ -549,9 +560,6 @@
         <a href="admin.html?view=data" class="nav-btn">
           <i class="fa-solid fa-table-list"></i> 데이터조회
         </a>
-        <button class="nav-btn" onclick="triggerManualScreening()" title="최신 데이터 및 포트폴리오 신호 새로고침">
-          <i class="fa-solid fa-arrows-rotate"></i> 새로고침
-        </button>
       </div>
     </div>
   </header>
@@ -647,11 +655,11 @@
           </div>
           <div class="strategy-meta-row">
             <span class="meta-label">하락 대응</span>
-            <span class="meta-val" id="metaStratDrops">-20% (1차 QLD) · -30% (2차 TQQQ) · -40% (3차)</span>
+            <span class="meta-val" id="metaStratDrops">1차 (-20%) · 2차 (-30%) · 3차 (-40%)</span>
           </div>
           <div class="strategy-meta-row">
             <span class="meta-label">반등 익절</span>
-            <span class="meta-val" id="metaStratRecovery">-25% (TQQQ 익절) · -15% (QLD 축소) · -5% (기본 복귀)</span>
+            <span class="meta-val" id="metaStratRecovery">1차 (-25%) · 2차 (-15%) · 3차 (-5%)</span>
           </div>
         </div>
       </div>

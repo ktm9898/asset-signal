@@ -39,6 +39,11 @@
       --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    html {
+      overflow-y: scroll;
+      scrollbar-gutter: stable;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -62,10 +67,13 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      padding: 10px 0;
+      height: 60px;
+      display: flex;
+      align-items: center;
     }
 
     .header-inner {
+      width: 100%;
       max-width: 1400px;
       margin: 0 auto;
       padding: 0 20px;
@@ -781,8 +789,11 @@
         </div>
       </a>
 
-      <!-- Main Navigation: 대시보드, 백테스트, 데이터조회 -->
+      <!-- Main Navigation: 새로고침, 대시보드, 백테스트, 데이터조회 -->
       <div class="header-actions">
+        <button class="nav-btn" onclick="triggerManualScreening()" title="최신 데이터 새로고침">
+          <i class="fa-solid fa-arrows-rotate"></i> 새로고침
+        </button>
         <a href="index.html" class="nav-btn">
           <i class="fa-solid fa-gauge-high"></i> 대시보드
         </a>
@@ -800,7 +811,7 @@
   <div class="container">
     
     <!-- VIEW 1: 백테스트 스튜디오 (Studio View) -->
-    <div id="viewStudio" style="display: flex; flex-direction: column; gap: 24px;">
+    <div id="viewStudio" style="display: flex; flex-direction: column; gap: 16px;">
 
       <!-- Strategy Preset Slots & Integrated Control Toolbar -->
       <div class="slots-wrapper">
@@ -1029,7 +1040,7 @@
     </div>
 
     <!-- VIEW 2: 데이터조회 뷰 (Comprehensive Daily Historical Table & Technical Indicators) -->
-    <div id="viewData" style="display: none; flex-direction: column; gap: 20px;">
+    <div id="viewData" style="display: none; flex-direction: column; gap: 16px;">
       
       <!-- Top Control Bar: Market Filter, Ticker Selection & Range Filter -->
       <div class="slots-wrapper">
