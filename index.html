@@ -447,27 +447,35 @@
       border: 1px solid var(--border-color);
       border-radius: var(--radius-sm);
       padding: 14px 16px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      font-size: 13px;
-    }
-
-    .meta-item {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 10px;
     }
 
-    .meta-label {
+    .strategy-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      border-bottom: 1px dashed #e2e8f0;
+      padding-bottom: 8px;
+    }
+
+    .strategy-meta-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .strategy-meta-row .meta-label {
       color: var(--text-dim);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
     }
 
-    .meta-val {
+    .strategy-meta-row .meta-val {
       font-weight: 700;
       color: var(--text-main);
+      text-align: right;
     }
 
     /* History Table */
@@ -480,7 +488,7 @@
     .history-table th {
       background: #f8fafc;
       padding: 9px 12px;
-      text-align: left;
+      text-align: center;
       color: var(--text-dim);
       font-weight: 600;
       border-bottom: 1px solid var(--border-color);
@@ -488,6 +496,7 @@
 
     .history-table td {
       padding: 10px 12px;
+      text-align: center;
       border-bottom: 1px solid #f1f5f9;
       color: var(--text-main);
     }
@@ -529,8 +538,11 @@
         </div>
       </a>
 
-      <!-- Top Navigation: 대시보드, 백테스트, 데이터조회 -->
+      <!-- Top Navigation: 새로고침, 대시보드, 백테스트, 데이터조회 -->
       <div class="header-actions">
+        <button class="nav-btn" onclick="triggerManualScreening()" title="최신 데이터 및 포트폴리오 신호 새로고침">
+          <i class="fa-solid fa-arrows-rotate"></i> 새로고침
+        </button>
         <a href="index.html" class="nav-btn btn-primary">
           <i class="fa-solid fa-gauge-high"></i> 대시보드
         </a>
@@ -540,9 +552,6 @@
         <a href="admin.html?view=data" class="nav-btn">
           <i class="fa-solid fa-table-list"></i> 데이터조회
         </a>
-        <button class="nav-btn" onclick="triggerManualScreening()">
-          <i class="fa-solid fa-arrows-rotate"></i> 신호 갱신
-        </button>
       </div>
     </div>
   </header>
@@ -554,27 +563,27 @@
     <div class="hero-banner">
       <div class="hero-left">
         <div class="state-badge" id="heroStateBadge">
-          <i class="fa-solid fa-circle-check"></i> <span id="heroStateText">평시 (Normal State)</span>
+          <i class="fa-solid fa-circle-check"></i> <span id="heroStateText">기본 (정상 운용)</span>
         </div>
         <div class="hero-title" id="heroAdviceTitle">
-          QQQ 고점 대비 -3.25% 안정권 유지 | 기본 자산 배분 비중 운용
+          기준지표 QQQ (낙폭 -3.3%) — 기본 비중 정상 운용
         </div>
         <div class="hero-desc" id="heroAdviceDesc">
-          현재 기준 지수(QQQ)가 최고가 대비 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중(QQQ 60% : SCHD 40%)을 그대로 유지하며 복리 성장 및 배당을 수취합니다.
+          현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.
         </div>
       </div>
 
       <div class="hero-stats">
         <div class="hero-stat-box">
-          <div class="stat-label">기준 지수 (QQQ) 현재가</div>
+          <div class="stat-label">현재가</div>
           <div class="stat-value" id="heroPrice">$721.11</div>
         </div>
         <div class="hero-stat-box">
-          <div class="stat-label">고점 대비 낙폭 (MDD)</div>
+          <div class="stat-label">MDD</div>
           <div class="stat-value" id="heroMDD" style="color: var(--emerald);">-3.25%</div>
         </div>
         <div class="hero-stat-box">
-          <div class="stat-label">최고가 (ATH)</div>
+          <div class="stat-label">최고가</div>
           <div class="stat-value" id="heroATH">$745.34</div>
         </div>
       </div>
@@ -587,7 +596,7 @@
       <div class="dashboard-card">
         <div class="card-header">
           <div class="card-title">
-            <i class="fa-solid fa-chart-pie text-primary"></i> 금일 목표 자산 비중 (Target Weight %)
+            <i class="fa-solid fa-chart-pie text-primary"></i> 목표 자산 비중
           </div>
           <span class="text-dim" style="font-size: 12px;" id="signalUpdatedTime">오늘 기준</span>
         </div>
@@ -604,8 +613,8 @@
         <!-- Total Capital Calculator -->
         <div class="calc-input-box">
           <div>
-            <div style="font-weight: 700;">내 총 투자자산 규모 입력 (선택)</div>
-            <div style="font-size: 11px; color: var(--text-dim);">금액 입력 시 ETF별 목표 매수/보유 원화 금액이 자동 계산됩니다.</div>
+            <div style="font-weight: 700;">총 투자자산</div>
+            <div style="font-size: 11px; color: var(--text-dim);">금액 입력 시 ETF별 목표 매수/보유 금액이 자동 계산됩니다.</div>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             <input type="number" class="calc-input" id="userTotalCapital" value="50000000" step="1000000" onchange="onCapitalChange()" style="width: 160px;">
@@ -618,11 +627,8 @@
       <div class="dashboard-card">
         <div class="card-header">
           <div class="card-title">
-            <i class="fa-solid fa-list-check text-primary"></i> 오늘 실행할 리밸런싱 지시서
+            <i class="fa-solid fa-list-check text-primary"></i> 리밸런싱 지시서
           </div>
-          <span class="brand-badge" style="background: rgba(56, 189, 248, 0.15); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.3);">
-            기계적 집행 가이드
-          </span>
         </div>
 
         <div class="orders-list" id="ordersListContainer">
@@ -631,21 +637,21 @@
 
         <!-- Active Strategy Info Summary -->
         <div class="strategy-meta-box">
-          <div class="meta-item">
-            <div class="meta-label">실전 적용 중인 전략</div>
-            <div class="meta-val" id="metaStratName">나스닥100 동적 계단식 (QQQ/QLD/TQQQ/SCHD)</div>
+          <div class="strategy-meta-row">
+            <span class="meta-label">실전 적용 전략</span>
+            <span class="meta-val" id="metaStratName">나스닥100 동적 계단식 (QQQ/QLD/TQQQ/SCHD)</span>
           </div>
-          <div class="meta-item">
-            <div class="meta-label">기준 지수 / 평시 비중</div>
-            <div class="meta-val" id="metaStratBase">QQQ (60%) : SCHD (40%)</div>
+          <div class="strategy-meta-row">
+            <span class="meta-label">기준 지표 / 기본 비중</span>
+            <span class="meta-val" id="metaStratBase">QQQ 60% : SCHD 40%</span>
           </div>
-          <div class="meta-item">
-            <div class="meta-label">낙폭 진입 임계값</div>
-            <div class="meta-val" id="metaStratDrops">-20% (QLD) | -30% (TQQQ) | -40% (극단)</div>
+          <div class="strategy-meta-row">
+            <span class="meta-label">하락 대응</span>
+            <span class="meta-val" id="metaStratDrops">-20% (1차 QLD) · -30% (2차 TQQQ) · -40% (3차)</span>
           </div>
-          <div class="meta-item">
-            <div class="meta-label">계단식 복귀 임계값</div>
-            <div class="meta-val" id="metaStratRecovery">-25% (TQQQ 익절) | -15% (QLD 축소) | -5% (원복)</div>
+          <div class="strategy-meta-row">
+            <span class="meta-label">반등 익절</span>
+            <span class="meta-val" id="metaStratRecovery">-25% (TQQQ 익절) · -15% (QLD 축소) · -5% (기본 복귀)</span>
           </div>
         </div>
       </div>
@@ -656,7 +662,7 @@
     <div class="dashboard-card">
       <div class="card-header">
         <div class="card-title">
-          <i class="fa-solid fa-clock-rotate-left text-primary"></i> 최근 국면 전환 및 신호 발생 이력
+          <i class="fa-solid fa-clock-rotate-left text-primary"></i> 신호발생 이력
         </div>
         <span class="text-dim" style="font-size: 12px;">Cloud DB Sync</span>
       </div>
@@ -666,10 +672,10 @@
           <thead>
             <tr>
               <th>발생 일자</th>
-              <th>국면 상태</th>
+              <th>상태</th>
               <th>기준 MDD</th>
-              <th>권장 목표 비중 (%)</th>
-              <th>운용 조언 및 지시 내용</th>
+              <th>목표 비중</th>
+              <th>운용 지시 내용</th>
             </tr>
           </thead>
           <tbody id="historyTableBody">
@@ -744,10 +750,10 @@
         benchmarkPrice: 721.11,
         benchmarkATH: 745.34,
         benchmarkMDD: -3.25,
-        currentState: "평시 (Normal)",
+        currentState: "기본 (정상 운용)",
         targetWeights: { "QQQ": 60.0, "SCHD": 40.0 },
         deltaWeights: { "QQQ": 0.0, "SCHD": 0.0 },
-        advice: "[평시 정상 운용] QQQ 고점 대비 -3.3%로 안정권 유지. 기본 자산 배분 비중 유지."
+        advice: "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다."
       };
       renderDashboardUI();
     }
@@ -760,12 +766,15 @@
           if (data.success) {
             if (data.portfolioSignals && data.portfolioSignals.length > 0) {
               const latest = data.portfolioSignals[0];
+              let state = latest.CurrentState || "기본 (정상 운용)";
+              if (state.includes("평시")) state = "기본 (정상 운용)";
+
               liveSignalData = {
                 benchmark: latest.Benchmark || "QQQ",
                 benchmarkPrice: parseFloat(latest.BenchmarkPrice || 720),
                 benchmarkATH: parseFloat(latest.BenchmarkATH || 745),
                 benchmarkMDD: parseFloat(latest.BenchmarkMDD || -3.2),
-                currentState: latest.CurrentState || "평시 (Normal)",
+                currentState: state,
                 targetWeights: typeof latest.TargetWeights === 'string' ? JSON.parse(latest.TargetWeights) : latest.TargetWeights,
                 deltaWeights: typeof latest.DeltaWeights === 'string' ? JSON.parse(latest.DeltaWeights) : latest.DeltaWeights,
                 advice: latest.Advice || ""
@@ -789,21 +798,28 @@
       const isDrop = mdd <= -20.0;
       const isRecovery = liveSignalData.currentState.includes("반등") || liveSignalData.currentState.includes("복귀");
 
-      const badge = document.getElementById('heroStateBadge');
-      badge.innerHTML = `<i class="fa-solid fa-circle-${isDrop ? 'exclamation' : 'check'}"></i> <span>${liveSignalData.currentState}</span>`;
-      badge.style.background = isDrop ? 'rgba(244, 63, 94, 0.15)' : (isRecovery ? 'rgba(56, 189, 248, 0.15)' : 'rgba(16, 185, 129, 0.15)');
-      badge.style.color = isDrop ? 'var(--rose)' : (isRecovery ? 'var(--primary)' : 'var(--emerald)');
-      badge.style.borderColor = isDrop ? 'rgba(244, 63, 94, 0.3)' : (isRecovery ? 'rgba(56, 189, 248, 0.3)' : 'rgba(16, 185, 129, 0.3)');
+      let stateDisplay = liveSignalData.currentState || "기본 (정상 운용)";
+      if (stateDisplay.includes("평시")) stateDisplay = "기본 (정상 운용)";
 
-      document.getElementById('heroPrice').textContent = `$${liveSignalData.benchmarkPrice.toLocaleString()}`;
-      document.getElementById('heroATH').textContent = `$${liveSignalData.benchmarkATH.toLocaleString()}`;
+      const badge = document.getElementById('heroStateBadge');
+      badge.innerHTML = `<i class="fa-solid fa-circle-${isDrop ? 'exclamation' : 'check'}"></i> <span>${stateDisplay}</span>`;
+      badge.style.background = isDrop ? '#fee2e2' : (isRecovery ? '#e0f2fe' : '#dcfce7');
+      badge.style.color = isDrop ? 'var(--rose)' : (isRecovery ? 'var(--primary)' : 'var(--emerald)');
+      badge.style.borderColor = isDrop ? '#fca5a5' : (isRecovery ? '#bae6fd' : '#bbf7d0');
+
+      document.getElementById('heroPrice').textContent = `$${liveSignalData.benchmarkPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('heroATH').textContent = `$${liveSignalData.benchmarkATH.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       
       const mddEl = document.getElementById('heroMDD');
       mddEl.textContent = `${mdd.toFixed(2)}%`;
       mddEl.style.color = isDrop ? 'var(--rose)' : 'var(--emerald)';
 
-      document.getElementById('heroAdviceTitle').textContent = `${liveSignalData.benchmark} 낙폭 ${mdd.toFixed(1)}% | ${liveSignalData.currentState}`;
-      document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice || "사전 설정된 퀀트 자산배분 모델에 따른 최적 목표 비중입니다.";
+      let actionDesc = '기본 비중 정상 운용';
+      if (isDrop) actionDesc = '하락 대응 분할 편입';
+      else if (isRecovery) actionDesc = '반등 분할 익절';
+
+      document.getElementById('heroAdviceTitle').textContent = `기준지표 ${liveSignalData.benchmark} (낙폭 ${mdd.toFixed(1)}%) — ${actionDesc}`;
+      document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice && !liveSignalData.advice.includes("평시") ? liveSignalData.advice : "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.";
 
       renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.deltaWeights);
       renderOrdersList(liveSignalData.targetWeights, liveSignalData.deltaWeights);
@@ -927,13 +943,15 @@
       tbody.innerHTML = '';
 
       logs.slice(0, 10).forEach(l => {
+        let stateStr = l.CurrentState || '기본';
+        if (stateStr.includes("평시")) stateStr = "기본 (정상 운용)";
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${l.Timestamp || '-'}</td>
-          <td><span class="brand-badge" style="font-size: 11px;">${l.CurrentState || '평시'}</span></td>
+          <td><span class="brand-badge" style="font-size: 11px; background: #dcfce7; color: #059669; border: 1px solid #bbf7d0;">${stateStr}</span></td>
           <td style="color: var(--rose); font-family: 'Outfit', sans-serif; font-weight: 700;">${l.BenchmarkMDD || 0}%</td>
-          <td style="font-size: 12px; color: var(--primary);">-</td>
-          <td style="font-size: 12px; color: var(--text-muted);">${l.Message || ''}</td>
+          <td style="font-size: 12px; color: var(--primary); font-weight: 700;">${l.TargetWeights ? JSON.stringify(l.TargetWeights).replace(/"/g, '').replace(/\{|\}/g, '') : '-'}</td>
+          <td style="font-size: 12px; color: var(--text-muted); text-align: left;">${l.Message || l.Advice || ''}</td>
         `;
         tbody.appendChild(tr);
       });

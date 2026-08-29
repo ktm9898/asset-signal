@@ -781,15 +781,18 @@
         </div>
       </a>
 
-      <!-- Main Navigation: 대시보드, 백테스트, 데이터조회 -->
-      <div class="header-nav">
-        <a href="index.html" class="main-tab-btn">
+      <!-- Main Navigation: 새로고침, 대시보드, 백테스트, 데이터조회 -->
+      <div class="header-actions">
+        <button class="nav-btn" onclick="triggerManualScreening()" title="최신 데이터 새로고침">
+          <i class="fa-solid fa-arrows-rotate"></i> 새로고침
+        </button>
+        <a href="index.html" class="nav-btn">
           <i class="fa-solid fa-gauge-high"></i> 대시보드
         </a>
-        <button class="main-tab-btn active" id="tabBtnStudio" onclick="switchMainView('studio')">
+        <button class="nav-btn btn-primary" id="tabBtnStudio" onclick="switchMainView('studio')">
           <i class="fa-solid fa-sliders"></i> 백테스트
         </button>
-        <button class="main-tab-btn" id="tabBtnData" onclick="switchMainView('data')">
+        <button class="nav-btn" id="tabBtnData" onclick="switchMainView('data')">
           <i class="fa-solid fa-table-list"></i> 데이터조회
         </button>
       </div>
@@ -1341,13 +1344,36 @@
 
     function switchMainView(view) {
       currentMainView = view;
-      document.getElementById('tabBtnStudio').classList.toggle('active', view === 'studio');
-      document.getElementById('tabBtnData').classList.toggle('active', view === 'data');
+      const studioBtn = document.getElementById('tabBtnStudio');
+      const dataBtn = document.getElementById('tabBtnData');
+
+      if (view === 'studio') {
+        studioBtn.classList.add('btn-primary');
+        dataBtn.classList.remove('btn-primary');
+      } else {
+        studioBtn.classList.remove('btn-primary');
+        dataBtn.classList.add('btn-primary');
+      }
+
       document.getElementById('viewStudio').style.display = view === 'studio' ? 'flex' : 'none';
       document.getElementById('viewData').style.display = view === 'data' ? 'flex' : 'none';
       if (view === 'data') {
         renderDataTable();
       }
+    }
+
+    async function triggerManualScreening() {
+      showToast("데이터를 새로고침하는 중입니다...");
+      await fetchEtfDataset();
+      await fetchGoogleSheetSlots();
+      populateCurrentSlotUI();
+      populateDataTickerDropdown();
+      if (currentMainView === 'studio') {
+        runInteractiveBacktest();
+      } else {
+        renderDataTable();
+      }
+      showToast("새로고침이 완료되었습니다.");
     }
 
     function loadLocalSlots() {
