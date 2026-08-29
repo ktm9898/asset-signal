@@ -938,8 +938,8 @@
             </div>
           </div>
 
-          <button class="nav-btn btn-primary" style="padding: 12px; font-size: 14px; justify-content: center;" onclick="runInteractiveBacktest()">
-            <i class="fa-solid fa-play"></i> 백테스트
+          <button class="nav-btn btn-primary" style="padding: 12px; font-size: 14px; justify-content: center;" onclick="runInteractiveBacktest(true)">
+            <i class="fa-solid fa-play"></i> 백테스트 실행
           </button>
         </div>
 
@@ -1648,7 +1648,6 @@
       s.baseWeights = autoNormalizeBaseWeights(s.baseWeights, ticker, numVal);
       saveLocalSlots();
       renderBaseWeightsTable(s.baseWeights);
-      runInteractiveBacktest();
     }
 
     function deleteBaseWeight(ticker) {
@@ -1679,15 +1678,17 @@
         }
         saveLocalSlots();
         renderBaseWeightsTable(s.baseWeights);
-        runInteractiveBacktest();
       }
     }
 
     function addBaseWeightRow() {
-      openEtfSelectModal();
+      openEtfSelectModal('base', -1);
     }
 
-    function openEtfSelectModal() {
+    let currentEtfTarget = { type: 'base', idx: -1 };
+
+    function openEtfSelectModal(targetType = 'base', targetIdx = -1) {
+      currentEtfTarget = { type: targetType, idx: targetIdx };
       document.getElementById('etfSelectModal').style.display = 'flex';
     }
 
@@ -1697,36 +1698,57 @@
 
     function selectUniverseItem(ticker) {
       const s = getCurrentSlot();
-      if (!s.baseWeights) s.baseWeights = {};
-      if (!s.baseWeights[ticker]) {
-        const existingKeys = Object.keys(s.baseWeights);
-        if (existingKeys.length === 0) {
-          s.baseWeights[ticker] = 1.0;
-        } else {
-          const newAssetPct = 20; // Default new asset 20%
-          const factor = (100 - newAssetPct) / 100.0;
-          let allocated = 0;
-          existingKeys.forEach((k, idx) => {
-            if (idx === existingKeys.length - 1) {
-              const finalP = Math.max(0, (100 - newAssetPct) - allocated);
-              s.baseWeights[k] = finalP / 100.0;
-            } else {
-              const p = Math.round(Math.round((s.baseWeights[k] || 0) * 100) * factor);
-              s.baseWeights[k] = p / 100.0;
-              allocated += p;
-            }
-          });
-          s.baseWeights[ticker] = newAssetPct / 100.0;
+      if (currentEtfTarget.type === 'base') {
+        if (!s.baseWeights) s.baseWeights = {};
+        if (!s.baseWeights[ticker]) {
+          const existingKeys = Object.keys(s.baseWeights);
+          if (existingKeys.length === 0) {
+            s.baseWeights[ticker] = 1.0;
+          } else {
+            const newAssetPct = 20; // Default new asset 20%
+            const factor = (100 - newAssetPct) / 100.0;
+            let allocated = 0;
+            existingKeys.forEach((k, idx) => {
+              if (idx === existingKeys.length - 1) {
+                const finalP = Math.max(0, (100 - newAssetPct) - allocated);
+                s.baseWeights[k] = finalP / 100.0;
+              } else {
+                const p = Math.round(Math.round((s.baseWeights[k] || 0) * 100) * factor);
+                s.baseWeights[k] = p / 100.0;
+                allocated += p;
+              }
+            });
+            s.baseWeights[ticker] = newAssetPct / 100.0;
+          }
+          saveLocalSlots();
+          renderBaseWeightsTable(s.baseWeights);
         }
-        saveLocalSlots();
-        renderBaseWeightsTable(s.baseWeights);
-        runInteractiveBacktest();
+      } else if (currentEtfTarget.type === 'drop') {
+        const stg = s.dropStages && s.dropStages[currentEtfTarget.idx];
+        if (stg) {
+          if (!stg.weights) stg.weights = {};
+          if (stg.weights[ticker] === undefined) {
+            stg.weights[ticker] = 0.20;
+            saveLocalSlots();
+            renderDropStages(s.dropStages);
+          }
+        }
+      } else if (currentEtfTarget.type === 'recovery') {
+        const stg = s.recoveryStages && s.recoveryStages[currentEtfTarget.idx];
+        if (stg) {
+          if (!stg.weights) stg.weights = {};
+          if (stg.weights[ticker] === undefined) {
+            stg.weights[ticker] = 0.20;
+            saveLocalSlots();
+            renderRecoveryStages(s.recoveryStages);
+          }
+        }
       }
       closeEtfSelectModal();
     }
 
     // ==========================================
-    // Drop & Recovery Stages UI (Editable Threshold & Weights)
+    // Drop & Recovery Stages UI (Flexible Asset Management)
     // ==========================================
     function renderDropStages(stages) {
       const container = document.getElementById('dropStagesContainer');
@@ -1737,18 +1759,18 @@
         card.className = 'stage-card';
 
         let weightInputs = '';
-        const allTickers = Array.from(new Set([
-          ...Object.keys(getCurrentSlot().baseWeights || {}),
-          ...Object.keys(stg.weights || {})
-        ]));
+        const tickers = Object.keys(stg.weights || {});
 
-        allTickers.forEach(t => {
+        tickers.forEach(t => {
           const pct = Math.round((stg.weights[t] || 0) * 100);
           weightInputs += `
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
-              <span>${formatTickerDisplay(t)}</span>
-              <span><input type="number" class="weight-input" style="padding: 4px 6px; font-size: 11px;" value="${pct}" 
-                onchange="updateDropStageWeight(${idx}, '${t}', this.value)"> %</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; background: #ffffff; padding: 4px 6px; border-radius: 4px; border: 1px solid #f1f5f9;">
+              <span style="font-weight: 600;">${formatTickerDisplay(t)}</span>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <input type="number" class="weight-input" style="width: 45px; padding: 2px 4px; font-size: 11px; text-align: center;" value="${pct}" 
+                  onchange="updateDropStageWeight(${idx}, '${t}', this.value)"> %
+                <button class="btn-icon-del" style="font-size: 10px; padding: 2px 4px;" onclick="deleteDropStageTicker(${idx}, '${t}')"><i class="fa-solid fa-xmark"></i></button>
+              </div>
             </div>
           `;
         });
@@ -1759,16 +1781,19 @@
               <span class="stage-badge-drop">${idx + 1}차 하락</span>
               <div style="display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700;">
                 <span style="color: var(--text-dim); font-size: 11px;">낙폭:</span>
-                <input type="number" class="weight-input" style="width: 58px; padding: 2px 4px; font-size: 11px; text-align: center;" 
+                <input type="number" class="weight-input" style="width: 55px; padding: 2px 4px; font-size: 11px; text-align: center;" 
                   value="${stg.threshold}" step="1" max="0" 
                   onchange="updateDropStageThreshold(${idx}, this.value)"> %
               </div>
             </div>
             <button class="btn-icon-del" onclick="deleteDropStage(${idx})"><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
-            ${weightInputs}
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+            ${weightInputs || '<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 4px;">설정된 자산이 없습니다.</div>'}
           </div>
+          <button class="nav-btn btn-sm" style="margin-top: 6px; font-size: 11px; padding: 2px 8px; width: 100%; justify-content: center;" onclick="openEtfSelectModal('drop', ${idx})">
+            <i class="fa-solid fa-plus"></i> 자산 추가
+          </button>
         `;
         container.appendChild(card);
       });
@@ -1785,7 +1810,6 @@
         s.dropStages.sort((a, b) => b.threshold - a.threshold);
         saveLocalSlots();
         renderDropStages(s.dropStages);
-        runInteractiveBacktest();
       }
     }
 
@@ -1796,15 +1820,15 @@
       const threshold = prompt(`하락 ${nextIdx}차 기준 낙폭을 입력하세요 (예: -20, -30, -40):`, `-${nextIdx * 10}`);
       if (threshold !== null) {
         const thNum = -Math.abs(parseFloat(threshold));
+        const initWeights = Object.keys(s.baseWeights || {}).length > 0 ? { ...s.baseWeights } : { "QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30 };
         s.dropStages.push({
           threshold: thNum,
           name: `${nextIdx}차 하락`,
-          weights: { "QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30 }
+          weights: initWeights
         });
         s.dropStages.sort((a, b) => b.threshold - a.threshold);
         saveLocalSlots();
         renderDropStages(s.dropStages);
-        runInteractiveBacktest();
       }
     }
 
@@ -1813,15 +1837,22 @@
       s.dropStages.splice(idx, 1);
       saveLocalSlots();
       renderDropStages(s.dropStages);
-      runInteractiveBacktest();
+    }
+
+    function deleteDropStageTicker(stgIdx, ticker) {
+      const s = getCurrentSlot();
+      if (s.dropStages && s.dropStages[stgIdx] && s.dropStages[stgIdx].weights) {
+        delete s.dropStages[stgIdx].weights[ticker];
+        saveLocalSlots();
+        renderDropStages(s.dropStages);
+      }
     }
 
     function updateDropStageWeight(stgIdx, ticker, val) {
       const s = getCurrentSlot();
       if (!s.dropStages[stgIdx].weights) s.dropStages[stgIdx].weights = {};
-      s.dropStages[stgIdx].weights[ticker] = parseFloat(val) / 100.0;
+      s.dropStages[stgIdx].weights[ticker] = (parseFloat(val) || 0) / 100.0;
       saveLocalSlots();
-      runInteractiveBacktest();
     }
 
     function renderRecoveryStages(stages) {
@@ -1833,18 +1864,18 @@
         card.className = 'stage-card';
 
         let weightInputs = '';
-        const allTickers = Array.from(new Set([
-          ...Object.keys(getCurrentSlot().baseWeights || {}),
-          ...Object.keys(stg.weights || {})
-        ]));
+        const tickers = Object.keys(stg.weights || {});
 
-        allTickers.forEach(t => {
+        tickers.forEach(t => {
           const pct = Math.round((stg.weights[t] || 0) * 100);
           weightInputs += `
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
-              <span>${formatTickerDisplay(t)}</span>
-              <span><input type="number" class="weight-input" style="padding: 4px 6px; font-size: 11px;" value="${pct}" 
-                onchange="updateRecoveryStageWeight(${idx}, '${t}', this.value)"> %</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; background: #ffffff; padding: 4px 6px; border-radius: 4px; border: 1px solid #f1f5f9;">
+              <span style="font-weight: 600;">${formatTickerDisplay(t)}</span>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <input type="number" class="weight-input" style="width: 45px; padding: 2px 4px; font-size: 11px; text-align: center;" value="${pct}" 
+                  onchange="updateRecoveryStageWeight(${idx}, '${t}', this.value)"> %
+                <button class="btn-icon-del" style="font-size: 10px; padding: 2px 4px;" onclick="deleteRecoveryStageTicker(${idx}, '${t}')"><i class="fa-solid fa-xmark"></i></button>
+              </div>
             </div>
           `;
         });
@@ -1855,16 +1886,19 @@
               <span class="stage-badge-rec">${idx + 1}단계 반등</span>
               <div style="display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700;">
                 <span style="color: var(--text-dim); font-size: 11px;">반등:</span>
-                <input type="number" class="weight-input" style="width: 58px; padding: 2px 4px; font-size: 11px; text-align: center;" 
+                <input type="number" class="weight-input" style="width: 55px; padding: 2px 4px; font-size: 11px; text-align: center;" 
                   value="${stg.recovery}" step="1" max="0" 
                   onchange="updateRecoveryStageThreshold(${idx}, this.value)"> %
               </div>
             </div>
             <button class="btn-icon-del" onclick="deleteRecoveryStage(${idx})"><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
-            ${weightInputs}
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+            ${weightInputs || '<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 4px;">설정된 자산이 없습니다.</div>'}
           </div>
+          <button class="nav-btn btn-sm" style="margin-top: 6px; font-size: 11px; padding: 2px 8px; width: 100%; justify-content: center;" onclick="openEtfSelectModal('recovery', ${idx})">
+            <i class="fa-solid fa-plus"></i> 자산 추가
+          </button>
         `;
         container.appendChild(card);
       });
@@ -1881,7 +1915,6 @@
         s.recoveryStages.sort((a, b) => a.recovery - b.recovery);
         saveLocalSlots();
         renderRecoveryStages(s.recoveryStages);
-        runInteractiveBacktest();
       }
     }
 
@@ -1892,16 +1925,16 @@
       const recovery = prompt(`반등 ${nextIdx}단계 회복 기준을 입력하세요 (예: -25, -15, -5):`, "-15");
       if (recovery !== null) {
         const recNum = -Math.abs(parseFloat(recovery));
+        const initWeights = Object.keys(s.baseWeights || {}).length > 0 ? { ...s.baseWeights } : { "QQQ": 0.50, "QLD": 0.20, "SCHD": 0.30 };
         s.recoveryStages.push({
           fromDrop: -30.0,
           recovery: recNum,
           name: `${nextIdx}단계 반등`,
-          weights: { "QQQ": 0.50, "QLD": 0.20, "SCHD": 0.30 }
+          weights: initWeights
         });
         s.recoveryStages.sort((a, b) => a.recovery - b.recovery);
         saveLocalSlots();
         renderRecoveryStages(s.recoveryStages);
-        runInteractiveBacktest();
       }
     }
 
@@ -1910,15 +1943,22 @@
       s.recoveryStages.splice(idx, 1);
       saveLocalSlots();
       renderRecoveryStages(s.recoveryStages);
-      runInteractiveBacktest();
+    }
+
+    function deleteRecoveryStageTicker(stgIdx, ticker) {
+      const s = getCurrentSlot();
+      if (s.recoveryStages && s.recoveryStages[stgIdx] && s.recoveryStages[stgIdx].weights) {
+        delete s.recoveryStages[stgIdx].weights[ticker];
+        saveLocalSlots();
+        renderRecoveryStages(s.recoveryStages);
+      }
     }
 
     function updateRecoveryStageWeight(stgIdx, ticker, val) {
       const s = getCurrentSlot();
       if (!s.recoveryStages[stgIdx].weights) s.recoveryStages[stgIdx].weights = {};
-      s.recoveryStages[stgIdx].weights[ticker] = parseFloat(val) / 100.0;
+      s.recoveryStages[stgIdx].weights[ticker] = (parseFloat(val) || 0) / 100.0;
       saveLocalSlots();
-      runInteractiveBacktest();
     }
 
     function onConfigChange() {
@@ -1927,13 +1967,12 @@
       s.gainThresholdPct = parseFloat(document.getElementById('cfgGainThreshold').value);
       s.feeRate = parseFloat(document.getElementById('cfgFeeRate').value) / 100.0;
       saveLocalSlots();
-      runInteractiveBacktest();
     }
 
     // ==========================================
     // Client-Side Fast Backtester Engine
     // ==========================================
-    function runInteractiveBacktest() {
+    function runInteractiveBacktest(showToastMsg = false) {
       if (!etfDataset || !etfDataset.dates || !etfDataset.universe) return;
 
       const s = getCurrentSlot();
@@ -2117,6 +2156,7 @@
       updateBenchmarkTableUI(stratMetrics, ndxMetrics, gspcMetrics, ks11Metrics);
       updateRebalanceEventsUI(rebalanceEvents);
       renderChart();
+      if (showToastMsg) showToast("백테스트 계산 및 차트 갱신이 완료되었습니다!");
     }
 
     function normalizeWeights(wDict) {
