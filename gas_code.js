@@ -67,8 +67,64 @@ function doGet(e) {
       sheet.getRange(2, lastCol, activeFlags.length, 1).setValues(activeFlags);
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", activeSlotId: slotId }))
-      .setMimeType(ContentService.MimeType.JSON);
+  if (action === "fetch_ticker_history") {
+    const ticker = String(e.parameter.ticker || "").trim().toUpperCase();
+    if (!ticker) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: "No ticker provided" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=15y&interval=1d`;
+      const resp = UrlFetchApp.fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+        muteHttpExceptions: true
+      });
+      
+      if (resp.getResponseCode() === 200) {
+        const json = JSON.parse(resp.getContentText());
+        const chart = json.chart && json.chart.result && json.chart.result[0];
+        if (chart && chart.timestamp) {
+          const timestamps = chart.timestamp;
+          const quotes = chart.indicators.quote[0];
+          const adjcloseObj = chart.indicators.adjclose && chart.indicators.adjclose[0];
+          const adjclose = adjcloseObj ? adjcloseObj.adjclose : quotes.close;
+          
+          const dates = [];
+          const closePrices = [];
+          const adjClosePrices = [];
+          
+          for (let i = 0; i < timestamps.length; i++) {
+            const d = new Date(timestamps[i] * 1000);
+            const dStr = Utilities.formatDate(d, "GMT", "yyyy-MM-dd");
+            const cVal = quotes.close[i];
+            const aVal = adjclose[i];
+            
+            if (cVal !== null && aVal !== null && !isNaN(cVal) && !isNaN(aVal)) {
+              dates.push(dStr);
+              closePrices.push(Math.round(cVal * 10000) / 10000);
+              adjClosePrices.push(Math.round(aVal * 10000) / 10000);
+            }
+          }
+          
+          return ContentService.createTextOutput(JSON.stringify({
+            success: true,
+            ticker: ticker,
+            currency: (chart.meta && chart.meta.currency) || "USD",
+            name: (chart.meta && (chart.meta.shortName || chart.meta.symbol)) || ticker,
+            dates: dates,
+            close: closePrices,
+            adjClose: adjClosePrices,
+            latestPrice: closePrices[closePrices.length - 1] || 0
+          })).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Ticker not found on Yahoo Finance" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
   }
 
   if (action === "get_strategy_slots") {

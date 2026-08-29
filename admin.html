@@ -880,6 +880,75 @@
     </div>
   </div>
 
+  <!-- ETF Universe Selection Modal -->
+  <div class="modal-overlay" id="etfSelectModal">
+    <div class="modal-content" style="max-width: 600px; max-height: 85vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-layer-group text-primary"></i> 편입할 ETF 자산 선택
+        </div>
+        <button class="btn-icon-del" onclick="closeEtfSelectModal()"><i class="fa-solid fa-xmark" style="font-size: 18px;"></i></button>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+        현재 16년치 배당재투자 데이터셋에 포함된 검증된 ETF 목록입니다. 원하는 종목을 클릭하시면 포트폴리오에 추가됩니다.
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 6px;">
+        <!-- Group 1: US Tech & Leverage -->
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px;">🚀 미국 테크 & 레버리지</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div class="slot-tab" onclick="selectUniverseItem('QQQ')"><strong>QQQ</strong> <span class="text-dim" style="font-size: 11px;">나스닥 100 1X</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('QLD')"><strong>QLD</strong> <span class="text-dim" style="font-size: 11px;">나스닥 2X 레버리지</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('TQQQ')"><strong style="color: var(--rose);">TQQQ</strong> <span class="text-dim" style="font-size: 11px;">나스닥 3X 레버리지</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('SOXL')"><strong style="color: var(--rose);">SOXL</strong> <span class="text-dim" style="font-size: 11px;">반도체 3X 레버리지</span></div>
+          </div>
+        </div>
+
+        <!-- Group 2: US Broad & Dividend -->
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--emerald); margin-bottom: 6px;">🏛️ 미국 시장 & 배당/가치</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div class="slot-tab" onclick="selectUniverseItem('SCHD')"><strong>SCHD</strong> <span class="text-dim" style="font-size: 11px;">미국 배당다우존스</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('SPY')"><strong>SPY</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 1X</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('SSO')"><strong>SSO</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 2X</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('UPRO')"><strong style="color: var(--rose);">UPRO</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 3X</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('JEPI')"><strong>JEPI</strong> <span class="text-dim" style="font-size: 11px;">월배당 커버드콜</span></div>
+          </div>
+        </div>
+
+        <!-- Group 3: Fixed Income & Cash -->
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--amber); margin-bottom: 6px;">🛡️ 미국 채권 & 현금성</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div class="slot-tab" onclick="selectUniverseItem('TLT')"><strong>TLT</strong> <span class="text-dim" style="font-size: 11px;">미국 20년+ 국채</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('BIL')"><strong>BIL</strong> <span class="text-dim" style="font-size: 11px;">1-3M 단기국채(현금)</span></div>
+          </div>
+        </div>
+
+        <!-- Group 4: Korean ETFs -->
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: #a855f7; margin-bottom: 6px;">🇰🇷 한국 상장 ETF</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div class="slot-tab" onclick="selectUniverseItem('069500.KS')"><strong>069500.KS</strong> <span class="text-dim" style="font-size: 11px;">KODEX 200</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('122630.KS')"><strong>122630.KS</strong> <span class="text-dim" style="font-size: 11px;">KODEX 레버리지 (2X)</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('379800.KS')"><strong>379800.KS</strong> <span class="text-dim" style="font-size: 11px;">KODEX 나스닥100TR</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('448290.KS')"><strong>448290.KS</strong> <span class="text-dim" style="font-size: 11px;">ACE 미국배당다우존스</span></div>
+          </div>
+        </div>
+
+        <!-- Custom Ticker Input -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <label class="form-label">기타 티커 직접 입력 (US / KR)</label>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <input type="text" class="form-input" id="customTickerInput" placeholder="예: GLD, VOO, 453850.KS" style="flex: 1;">
+            <button class="nav-btn btn-primary" onclick="selectCustomUniverseItem()">추가하기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div class="toast" id="toastMessage">
     <i class="fa-solid fa-circle-check text-emerald"></i>
@@ -1144,15 +1213,77 @@
     }
 
     function addBaseWeightRow() {
-      const ticker = prompt("추가할 ETF 티커를 입력하세요 (예: QQQ, QLD, TQQQ, SCHD, SPY, TLT, SOXL):");
-      if (ticker) {
-        const tUpper = ticker.trim().toUpperCase();
-        const s = getCurrentSlot();
-        if (!s.baseWeights) s.baseWeights = {};
-        s.baseWeights[tUpper] = 0.20;
-        saveLocalSlots();
-        renderBaseWeightsTable(s.baseWeights);
-        runInteractiveBacktest();
+      openEtfSelectModal();
+    }
+
+    function openEtfSelectModal() {
+      document.getElementById('etfSelectModal').style.display = 'flex';
+    }
+
+    function closeEtfSelectModal() {
+      document.getElementById('etfSelectModal').style.display = 'none';
+    }
+
+    function selectUniverseItem(ticker) {
+      const s = getCurrentSlot();
+      if (!s.baseWeights) s.baseWeights = {};
+      s.baseWeights[ticker] = 0.20;
+      saveLocalSlots();
+      renderBaseWeightsTable(s.baseWeights);
+      closeEtfSelectModal();
+      runInteractiveBacktest();
+    }
+
+    async function selectCustomUniverseItem() {
+      const input = document.getElementById('customTickerInput');
+      const val = input.value.trim().toUpperCase();
+      if (!val) return;
+
+      if (etfDataset && etfDataset.universe && etfDataset.universe[val]) {
+        selectUniverseItem(val);
+        input.value = '';
+        return;
+      }
+
+      showToast(`[${val}] 과거 15년치 일봉 데이터를 실시간 수집 중...`);
+      try {
+        const resp = await fetch(`${GAS_WEBAPP_URL}?action=fetch_ticker_history&ticker=${encodeURIComponent(val)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.success && data.dates && data.dates.length > 0) {
+            // Align dates to etfDataset
+            const dateMap = {};
+            for (let i = 0; i < data.dates.length; i++) {
+              dateMap[data.dates[i]] = data.adjClose[i];
+            }
+
+            const alignedAdj = [];
+            let lastVal = data.adjClose[0];
+            for (const d of etfDataset.dates) {
+              if (dateMap[d] !== undefined) {
+                lastVal = dateMap[d];
+              }
+              alignedAdj.push(lastVal);
+            }
+
+            if (!etfDataset.universe) etfDataset.universe = {};
+            etfDataset.universe[val] = {
+              ticker: val,
+              name: data.name || val,
+              currency: data.currency || "USD",
+              adjClose: alignedAdj,
+              latestPrice: data.latestPrice
+            };
+
+            showToast(`✅ [${val}] 데이터 로드 완료! 포트폴리오에 추가되었습니다.`);
+            selectUniverseItem(val);
+            input.value = '';
+            return;
+          }
+        }
+        showToast(`⚠️ [${val}] 티커 정보를 찾을 수 없습니다. (미국 티커는 VOO, 한국 티커는 069500.KS 형태로 입력)`);
+      } catch (err) {
+        showToast(`⚠️ 통신 오류: ${err.message}`);
       }
     }
 
