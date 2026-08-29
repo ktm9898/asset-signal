@@ -1061,11 +1061,14 @@
 
       <!-- Strategy Preset Slots & Integrated Control Toolbar -->
       <div class="slots-wrapper">
-        <div class="slots-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-          <div class="slots-title" style="display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-layer-group text-primary"></i> <span>전략 슬롯</span>
+        <div class="slots-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
+          <div class="slots-title" style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; overflow: hidden;">
+            <i class="fa-solid fa-layer-group text-primary" style="flex-shrink: 0;"></i>
+            <span style="font-weight: 800; font-size: 13.5px; white-space: nowrap; flex-shrink: 0;">전략 슬롯 :</span>
+            <span id="overviewSlotNameText" style="font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">#1. 나스닥100 동적 계단식</span>
+            <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none; flex-shrink: 0;">ACTIVE</span>
           </div>
-          <div class="slot-actions-bar" style="display: flex; align-items: center; gap: 6px;">
+          <div class="slot-actions-bar" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
             <button class="nav-btn btn-sm btn-primary" onclick="openSaveStrategyModal()" title="저장">
               <i class="fa-solid fa-floppy-disk"></i> <span class="nav-text">저장</span>
             </button>
@@ -1079,17 +1082,6 @@
               <i class="fa-solid fa-bolt"></i> <span class="nav-text">전략적용</span>
             </button>
           </div>
-        </div>
-        <!-- Current Strategy Row -->
-        <div id="currentSlotOverviewRow" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 4px; gap: 8px;">
-          <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; overflow: hidden;">
-            <span id="overviewSlotNumberBadge" class="brand-badge" style="background: #eff6ff; color: var(--primary); border: 1px solid #bfdbfe; font-size: 11px; padding: 2px 6px; font-weight: 800; flex-shrink: 0;">#1</span>
-            <span id="overviewSlotNameText" style="font-weight: 700; font-size: 13.5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">나스닥100 동적 계단식</span>
-            <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none; flex-shrink: 0;">ACTIVE</span>
-          </div>
-          <button class="nav-btn btn-sm" onclick="openLoadStrategyModal()" style="font-size: 11px; padding: 3px 8px; flex-shrink: 0;">
-            슬롯 변경 <i class="fa-solid fa-chevron-right" style="font-size: 9px;"></i>
-          </button>
         </div>
       </div>
 
@@ -1865,10 +1857,8 @@
     // ==========================================
     function renderSlotsNav() {
       const cur = getCurrentSlot();
-      const numBadge = document.getElementById('overviewSlotNumberBadge');
-      if (numBadge) numBadge.textContent = `#${cur.id}`;
       const nameText = document.getElementById('overviewSlotNameText');
-      if (nameText) nameText.textContent = cur.name || `전략 ${cur.id}`;
+      if (nameText) nameText.textContent = `#${cur.id}. ${cur.name || `전략 ${cur.id}`}`;
       const actBadge = document.getElementById('overviewSlotActiveBadge');
       if (actBadge) actBadge.style.display = (cur.id === activeSlotId) ? 'inline-block' : 'none';
 
@@ -2136,10 +2126,8 @@
       document.getElementById('cfgGainThreshold').value = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20;
       document.getElementById('cfgFeeRate').value = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate : s.feeRate * 100) : 0.15;
 
-      const numBadge = document.getElementById('overviewSlotNumberBadge');
-      if (numBadge) numBadge.textContent = `#${s.id}`;
       const nameText = document.getElementById('overviewSlotNameText');
-      if (nameText) nameText.textContent = s.name || `전략 ${s.id}`;
+      if (nameText) nameText.textContent = `#${s.id}. ${s.name || `전략 ${s.id}`}`;
       const actBadge = document.getElementById('overviewSlotActiveBadge');
       if (actBadge) actBadge.style.display = (s.id === activeSlotId) ? 'inline-block' : 'none';
 
