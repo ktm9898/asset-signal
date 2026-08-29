@@ -1017,13 +1017,28 @@
 
           <!-- Interactive Chart Panel -->
           <div class="chart-panel">
-            <div class="chart-header">
-              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <div style="font-weight: 700; font-size: 15px;">
+            <div class="chart-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
+              <!-- Row 1: Title (Left) + Chart View Tabs (Right) -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;">
                   <i class="fa-solid fa-chart-line text-primary"></i> 백테스트 성과 분석
                 </div>
-                <!-- Period Selector & Custom Date Picker -->
-                <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <div class="chart-tabs">
+                  <button class="chart-tab active" onclick="switchChartTab('nav')">
+                    <i class="fa-solid fa-chart-line"></i> 자산 성장 곡선
+                  </button>
+                  <button class="chart-tab" onclick="switchChartTab('drawdown')">
+                    <i class="fa-solid fa-chart-area"></i> 고점 대비 낙폭
+                  </button>
+                </div>
+              </div>
+
+              <!-- Row 2: Period Selector & Custom Date Picker (Below Title) -->
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color);">
+                <div style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="font-size: 12px; font-weight: 700; color: var(--text-main); display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-regular fa-calendar text-primary"></i> 기간 설정:
+                  </span>
                   <div class="period-tabs">
                     <button class="period-tab active" id="periodBtn_ALL" onclick="setBacktestPeriod('ALL')">전체(MAX)</button>
                     <button class="period-tab" id="periodBtn_10Y" onclick="setBacktestPeriod('10Y')">10년</button>
@@ -1037,14 +1052,6 @@
                     <input type="date" id="customEndDate" class="date-picker-input" onchange="onCustomDateChange()">
                   </div>
                 </div>
-              </div>
-              <div class="chart-tabs">
-                <button class="chart-tab active" onclick="switchChartTab('nav')">
-                  <i class="fa-solid fa-chart-line"></i> 자산 성장 곡선
-                </button>
-                <button class="chart-tab" onclick="switchChartTab('drawdown')">
-                  <i class="fa-solid fa-chart-area"></i> 고점 대비 낙폭
-                </button>
               </div>
             </div>
 
