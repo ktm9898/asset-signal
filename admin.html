@@ -943,28 +943,15 @@
             </button>
           </div>
 
-          <!-- Drawdown Drop Stages -->
+          <!-- Unified Drawdown Adjustment Stages -->
           <div class="form-group">
             <div class="form-label">
-              <span>낙폭 진입 국면</span>
+              <span>하락 / 복귀 조정 단계</span>
               <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addDropStage()">
-                <i class="fa-solid fa-plus"></i> 하락단계
+                <i class="fa-solid fa-plus"></i> 단계 추가
               </button>
             </div>
             <div id="dropStagesContainer">
-              <!-- Rendered dynamically -->
-            </div>
-          </div>
-
-          <!-- Staircase Recovery Stages -->
-          <div class="form-group">
-            <div class="form-label">
-              <span>계단식 복귀 국면</span>
-              <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addRecoveryStage()">
-                <i class="fa-solid fa-plus"></i> 복귀단계
-              </button>
-            </div>
-            <div id="recoveryStagesContainer">
               <!-- Rendered dynamically -->
             </div>
           </div>
@@ -1390,22 +1377,15 @@
       {
         id: 1,
         name: "나스닥100 동적 계단식 (QQQ/QLD/TQQQ/SCHD)",
-        memo: "평시 QQQ 60:SCHD 40 유지, 나스닥 -20%/-30%/-40% 하락 시 2X/3X 레버리지 분할 매수 및 반등 시 계단식 선제 익절",
+        memo: "평시 QQQ 60:SCHD 40 유지, 나스닥 -20%/-30%/-40% 하락 시 2X/3X 레버리지 분할 매수 및 반등 시 선을 넘으면 계단식 원복",
         benchmark: "^NDX",
         baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
         dropStages: [
-          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락"},
-          {"threshold": -30.0, "weights": {"QQQ": 0.30, "QLD": 0.30, "TQQQ": 0.20, "SCHD": 0.20}, "name": "2차 하락"},
-          {"threshold": -40.0, "weights": {"QQQ": 0.20, "QLD": 0.30, "TQQQ": 0.40, "SCHD": 0.10}, "name": "3차 하락"}
-        ],
-        recoveryStages: [
-          {"fromDrop": -40.0, "recovery": -25.0, "weights": {"QQQ": 0.35, "QLD": 0.30, "TQQQ": 0.15, "SCHD": 0.20}, "name": "1단계 반등"},
-          {"fromDrop": -30.0, "recovery": -15.0, "weights": {"QQQ": 0.45, "QLD": 0.25, "TQQQ": 0.00, "SCHD": 0.30}, "name": "2단계 반등"},
-          {"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "TQQQ": 0.00, "SCHD": 0.40}, "name": "3단계 반등"}
+          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-20%)"},
+          {"threshold": -30.0, "weights": {"QQQ": 0.30, "QLD": 0.30, "TQQQ": 0.20, "SCHD": 0.20}, "name": "2차 하락 (-30%)"},
+          {"threshold": -40.0, "weights": {"QQQ": 0.20, "QLD": 0.30, "TQQQ": 0.40, "SCHD": 0.10}, "name": "3차 하락 (-40%)"}
         ],
         gainThresholdPct: 20.0,
-        toleranceBandPct: 5.0,
-        cooldownDays: 5,
         feeRate: 0.15
       },
       {
@@ -1415,16 +1395,10 @@
         benchmark: "^NDX",
         baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
         dropStages: [
-          {"threshold": -15.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락"},
-          {"threshold": -25.0, "weights": {"QQQ": 0.20, "QLD": 0.60, "SCHD": 0.20}, "name": "2차 하락"}
-        ],
-        recoveryStages: [
-          {"fromDrop": -25.0, "recovery": -10.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1단계 반등"},
-          {"fromDrop": -15.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "2단계 반등"}
+          {"threshold": -15.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-15%)"},
+          {"threshold": -25.0, "weights": {"QQQ": 0.20, "QLD": 0.60, "SCHD": 0.20}, "name": "2차 하락 (-25%)"}
         ],
         gainThresholdPct: 20.0,
-        toleranceBandPct: 5.0,
-        cooldownDays: 5,
         feeRate: 0.15
       },
       {
@@ -1434,16 +1408,10 @@
         benchmark: "^GSPC",
         baseWeights: {"SPY": 0.50, "SCHD": 0.50},
         dropStages: [
-          {"threshold": -15.0, "weights": {"SPY": 0.30, "UPRO": 0.30, "SCHD": 0.40}, "name": "1차 하락"},
-          {"threshold": -25.0, "weights": {"SPY": 0.20, "UPRO": 0.30, "TQQQ": 0.30, "SCHD": 0.20}, "name": "2차 하락"}
-        ],
-        recoveryStages: [
-          {"fromDrop": -25.0, "recovery": -10.0, "weights": {"SPY": 0.35, "UPRO": 0.25, "TQQQ": 0.00, "SCHD": 0.40}, "name": "1단계 반등"},
-          {"fromDrop": -15.0, "recovery": -5.0, "weights": {"SPY": 0.50, "UPRO": 0.00, "TQQQ": 0.00, "SCHD": 0.50}, "name": "2단계 반등"}
+          {"threshold": -15.0, "weights": {"SPY": 0.30, "UPRO": 0.30, "SCHD": 0.40}, "name": "1차 하락 (-15%)"},
+          {"threshold": -25.0, "weights": {"SPY": 0.20, "UPRO": 0.30, "TQQQ": 0.30, "SCHD": 0.20}, "name": "2차 하락 (-25%)"}
         ],
         gainThresholdPct: 20.0,
-        toleranceBandPct: 5.0,
-        cooldownDays: 5,
         feeRate: 0.15
       }
     ];
@@ -1456,14 +1424,9 @@
         benchmark: "^NDX",
         baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
         dropStages: [
-          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락"}
-        ],
-        recoveryStages: [
-          {"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "1단계 반등"}
+          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-20%)"}
         ],
         gainThresholdPct: 20.0,
-        toleranceBandPct: 5.0,
-        cooldownDays: 5,
         feeRate: 0.15
       });
     }
@@ -1666,7 +1629,6 @@
 
       renderBaseWeightsTable(s.baseWeights || {});
       renderDropStages(s.dropStages || []);
-      renderRecoveryStages(s.recoveryStages || []);
     }
 
     // ==========================================
@@ -1722,59 +1684,56 @@
         const pct = Math.round(w * 100);
         totalPct += pct;
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${formatTickerDisplay(ticker)}</strong></td>
-          <td style="text-align: right;">
-            <input type="number" class="weight-input" value="${pct}" min="0" max="100" 
-              onchange="updateBaseWeight('${ticker}', this.value)"> %
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>
+            <div style="font-weight: 700;">${formatTickerDisplay(ticker)}</div>
+            <div style="font-size: 11px; color: var(--text-dim);">${etfDataset?.universe[ticker]?.name || ticker}</div>
           </td>
-          <td style="text-align: right; width: 30px;">
-            <button class="btn-icon-del" onclick="deleteBaseWeight('${ticker}')"><i class="fa-solid fa-xmark"></i></button>
+          <td>
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
+              <input type="number" class="weight-input" value="${pct}" min="0" max="100" step="1" 
+                onchange="onBaseWeightChange('${ticker}', this.value)">
+              <span style="font-size: 12px; font-weight: 600;">%</span>
+            </div>
+          </td>
+          <td style="text-align: right;">
+            <button class="btn-icon-del" onclick="deleteBaseWeightRow('${ticker}')" title="삭제">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
           </td>
         `;
-        tbody.appendChild(tr);
+        tbody.appendChild(row);
       });
 
       const badge = document.getElementById('baseWeightSumBadge');
       badge.textContent = `합계 ${totalPct}%`;
-      badge.className = `weight-sum-badge ${totalPct === 100 ? 'weight-sum-ok' : 'weight-sum-err'}`;
+      if (totalPct === 100) {
+        badge.className = 'weight-sum-badge weight-sum-ok';
+      } else {
+        badge.className = 'weight-sum-badge weight-sum-err';
+      }
     }
 
-    function updateBaseWeight(ticker, val) {
+    function onBaseWeightChange(ticker, val) {
       const s = getCurrentSlot();
-      if (!s.baseWeights) s.baseWeights = {};
-      const numVal = parseFloat(val) || 0;
-      s.baseWeights = autoNormalizeBaseWeights(s.baseWeights, ticker, numVal);
+      const newPct = parseFloat(val) || 0;
+      s.baseWeights = autoNormalizeBaseWeights(s.baseWeights || {}, ticker, newPct);
       saveLocalSlots();
       renderBaseWeightsTable(s.baseWeights);
     }
 
-    function deleteBaseWeight(ticker) {
+    function deleteBaseWeightRow(ticker) {
       const s = getCurrentSlot();
       if (s.baseWeights && s.baseWeights[ticker] !== undefined) {
         delete s.baseWeights[ticker];
-        const remaining = Object.keys(s.baseWeights);
-        if (remaining.length > 0) {
-          const currentSum = remaining.reduce((sum, t) => sum + Math.max(0, Math.round((s.baseWeights[t] || 0) * 100)), 0);
-          if (currentSum > 0) {
-            let allocated = 0;
-            remaining.forEach((t, i) => {
-              if (i === remaining.length - 1) {
-                s.baseWeights[t] = (100 - allocated) / 100.0;
-              } else {
-                const p = Math.round((Math.round(s.baseWeights[t] * 100) / currentSum) * 100);
-                s.baseWeights[t] = p / 100.0;
-                allocated += p;
-              }
-            });
-          } else {
-            const equalShare = Math.floor(100 / remaining.length);
-            const remainder = 100 % remaining.length;
-            remaining.forEach((t, i) => {
-              s.baseWeights[t] = (equalShare + (i < remainder ? 1 : 0)) / 100.0;
-            });
-          }
+        const keys = Object.keys(s.baseWeights);
+        if (keys.length > 0) {
+          const share = Math.floor(100 / keys.length);
+          const remainder = 100 % keys.length;
+          keys.forEach((k, i) => {
+            s.baseWeights[k] = (share + (i < remainder ? 1 : 0)) / 100.0;
+          });
         }
         saveLocalSlots();
         renderBaseWeightsTable(s.baseWeights);
@@ -1848,7 +1807,7 @@
     }
 
     // ==========================================
-    // Drop & Recovery Stages UI (Flexible Asset Management)
+    // Unified Drawdown Adjustment Stages UI (Hysteresis Ladder)
     // ==========================================
     function renderDropStages(stages) {
       const container = document.getElementById('dropStagesContainer');
@@ -1878,9 +1837,9 @@
         card.innerHTML = `
           <div class="stage-card-header">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="stage-badge-drop">${idx + 1}차 하락</span>
+              <span class="stage-badge-drop">${idx + 1}차 하락 (${stg.threshold}%)</span>
               <div style="display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700;">
-                <span style="color: var(--text-dim); font-size: 11px;">낙폭:</span>
+                <span style="color: var(--text-dim); font-size: 11px;">임계값:</span>
                 <input type="number" class="weight-input" style="width: 55px; padding: 2px 4px; font-size: 11px; text-align: center;" 
                   value="${stg.threshold}" step="1" max="0" 
                   onchange="updateDropStageThreshold(${idx}, this.value)"> %
@@ -1907,7 +1866,7 @@
         if (num > 0) num = -num;
         s.dropStages[idx].threshold = num;
         s.dropStages.sort((a, b) => b.threshold - a.threshold);
-        s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락`);
+        s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락 (${stg.threshold}%)`);
         saveLocalSlots();
         renderDropStages(s.dropStages);
       }
@@ -1917,17 +1876,17 @@
       const s = getCurrentSlot();
       if (!s.dropStages) s.dropStages = [];
       const nextIdx = s.dropStages.length + 1;
-      const threshold = prompt(`하락 ${nextIdx}차 기준 낙폭을 입력하세요 (예: -20, -30, -40):`, `-${nextIdx * 10}`);
+      const threshold = prompt(`하락 ${nextIdx}차 기준 낙폭을 입력하세요 (예: -15, -25, -35):`, `-${nextIdx * 10}`);
       if (threshold !== null) {
         const thNum = -Math.abs(parseFloat(threshold));
         const initWeights = Object.keys(s.baseWeights || {}).length > 0 ? { ...s.baseWeights } : { "QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30 };
         s.dropStages.push({
           threshold: thNum,
-          name: `${nextIdx}차 하락`,
+          name: `${nextIdx}차 하락 (${thNum}%)`,
           weights: initWeights
         });
         s.dropStages.sort((a, b) => b.threshold - a.threshold);
-        s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락`);
+        s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락 (${stg.threshold}%)`);
         saveLocalSlots();
         renderDropStages(s.dropStages);
       }
@@ -1936,7 +1895,7 @@
     function deleteDropStage(idx) {
       const s = getCurrentSlot();
       s.dropStages.splice(idx, 1);
-      s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락`);
+      s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락 (${stg.threshold}%)`);
       saveLocalSlots();
       renderDropStages(s.dropStages);
     }
@@ -2211,16 +2170,11 @@
 
       const stratNAV = new Float64Array(numDays);
       const rebalanceEvents = [];
-      let currentState = "기본 (정상 운용)";
-      let currentDropLevel = 0;
-      let deepestDrop = 0.0;
-      let executedRecLevels = new Set();
+      let currentStageIdx = -1; // -1: Base Normal State (기본), 0: 1차 하락, 1: 2차 하락...
       let lastRebalanceDay = 0;
       let lastRebalanceNAV = initialCapital;
-      const cooldownDays = 5;
 
-      const sortedDrops = [...(s.dropStages || [])].sort((a, b) => b.threshold - a.threshold); // e.g. -20%, -30%, -40%
-      const sortedRecs = [...(s.recoveryStages || [])].sort((a, b) => a.recovery - b.recovery); // e.g. -25%, -15%, -5%
+      const stages = [...(s.dropStages || [])].sort((a, b) => b.threshold - a.threshold); // e.g. -15%, -25%, -35%
 
       for (let day = 0; day < numDays; day++) {
         let currentNAV = 0;
@@ -2230,65 +2184,62 @@
         stratNAV[day] = currentNAV;
 
         const currentBM_DD = bmDrawdowns[day];
-        if (currentBM_DD < deepestDrop) deepestDrop = currentBM_DD;
 
         let targetWeights = null;
         let triggerReason = null;
-        let nextState = currentState;
+        let nextStageIdx = currentStageIdx;
         const daysSinceRebal = day - lastRebalanceDay;
 
-        // 1. Check Progressive Drop Stages (Escalation)
-        let nextDropLevel = 0;
-        for (let i = 0; i < sortedDrops.length; i++) {
-          if (currentBM_DD <= sortedDrops[i].threshold) {
-            nextDropLevel = i + 1;
-          }
-        }
-
-        if (nextDropLevel > currentDropLevel) {
-          const drop = sortedDrops[nextDropLevel - 1];
-          targetWeights = normalizeWeights(drop.weights);
-          triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}%`;
-          nextState = drop.name || `${nextDropLevel}차 하락`;
-          currentDropLevel = nextDropLevel;
-          executedRecLevels.clear();
-        } else if (currentDropLevel > 0) {
-          // 2. Check Progressive Recovery Stages (De-escalation)
-          for (let j = 0; j < sortedRecs.length; j++) {
-            const rec = sortedRecs[j];
-            const recLevel = j + 1;
-            const recTarget = rec.recovery !== undefined ? rec.recovery : 0;
-            // The market must have fallen below this recovery threshold, and now bounced back above it
-            const minDropRequired = rec.fromDrop !== undefined ? rec.fromDrop : (recTarget - 1.0);
-
-            if (!executedRecLevels.has(recLevel) && deepestDrop <= minDropRequired && currentBM_DD >= (recTarget - 0.2) && (daysSinceRebal >= cooldownDays || executedRecLevels.size === 0)) {
-              targetWeights = normalizeWeights(rec.weights);
-              triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}%`;
-              nextState = rec.name || `${recLevel}단계 반등`;
-              executedRecLevels.add(recLevel);
-              break;
+        if (stages.length > 0) {
+          if (currentStageIdx < 0) {
+            // In Base State: Check if market falls below any drop threshold
+            let deepestIdx = -1;
+            for (let i = 0; i < stages.length; i++) {
+              if (currentBM_DD <= stages[i].threshold) {
+                deepestIdx = i;
+              }
             }
-          }
-
-          // When benchmark completely recovers to All-Time High (0%), return to Normal Base State
-          if (!targetWeights && currentBM_DD >= -0.5 && currentState !== "기본 (정상 운용)") {
-            // Only rebalance if weights differ from base
-            targetWeights = normalizeWeights(s.baseWeights);
-            triggerReason = `[기본 복귀] 0.0% (고점 회복)`;
-            nextState = "기본 (정상 운용)";
-            currentDropLevel = 0;
-            deepestDrop = 0.0;
-            executedRecLevels.clear();
+            if (deepestIdx >= 0) {
+              nextStageIdx = deepestIdx;
+              targetWeights = normalizeWeights(stages[deepestIdx].weights);
+              triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}% (${stages[deepestIdx].name || (deepestIdx + 1) + '차 하락'} 진입)`;
+            }
+          } else {
+            // Already in a stage:
+            // 1. Check if market drops deeper (하향 돌파)
+            let deeperIdx = currentStageIdx;
+            for (let i = currentStageIdx + 1; i < stages.length; i++) {
+              if (currentBM_DD <= stages[i].threshold) {
+                deeperIdx = i;
+              }
+            }
+            if (deeperIdx > currentStageIdx) {
+              nextStageIdx = deeperIdx;
+              targetWeights = normalizeWeights(stages[deeperIdx].weights);
+              triggerReason = `[낙폭 심화] ${currentBM_DD.toFixed(1)}% (${stages[deeperIdx].name || (deeperIdx + 1) + '차 하락'} 진입)`;
+            } else {
+              // 2. Check if market rebounds above previous stage threshold (상향 돌파)
+              const upperBarrier = currentStageIdx === 0 ? -0.5 : stages[currentStageIdx - 1].threshold;
+              if (currentBM_DD >= upperBarrier) {
+                nextStageIdx = currentStageIdx - 1;
+                if (nextStageIdx < 0) {
+                  targetWeights = normalizeWeights(s.baseWeights);
+                  triggerReason = `[고점 복귀] ${currentBM_DD.toFixed(1)}% (기본 비중 원복)`;
+                } else {
+                  targetWeights = normalizeWeights(stages[nextStageIdx].weights);
+                  triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% (${stages[nextStageIdx].name || (nextStageIdx + 1) + '차 하락'} 복귀)`;
+                }
+              }
+            }
           }
         }
 
         // 3. Check Gain Rebalance (Only in Base Normal State)
-        if (!targetWeights && currentState === "기본 (정상 운용)" && daysSinceRebal >= 20) {
+        if (!targetWeights && currentStageIdx < 0 && daysSinceRebal >= 20) {
           const navGainPct = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
           if (s.gainThresholdPct > 0 && navGainPct >= s.gainThresholdPct) {
             targetWeights = normalizeWeights(s.baseWeights);
             triggerReason = `[이익실현] +${navGainPct.toFixed(1)}%`;
-            nextState = "기본 (이익실현)";
           }
         }
 
@@ -2309,14 +2260,15 @@
             holdings[t] = prices[t][day] > 0 ? tgtVal / prices[t][day] : 0;
           });
 
-          currentState = nextState;
+          currentStageIdx = nextStageIdx;
           lastRebalanceDay = day;
           lastRebalanceNAV = netNAV;
+          const stateName = currentStageIdx < 0 ? "기본 (정상 운용)" : (stages[currentStageIdx].name || `${currentStageIdx + 1}차 단계`);
 
           rebalanceEvents.push({
             date: dates[day],
             reason: triggerReason,
-            state: currentState,
+            state: stateName,
             benchmarkDD: currentBM_DD.toFixed(1),
             nav: Math.round(netNAV),
             weights: Object.fromEntries(Object.entries(targetWeights).map(([k, v]) => [formatTickerDisplay(k), Math.round(v * 100)]))
