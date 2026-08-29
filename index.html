@@ -1,0 +1,3154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockSignal - KOSPI 200 ADX 매매 신호 트래커</title>
+  <!-- PWA Mobile App Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0e17">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="StockSignal">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --bg-dark: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --accent-cyan: #2563eb;
+      --accent-blue: #0284c7;
+      --accent-green: #059669;
+      --accent-red: #dc2626;
+      --accent-warning: #d97706;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --badge-tier1: linear-gradient(135deg, #10b981, #059669);
+      --badge-tier2: linear-gradient(135deg, #0284c7, #2563eb);
+      --badge-tier3: linear-gradient(135deg, #6366f1, #4f46e5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      overflow-y: scroll; /* Lock scrollbar space to prevent layout shift */
+      overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
+    }
+    body {
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding-bottom: 40px;
+      overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
+    }
+
+    /* Header */
+    header {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky; top: 0; z-index: 100;
+      padding: 12px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; color: #0f172a; }
+    .brand-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, #2563eb, #0284c7);
+      display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1rem;
+    }
+
+    .header-right-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .time-badge {
+      font-size: 0.78rem; color: #64748b; background: #f1f5f9;
+      padding: 4px 10px; border-radius: 12px; border: 1px solid #cbd5e1;
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .pulse-dot {
+      width: 6px; height: 6px; border-radius: 50%; background-color: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .btn-header-refresh {
+      background: #ffffff; border: 1px solid #cbd5e1; color: #475569;
+      width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .btn-header-refresh:hover { background: #f1f5f9; color: #2563eb; }
+
+    .btn-admin-nav {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-admin-nav:hover {
+      background: linear-gradient(135deg, #4338ca, #6d28d9);
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+      transform: translateY(-1px);
+    }
+
+    /* Layout Containers */
+    .container { max-width: 1280px; margin: 16px auto; padding: 0 20px; }
+
+    /* Summary Metric Cards (3 Compact Cards Layout) */
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; margin-bottom: 16px;
+    }
+    .metric-card {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 14px; padding: 12px 16px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+      min-height: 82px;
+      position: relative;
+    }
+    .metric-title {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      font-size: 0.90rem; font-weight: 700; color: #334155; white-space: nowrap;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .metric-value {
+      font-size: 2.25rem; font-weight: 800; color: #0f172a; line-height: 1;
+      display: flex; align-items: baseline; justify-content: center; text-align: center; width: 100%;
+      margin-top: 6px;
+    }
+    .metric-num-box {
+      position: relative;
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+    }
+    .metric-sub-badge {
+      position: absolute;
+      left: 100%;
+      margin-left: 6px;
+      bottom: 3px;
+      white-space: nowrap;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+    .metric-icon {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px; height: 36px; border-radius: 10px; background: #eff6ff;
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #2563eb;
+      flex-shrink: 0;
+    }
+    .label-desktop { display: inline; }
+    .label-mobile { display: none; }
+
+    /* Navigation & Strategy Row (PC: Strategy on Left, Tabs on Right) */
+    .nav-control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 10px;
+    }
+
+    .desktop-strategy-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 4px 10px 4px 4px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .desktop-strategy-bar:hover {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      transform: translateY(-1px);
+    }
+    .desktop-strategy-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+    }
+
+    .btn-strategy-pill {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 6px 13px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(37, 99, 235, 0.22);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-strategy-pill:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    /* Tab Navigation (Aligned Right on Desktop) */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin: 0;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .tab-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text-sub);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+    }
+
+    /* Mobile Strategy Bar (Under Header, Visible on Mobile Only - Exactly matches PC style) */
+    .mobile-strategy-bar {
+      display: none;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 4px 10px 4px 4px;
+      margin-bottom: 12px;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+    .mobile-strategy-bar:active {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+    .mobile-strategy-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    /* Custom Modern Strategy Dropdown in Modal */
+    .custom-strategy-trigger {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    .custom-strategy-trigger:hover {
+      border-color: #93c5fd;
+      background: #f8fafc;
+    }
+    .custom-strategy-slot-badge {
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1px solid #bfdbfe;
+      white-space: nowrap;
+    }
+    .custom-strategy-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+      max-height: 280px;
+      overflow-y: auto;
+      z-index: 10001;
+      padding: 6px;
+      box-sizing: border-box;
+      animation: fadeInDropdown 0.15s ease-out;
+    }
+    @keyframes fadeInDropdown {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .custom-strategy-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1e293b;
+      transition: background 0.15s;
+    }
+    .custom-strategy-item:hover {
+      background: #f1f5f9;
+    }
+    .custom-strategy-item.active {
+      background: #eff6ff;
+      color: #2563eb;
+      font-weight: 700;
+    }
+    .custom-strategy-item.is-empty {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* Modal Action Buttons */
+    .modal-btn-grid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 10px !important;
+      width: 100% !important;
+      margin-top: 12px !important;
+      box-sizing: border-box !important;
+    }
+    .btn-modal-action-quant {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+      color: #ffffff !important;
+      padding: 12px 0 !important;
+      border-radius: 10px !important;
+      font-size: 0.92rem !important;
+      font-weight: 700 !important;
+      text-decoration: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25) !important;
+      transition: all 0.2s ease !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      border: none !important;
+      cursor: pointer !important;
+      text-align: center !important;
+    }
+    .btn-modal-action-quant:hover {
+      background: linear-gradient(135deg, #4338ca, #6d28d9) !important;
+    }
+    .btn-modal-action-apply {
+      background: linear-gradient(135deg, #2563eb, #0284c7) !important;
+      color: #ffffff !important;
+      padding: 12px 0 !important;
+      border-radius: 10px !important;
+      font-size: 0.92rem !important;
+      font-weight: 700 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+      transition: all 0.2s ease !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      border: none !important;
+      cursor: pointer !important;
+      text-align: center !important;
+    }
+    .btn-modal-action-apply:hover {
+      background: linear-gradient(135deg, #1d4ed8, #0369a1) !important;
+    }
+
+    /* Metric Cards Clickable Style */
+    .metric-card.clickable {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .metric-card.clickable:hover {
+      border-color: #93c5fd;
+      background: #f8fafc;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+    }
+    .metric-card.active-tab-card {
+      border-color: #3b82f6;
+      background: #eff6ff;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Tables */
+    .table-container {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; table-layout: fixed; }
+    th {
+      background: #f8fafc; color: #475569;
+      font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+      padding: 10px 6px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;
+      text-align: center;
+    }
+    td { padding: 10px 6px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+
+    /* Exact Fixed Column Widths for All Tab Tables */
+    .stocks-metric-table,
+    .buy-signals-table,
+    .sell-signals-table,
+    .holdings-table {
+      width: 100% !important;
+      min-width: 860px !important;
+      table-layout: fixed !important;
+    }
+    .stocks-metric-table .col-stock-name { width: 140px; }
+    .stocks-metric-table .col-ind-adx { width: 54px; }
+    .stocks-metric-table .col-ind-mdi { width: 54px; }
+    .stocks-metric-table .col-ind-pdi { width: 54px; }
+    .stocks-metric-table .col-ind-rsi { width: 54px; }
+    .stocks-metric-table .col-ind-bb { width: 54px; }
+    .stocks-metric-table .col-ind-macd { width: 64px; }
+    .stocks-metric-table .col-ind-stoch { width: 84px; }
+    .stocks-metric-table .col-ind-disp { width: 64px; }
+    .stocks-metric-table .col-ind-vr { width: 60px; }
+    .stocks-metric-table .col-price { width: 76px; }
+    .stocks-metric-table .col-status { width: 70px; }
+
+    /* Badges & Action Buttons */
+    .badge {
+      display: inline-block; padding: 4px 10px; border-radius: 16px;
+      font-size: 0.75rem; font-weight: 700; color: #fff; cursor: pointer;
+    }
+    .badge-t1 { background: var(--badge-tier1); }
+    .badge-t2 { background: var(--badge-tier2); }
+    .badge-t3 { background: var(--badge-tier3); }
+    .badge-scale-in { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; }
+    .badge-neutral { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; font-weight: 500; }
+    .badge-sell-warn { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-sell-exit { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .badge-sell-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+    .btn-buy-reg {
+      background: linear-gradient(135deg, #2563eb, #0284c7);
+      color: #fff; border: none; border-radius: 8px; padding: 6px 14px;
+      font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: transform 0.1s;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+    }
+    .btn-buy-reg:hover { transform: translateY(-1px); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal-content {
+      background: #ffffff; border: 1px solid #e2e8f0;
+      border-radius: 20px; width: 90%; max-width: 500px; padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15); color: #0f172a;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-title { font-size: 1.2rem; font-weight: 700; color: #0f172a; }
+    .close-btn { background: none; border: none; color: var(--text-sub); font-size: 1.4rem; cursor: pointer; }
+
+    .form-group { margin-bottom: 16px; position: relative; }
+    .form-label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 6px; }
+    .form-input {
+      width: 100%; background: #f8fafc; border: 1px solid #cbd5e1;
+      border-radius: 10px; padding: 10px 14px; color: #0f172a; font-size: 1rem;
+    }
+    .search-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      z-index: 999;
+      margin-top: 4px;
+    }
+    .search-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.9rem;
+    }
+    .search-item:last-child { border-bottom: none; }
+    .search-item:hover {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+    .btn-manual-exec {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #2563eb;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-manual-exec:hover { background: #dbeafe; }
+
+    /* Mobile Responsive & App-like Navigation Optimizations */
+    @media (max-width: 768px) {
+      body {
+        padding-bottom: 70px;
+      }
+      header {
+        padding: 10px 0;
+      }
+      .brand { font-size: 1.05rem; }
+      .header-right-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .time-badge { display: none; }
+
+      .header-right-group .btn-header-refresh,
+      .header-right-group .btn-manual-exec,
+      .header-right-group .btn-admin-nav {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 8px !important;
+        font-size: 0.95rem !important;
+        box-sizing: border-box !important;
+      }
+      .header-right-group .btn-header-refresh i,
+      .header-right-group .btn-manual-exec i,
+      .header-right-group .btn-admin-nav i {
+        margin: 0 !important;
+        font-size: 0.95rem !important;
+      }
+
+      .container { padding: 0 10px; margin: 10px auto; }
+      
+      .metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .metric-card {
+        padding: 8px 6px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
+        min-height: 56px;
+        position: relative;
+        gap: 2px;
+      }
+      .metric-title {
+        position: static;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: left;
+        width: 100%;
+      }
+      .metric-value {
+        font-size: 1.30rem;
+        font-weight: 800;
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        text-align: center;
+        width: 100%;
+        margin: 0;
+        line-height: 1.1;
+      }
+      .metric-num-box {
+        position: relative;
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: center;
+      }
+      .metric-sub-badge {
+        position: absolute;
+        left: 100%;
+        margin-left: 3px;
+        bottom: 1px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--text-sub);
+        white-space: nowrap;
+      }
+      .metric-icon { display: none; }
+
+      .label-desktop { display: none !important; }
+      .label-mobile { display: inline !important; }
+
+      /* Mobile App Bottom Fixed Navigation Bar (2 Market Tabs) */
+      .tabs {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 52px !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        backdrop-filter: blur(12px) !important;
+        border-top: 1px solid #e2e8f0 !important;
+        border-bottom: none !important;
+        z-index: 9999 !important;
+        display: flex !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        padding: 4px 8px !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06) !important;
+        box-sizing: border-box !important;
+      }
+      .tab-btn {
+        flex: 1 1 0px !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        font-size: 0.90rem !important;
+        font-weight: 700 !important;
+        padding: 8px 0 !important;
+        border-radius: 8px !important;
+        border: 1px solid #e2e8f0 !important;
+        background: #f8fafc !important;
+        color: #64748b !important;
+        white-space: nowrap !important;
+      }
+      .tab-btn i {
+        font-size: 0.95rem !important;
+      }
+      .tab-btn.active {
+        color: #2563eb !important;
+        background: #eff6ff !important;
+        border-color: #bfdbfe !important;
+        font-weight: 700 !important;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1) !important;
+      }
+
+      .mobile-strategy-bar {
+        display: flex !important;
+      }
+      .desktop-strategy-bar {
+        display: none !important;
+      }
+      .nav-control-row {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+      }
+
+      .table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 10px !important;
+      }
+      table { min-width: 780px !important; width: 100% !important; table-layout: fixed !important; }
+      th { font-size: 0.72rem !important; padding: 7px 4px !important; white-space: nowrap !important; }
+      td { font-size: 0.80rem !important; padding: 7px 4px !important; white-space: nowrap !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 1.1rem; font-weight: 700; color: #0f172a; line-height: 1.1;">StockSignal</span>
+          <span style="font-size: 0.7rem; color: #2563eb; font-weight: 600; margin-top: 1px;">KOSPI 200 & KOSDAQ 150</span>
+        </div>
+      </div>
+      <div class="header-right-group">
+        <div class="time-badge">
+          <div class="pulse-dot"></div>
+          <span id="sync-time">최근 갱신: -</span>
+        </div>
+        <button class="btn-header-refresh" onclick="refreshDataUI(this)" title="데이터 새로고침">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+        <button class="btn-manual-exec" id="manual-trigger-btn" onclick="triggerManualScreening()" title="수동 스크리닝 분석 실행">
+          <i class="fa-solid fa-play"></i> <span class="label-desktop">수동 실행</span>
+        </button>
+        <a href="admin.html" class="btn-admin-nav" title="퀀트 전략 커스텀 & 5년 백테스터">
+          <i class="fa-solid fa-sliders"></i> <span class="label-desktop">퀀트 랩</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Mobile Compact Strategy Bar (Shown on Mobile Only - Exactly like PC) -->
+    <div class="mobile-strategy-bar" onclick="openStrategyDetailModal()" title="클릭하여 전략 선택 및 조건 확인">
+      <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
+      <span class="mobile-strategy-name" id="current-strategy-name-mobile">전략 1. 기존 전략 1번</span>
+    </div>
+
+    <!-- Metric Overview (3 Clickable Cards Layout) -->
+    <div class="metrics-grid">
+      <div class="metric-card clickable active-tab-card" id="metric-card-buy" onclick="switchTab('buy-tab')" title="매수 신호 목록으로 이동">
+        <div class="metric-title">매수 신호 <i class="fa-solid fa-arrow-right" style="font-size: 0.65rem; opacity: 0.5; margin-left: 2px;"></i></div>
+        <div class="metric-value">
+          <div class="metric-num-box">
+            <span id="count-buy" style="color: var(--accent-green);">0</span>
+            <span id="count-watch-wrapper" class="metric-sub-badge" style="display: none;">
+              (<span class="label-desktop">관심 </span><span id="count-watch" style="color:#d97706; font-weight:700;">0</span>)
+            </span>
+          </div>
+        </div>
+        <div class="metric-icon"><i class="fa-solid fa-bullseye"></i></div>
+      </div>
+
+      <div class="metric-card clickable" id="metric-card-sell" onclick="switchTab('sell-signals-tab')" title="매도 신호 목록으로 이동">
+        <div class="metric-title">매도 신호 <i class="fa-solid fa-arrow-right" style="font-size: 0.65rem; opacity: 0.5; margin-left: 2px;"></i></div>
+        <div class="metric-value">
+          <div class="metric-num-box">
+            <span id="count-sell" style="color: var(--accent-red);">0</span>
+          </div>
+        </div>
+        <div class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      </div>
+
+      <div class="metric-card clickable" id="metric-card-holdings" onclick="switchTab('holdings-tab')" title="보유 종목 목록으로 이동">
+        <div class="metric-title">보유 종목 <i class="fa-solid fa-arrow-right" style="font-size: 0.65rem; opacity: 0.5; margin-left: 2px;"></i></div>
+        <div class="metric-value">
+          <div class="metric-num-box">
+            <span id="count-holdings" style="color: var(--accent-cyan);">0</span>
+            <span class="metric-sub-badge">
+              (<span class="label-desktop">수익 </span><span id="count-profit" style="color:var(--accent-red); font-weight:700;">0</span><span class="label-desktop"> / 손실 </span><span class="label-mobile"> / </span><span id="count-loss" style="color:var(--accent-blue); font-weight:700;">0</span>)
+            </span>
+          </div>
+        </div>
+        <div class="metric-icon"><i class="fa-solid fa-briefcase"></i></div>
+      </div>
+    </div>
+
+    <!-- Navigation & Strategy Row (PC: Strategy on Left, Market Tabs on Right) -->
+    <div class="nav-control-row">
+      <!-- Desktop Strategy Bar on Left -->
+      <div class="desktop-strategy-bar" onclick="openStrategyDetailModal()" title="클릭하여 전략 선택 및 조건 확인">
+        <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
+        <span class="desktop-strategy-name" id="current-strategy-name-desktop">전략 1. 기존 전략 1번</span>
+      </div>
+
+      <!-- Market Tabs Aligned to Right on PC -->
+      <div class="tabs">
+        <button class="tab-btn" onclick="switchTab('all-stocks-tab')">
+          <i class="fa-solid fa-list-ul"></i>
+          <span>코스피200</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('kosdaq-stocks-tab')">
+          <i class="fa-solid fa-chart-simple"></i>
+          <span>코스닥150</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab 1: Buy Signals -->
+    <!-- Tab 1: Buy Signals -->
+    <div id="buy-tab" class="tab-content">
+      <div class="table-container">
+        <table class="buy-signals-table">
+          <colgroup>
+            <col style="width: 75px;">
+            <col style="width: 155px;">
+            <col style="width: 75px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 56px;">
+            <col style="width: 68px;">
+            <col style="width: 75px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>포착 일시</th>
+              <th>종목</th>
+              <th>우선순위</th>
+              <th>ADX</th>
+              <th>-DI</th>
+              <th>+DI</th>
+              <th>RSI</th>
+              <th>BB</th>
+              <th>VR</th>
+              <th>현재가</th>
+              <th>액션</th>
+            </tr>
+          </thead>
+          <tbody id="buy-candidates-body">
+            <!-- Dynamic Content -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 2: Sell Signals History -->
+    <div id="sell-signals-tab" class="tab-content" style="display: none;">
+      <div class="table-container">
+        <table class="sell-signals-table">
+          <colgroup>
+            <col style="width: 75px;">
+            <col style="width: 140px;">
+            <col style="width: 76px;">
+            <col style="width: 76px;">
+            <col style="width: 72px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 56px;">
+            <col style="width: 75px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>포착 일시</th>
+              <th>종목</th>
+              <th>매수가</th>
+              <th>현재가</th>
+              <th>수익률</th>
+              <th>ADX</th>
+              <th>-DI</th>
+              <th>+DI</th>
+              <th>RSI</th>
+              <th>BB</th>
+              <th>VR</th>
+              <th>신호</th>
+            </tr>
+          </thead>
+          <tbody id="sell-signals-body">
+            <!-- Dynamic Content -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 3: User Holdings -->
+    <div id="holdings-tab" class="tab-content" style="display: none;">
+      <div class="table-container">
+        <table class="holdings-table">
+          <colgroup>
+            <col style="width: 58px;">
+            <col style="width: 140px;">
+            <col style="width: 76px;">
+            <col style="width: 76px;">
+            <col style="width: 72px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 54px;">
+            <col style="width: 56px;">
+            <col style="width: 72px;">
+            <col style="width: 58px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>등록일</th>
+              <th>종목</th>
+              <th>매수가</th>
+              <th>현재가</th>
+              <th>수익률</th>
+              <th>ADX</th>
+              <th>-DI</th>
+              <th>+DI</th>
+              <th>RSI</th>
+              <th>BB</th>
+              <th>VR</th>
+              <th>상태</th>
+              <th>삭제</th>
+            </tr>
+          </thead>
+          <tbody id="holdings-body">
+            <!-- Dynamic Content -->
+          </tbody>
+        </table>
+      </div>
+      <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 12px;">
+        <button class="btn-buy-reg" onclick="openRegisterModal()"><i class="fa-solid fa-plus"></i> 종목 추가</button>
+      </div>
+    </div>
+
+    <!-- Tab 4: KOSPI 200 Stocks Metrics -->
+    <div id="all-stocks-tab" class="tab-content" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap;">
+        <h3 style="font-weight: 600; font-size: 1rem;">KOSPI 200 지표</h3>
+        <input type="text" id="all-stocks-search" placeholder="🔍 종목 검색..." class="form-input" style="max-width: 180px; padding: 5px 10px; font-size: 0.82rem;" oninput="filterAllStocksTable()">
+      </div>
+      <div class="table-container">
+        <table class="stocks-metric-table">
+          <colgroup>
+            <col class="col-stock-name">
+            <col class="col-ind-adx">
+            <col class="col-ind-mdi">
+            <col class="col-ind-pdi">
+            <col class="col-ind-rsi">
+            <col class="col-ind-bb">
+            <col class="col-ind-macd">
+            <col class="col-ind-stoch">
+            <col class="col-ind-disp">
+            <col class="col-ind-vr">
+            <col class="col-price">
+            <col class="col-status">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>종목</th>
+              <th onclick="showIndicatorHelp('ADX')" title="클릭 시 ADX 지표 설명 보기">ADX <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('-DI')" title="클릭 시 -DI 지표 설명 보기">-DI <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('+DI')" title="클릭 시 +DI 지표 설명 보기">+DI <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('RSI')" title="클릭 시 RSI 지표 설명 보기">RSI <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('BB_Pct')" title="클릭 시 BB 지표 설명 보기">BB <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('MACD')" title="클릭 시 MACD 지표 설명 보기">MACD <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('STOCH')" title="클릭 시 STOCH 지표 설명 보기">STOCH <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('DISPARITY')" title="클릭 시 이격도 지표 설명 보기">이격도 <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('VOLUME')" title="클릭 시 VR 지표 설명 보기">VR <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th>현재가</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody id="all-stocks-body">
+            <!-- Dynamic Content -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 5: KOSDAQ 150 Stocks Metrics -->
+    <div id="kosdaq-stocks-tab" class="tab-content" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap;">
+        <h3 style="font-weight: 600; font-size: 1rem;">KOSDAQ 150 지표</h3>
+        <input type="text" id="kosdaq-stocks-search" placeholder="🔍 종목 검색..." class="form-input" style="max-width: 180px; padding: 5px 10px; font-size: 0.82rem;" oninput="filterKosdaqStocksTable()">
+      </div>
+      <div class="table-container">
+        <table class="stocks-metric-table">
+          <colgroup>
+            <col class="col-stock-name">
+            <col class="col-ind-adx">
+            <col class="col-ind-mdi">
+            <col class="col-ind-pdi">
+            <col class="col-ind-rsi">
+            <col class="col-ind-bb">
+            <col class="col-ind-macd">
+            <col class="col-ind-stoch">
+            <col class="col-ind-disp">
+            <col class="col-ind-vr">
+            <col class="col-price">
+            <col class="col-status">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>종목</th>
+              <th onclick="showIndicatorHelp('ADX')" title="클릭 시 ADX 지표 설명 보기">ADX <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('-DI')" title="클릭 시 -DI 지표 설명 보기">-DI <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('+DI')" title="클릭 시 +DI 지표 설명 보기">+DI <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('RSI')" title="클릭 시 RSI 지표 설명 보기">RSI <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('BB_Pct')" title="클릭 시 BB 지표 설명 보기">BB <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('MACD')" title="클릭 시 MACD 지표 설명 보기">MACD <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('STOCH')" title="클릭 시 STOCH 지표 설명 보기">STOCH <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('DISPARITY')" title="클릭 시 이격도 지표 설명 보기">이격도 <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th onclick="showIndicatorHelp('VOLUME')" title="클릭 시 VR 지표 설명 보기">VR <i class="fa-regular fa-circle-question" style="font-size:0.72rem; color:#94a3b8;"></i></th>
+              <th>현재가</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody id="kosdaq-stocks-body">
+            <!-- Dynamic Content -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info/Details Modal -->
+  <div class="modal-overlay" id="info-modal">
+    <div class="modal-content" style="max-width: 460px; padding: 20px;">
+      <div class="modal-header" style="margin-bottom: 14px; align-items: flex-start;">
+        <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; padding-right: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span id="info-modal-badge" class="badge"></span>
+          </div>
+          <div class="modal-title" id="info-modal-title" style="font-size: 1.1rem; line-height: 1.35; font-weight: 700; color: #0f172a; word-break: keep-all;">종목 상세 사유</div>
+        </div>
+        <button class="close-btn" onclick="closeInfoModal()" style="line-height: 1;">&times;</button>
+      </div>
+      <div id="info-modal-body" style="font-size: 0.9rem; color: #334155; line-height: 1.6; background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 16px; white-space: pre-wrap; max-height: 60vh; overflow-y: auto;"></div>
+      <button class="btn-buy-reg" style="width: 100%; padding: 10px; font-size: 0.9rem;" onclick="closeInfoModal()">확인</button>
+    </div>
+  </div>
+
+  <!-- Custom Confirm Modal -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-title" id="confirm-modal-title" style="margin-bottom: 10px; font-size: 1.15rem;">확인</div>
+      <div id="confirm-modal-msg" style="font-size: 0.92rem; color: #475569; margin-bottom: 20px; line-height: 1.5; white-space: pre-wrap;"></div>
+      <div style="display: flex; gap: 10px;">
+        <button style="flex: 1; padding: 9px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 600; color: #475569; cursor: pointer;" onclick="closeConfirmModal(false)">취소</button>
+        <button style="flex: 1; padding: 9px; background: #2563eb; border: none; border-radius: 8px; font-weight: 600; color: #fff; cursor: pointer;" onclick="closeConfirmModal(true)">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div class="modal-overlay" id="register-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">보유 종목 매수 등록</div>
+        <button class="close-btn" onclick="closeRegisterModal()">&times;</button>
+      </div>
+      <div class="form-group" style="position: relative;">
+        <label class="form-label">종목명 또는 6자리 코드 검색</label>
+        <input type="text" class="form-input" id="reg-stock-name" placeholder="예: 삼성전자 (005930)" oninput="onStockSearchInput()" autocomplete="off">
+        <div id="stock-search-results" class="search-dropdown" style="display:none;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">매수가 (원)</label>
+        <input type="number" class="form-input" id="reg-stock-price" placeholder="예: 72000">
+      </div>
+      <button class="btn-buy-reg" id="btn-reg-save" style="width: 100%; padding: 12px; margin-top: 10px;" onclick="saveHolding()">등록하기</button>
+    </div>
+  </div>
+
+  <!-- PIN Modal -->
+  <div class="modal-overlay" id="pin-modal" style="display: flex;">
+    <div class="modal-content" style="text-align: center; max-width: 380px;">
+      <div class="brand-icon" style="margin: 0 auto 16px auto; width: 44px; height: 44px; font-size: 1.3rem;">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h3 style="font-size: 1.25rem; margin-bottom: 8px;">보안 비밀번호 입력</h3>
+      <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 16px;">대시보드에 접근하려면 비밀번호를 입력하세요.</p>
+      
+      <div class="form-group" style="margin-top: 10px;">
+        <input type="password" class="form-input" id="input-pin" placeholder="••••••••" style="text-align: center; font-size: 1.4rem; letter-spacing: 6px; font-weight: 700; padding: 10px;" onkeyup="if(event.key==='Enter') verifyPin()" autofocus>
+      </div>
+      <div id="pin-error" style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 12px; display: none;">비밀번호가 올바르지 않습니다.</div>
+      <button class="btn-buy-reg" id="btn-pin-submit" style="width: 100%; padding: 10px; font-size: 0.95rem;" onclick="verifyPin()">대시보드 열기</button>
+    </div>
+  </div>
+
+  <!-- Strategy Detail & Switcher Modal -->
+  <div class="modal-overlay" id="strategy-detail-modal">
+    <div class="modal-content" style="max-width: 500px; padding: 22px; max-height: 88vh; overflow-y: auto;">
+      <div class="modal-header" style="margin-bottom: 16px; align-items: center;">
+        <div class="modal-title" style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">퀀트 전략 설정</div>
+        <button class="close-btn" onclick="closeStrategyDetailModal()">&times;</button>
+      </div>
+
+      <!-- Custom Modern Strategy Dropdown -->
+      <div class="custom-strategy-dropdown-wrapper" id="custom-strategy-dropdown-wrapper" style="position: relative; margin-bottom: 14px;">
+        <button type="button" class="custom-strategy-trigger" id="custom-strategy-trigger" onclick="toggleCustomStrategyDropdown()">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="custom-strategy-slot-badge" id="custom-selected-slot-badge">전략 1</span>
+            <span id="custom-selected-slot-name" style="font-weight: 700; color: #0f172a; font-size: 0.94rem;">기존 전략 1번</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" id="custom-strategy-arrow" style="color: #64748b; font-size: 0.85rem; transition: transform 0.2s;"></i>
+        </button>
+
+        <div class="custom-strategy-menu" id="custom-strategy-menu" style="display: none;">
+          <!-- 10 Strategy items dynamically generated -->
+        </div>
+      </div>
+
+      <!-- Selected Strategy Card -->
+      <div id="modal-strategy-info-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+        <!-- Dynamic content -->
+      </div>
+
+      <!-- Action Button (Full Width Single Button: 전략적용) -->
+      <button type="button" class="btn-modal-action-apply" style="width: 100%; padding: 13px; font-size: 0.95rem; border-radius: 10px; cursor: pointer;" onclick="applySelectedModalStrategy()">
+        <i class="fa-solid fa-check"></i> 전략적용
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // GAS Web App API Endpoint
+    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw5oIiLoVYFFriMuCWckamUqrwDVf4S6TB_Tm7-FeycGeTheEZKfaFuIijT_N9HYNhH/exec";
+    const LOCAL_SLOTS_KEY = "quant_strategy_slots_v1";
+    const ACTIVE_STRATEGY_KEY = "active_dashboard_strategy_index";
+
+    let userPin = "";
+    let buyCandidatesData = [];
+    let sellSignalsData = [];
+    let holdingsData = [];
+    let executionLogsData = [];
+    let allMetricsData = [];
+    let kosdaqMetricsData = [];
+
+    // ==========================================
+    // Strategy Slots (Loaded dynamically from Google Sheets)
+    // ==========================================
+    const DEFAULT_STRATEGY_PRESETS = Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
+      name: i === 0 ? "기존 전략 1번 (추세 원형)" : `전략 ${i + 1}`,
+      memo: i === 0 ? "ADX 30 이상 추세 구간에서 -DI 하향 돌파 시 진입하는 1단계 추세 추종 전략" : "",
+      isEmpty: i > 0,
+      market: "ALL",
+      period: "5Y",
+      startDate: "",
+      endDate: "",
+      scaleInDrop: null,
+      scaleInMultiplier: null,
+      stopLoss: null,
+      takeProfit: null,
+      tradeAmount: 1000000,
+      buyRules: i === 0 ? [
+        {
+          group_id: 1,
+          rules: [
+            { indicator: 'adx', condition_type: 'gte_value', value: 30 },
+            { indicator: 'minus_di', condition_type: 'cross_below_indicator', target_indicator: 'adx', value: '' }
+          ]
+        }
+      ] : [],
+      sellRules: i === 0 ? [
+        {
+          group_id: 1,
+          rules: [
+            { indicator: 'rsi', condition_type: 'gte_value', value: 65 }
+          ]
+        }
+      ] : [],
+      updatedAt: "-"
+    }));
+
+    let strategySlots = [...DEFAULT_STRATEGY_PRESETS];
+    let currentActiveStrategySlotIndex = 0;
+
+    function initStrategySlotsForDashboard() {
+      let slots = DEFAULT_STRATEGY_PRESETS;
+      try {
+        const cached = localStorage.getItem(LOCAL_SLOTS_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length === 10) slots = parsed;
+        }
+        const savedActive = localStorage.getItem(ACTIVE_STRATEGY_KEY);
+        if (savedActive !== null) {
+          const idx = parseInt(savedActive, 10);
+          if (idx >= 0 && idx < 10) currentActiveStrategySlotIndex = idx;
+        }
+      } catch(e) {}
+
+      strategySlots = slots;
+      fetchGoogleSheetSlotsForDashboard();
+    }
+    const initStrategySlots = initStrategySlotsForDashboard;
+
+    async function fetchGoogleSheetSlotsForDashboard() {
+      try {
+        const resp = await fetch(GAS_WEBAPP_URL + "?action=get_strategy_slots");
+        const data = await resp.json();
+        if (data && data.success && Array.isArray(data.slots) && data.slots.length === 10) {
+          strategySlots = data.slots;
+          localStorage.setItem(LOCAL_SLOTS_KEY, JSON.stringify(strategySlots));
+          if (data.activeSlotId) {
+            currentActiveStrategySlotIndex = data.activeSlotId - 1;
+            localStorage.setItem(ACTIVE_STRATEGY_KEY, String(currentActiveStrategySlotIndex));
+          }
+          if (window.latestMetricsCacheData && window.latestMetricsCacheData.length > 0) {
+            evaluateStrategyForDashboard();
+          }
+        }
+      } catch(err) {}
+    }
+
+    // Modal Operations & Custom Sleek Dropdown
+    let modalSelectedSlotIndex = 0;
+
+    function openStrategyDetailModal() {
+      modalSelectedSlotIndex = currentActiveStrategySlotIndex;
+      renderCustomStrategyDropdown();
+      renderModalStrategyInfoCard(strategySlots[modalSelectedSlotIndex] || strategySlots[0]);
+      document.getElementById('strategy-detail-modal').style.display = 'flex';
+    }
+
+    function closeStrategyDetailModal() {
+      document.getElementById('strategy-detail-modal').style.display = 'none';
+      const menu = document.getElementById('custom-strategy-menu');
+      if (menu) menu.style.display = 'none';
+      const arrow = document.getElementById('custom-strategy-arrow');
+      if (arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+
+    function toggleCustomStrategyDropdown() {
+      const menu = document.getElementById('custom-strategy-menu');
+      const arrow = document.getElementById('custom-strategy-arrow');
+      if (!menu) return;
+      const isOpen = menu.style.display === 'block';
+      menu.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+
+    function selectCustomStrategySlot(idx) {
+      modalSelectedSlotIndex = idx;
+      renderCustomStrategyDropdown();
+      renderModalStrategyInfoCard(strategySlots[idx] || strategySlots[0]);
+      const menu = document.getElementById('custom-strategy-menu');
+      if (menu) menu.style.display = 'none';
+      const arrow = document.getElementById('custom-strategy-arrow');
+      if (arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+
+    function renderCustomStrategyDropdown() {
+      const slot = strategySlots[modalSelectedSlotIndex] || strategySlots[0];
+      const slotBadge = document.getElementById('custom-selected-slot-badge');
+      const slotName = document.getElementById('custom-selected-slot-name');
+      if (slotBadge) slotBadge.textContent = `전략 ${modalSelectedSlotIndex + 1}`;
+      if (slotName) slotName.textContent = slot.isEmpty ? '(비어있음)' : (slot.name || `전략 ${modalSelectedSlotIndex + 1}`);
+
+      const menu = document.getElementById('custom-strategy-menu');
+      if (menu) {
+        menu.innerHTML = strategySlots.map((s, idx) => {
+          const isSelected = idx === modalSelectedSlotIndex;
+          const isCurrentlyActive = idx === currentActiveStrategySlotIndex;
+          const emptyText = s.isEmpty ? ' <span style="font-size:0.75rem; color:#94a3b8; font-weight:normal;">(비어있음)</span>' : '';
+          return `
+            <div class="custom-strategy-item ${isSelected ? 'active' : ''} ${s.isEmpty ? 'is-empty' : ''}" onclick="selectCustomStrategySlot(${idx})">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="custom-strategy-slot-badge" style="${isSelected ? 'background:#2563eb; color:#ffffff; border-color:#2563eb;' : ''}">
+                  전략 ${idx + 1}
+                </span>
+                <span>${s.name || `전략 ${idx + 1}`}${emptyText}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                ${isCurrentlyActive ? '<span style="font-size:0.72rem; background:#dcfce7; color:#15803d; padding:2px 6px; border-radius:4px; font-weight:700;">적용중</span>' : ''}
+                ${isSelected ? '<i class="fa-solid fa-check" style="color:#2563eb; font-size:0.88rem;"></i>' : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function(e) {
+      const dropdownWrap = document.getElementById('custom-strategy-dropdown-wrapper');
+      const menu = document.getElementById('custom-strategy-menu');
+      const arrow = document.getElementById('custom-strategy-arrow');
+      if (dropdownWrap && !dropdownWrap.contains(e.target) && menu && menu.style.display === 'block') {
+        menu.style.display = 'none';
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+      }
+    });
+
+    function formatRuleShort(r) {
+      if (!r || !r.indicator) return "";
+      const indNames = {
+        adx: "ADX", minus_di: "-DI", plus_di: "+DI", rsi: "RSI", bb_pct: "볼린저%b",
+        macd: "MACD", macd_osc: "MACD Osc", stoch_k: "스토K", stoch_d: "스토D",
+        disparity20: "이격도", volume_ratio: "거래량비율(5일)", return_rate: "수익률"
+      };
+      const name = indNames[r.indicator] || r.indicator.toUpperCase();
+      const val = r.value !== undefined && r.value !== null ? r.value : "";
+      const targetName = r.target_indicator ? (indNames[r.target_indicator] || r.target_indicator.toUpperCase()) : "";
+
+      switch (r.condition_type) {
+        case 'gte_value': return `${name} ≥ ${val}`;
+        case 'lte_value': return `${name} ≤ ${val}`;
+        case 'gt_value': return `${name} > ${val}`;
+        case 'lt_value': return `${name} < ${val}`;
+        case 'cross_above_value': return `${name} 상향돌파 ${val}`;
+        case 'cross_below_value': return `${name} 하향돌파 ${val}`;
+        case 'turn_up': return `${name} 양전`;
+        case 'turn_down': return `${name} 음전`;
+        case 'gt_indicator': return `${name} > ${targetName}`;
+        case 'lt_indicator': return `${name} < ${targetName}`;
+        case 'gte_indicator': return `${name} ≥ ${targetName}`;
+        case 'lte_indicator': return `${name} ≤ ${targetName}`;
+        case 'cross_above_indicator': return `${name} 상향돌파 ${targetName}`;
+        case 'cross_below_indicator': return `${name} 하향돌파 ${targetName}`;
+        default: return `${name} ${val}`;
+      }
+    }
+
+    function renderModalStrategyInfoCard(slot) {
+      const card = document.getElementById('modal-strategy-info-card');
+      if (!card) return;
+
+      if (slot.isEmpty || !slot.buyRules || slot.buyRules.length === 0) {
+        card.innerHTML = `
+          <div style="text-align:center; padding:20px; color:#64748b;">
+            <i class="fa-regular fa-folder-open" style="font-size:1.6rem; margin-bottom:6px; display:block; color:#94a3b8;"></i>
+            <strong>비어있는 전략 슬롯입니다.</strong>
+            <div style="font-size:0.8rem; margin-top:4px; color:#94a3b8;">퀀트 랩에서 이 슬롯에 새로운 전략을 저장할 수 있습니다.</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Format Buy Rules (Clean hanging indent layout: 1. on left, wrapped lines aligned)
+      const buyGroupsHtml = (slot.buyRules || []).map((g, gIdx) => {
+        const rulesList = (g.rules || []).map(r => formatRuleShort(r)).join(' · ');
+        return `
+          <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom:6px; font-size:0.88rem; line-height:1.55;">
+            <strong style="color:#0f172a; min-width:16px; flex-shrink:0; font-weight:700;">${gIdx + 1}.</strong>
+            <div style="color:#1e293b; flex:1; word-break:keep-all;">${rulesList}</div>
+          </div>
+        `;
+      }).join('') || '<div style="font-size:0.85rem; color:#64748b;">조건 없음</div>';
+
+      // Format Sell Rules (Clean hanging indent layout: 1. on left, wrapped lines aligned)
+      const sellGroupsHtml = (slot.sellRules || []).map((g, gIdx) => {
+        const rulesList = (g.rules || []).map(r => formatRuleShort(r)).join(' · ');
+        return `
+          <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom:6px; font-size:0.88rem; line-height:1.55;">
+            <strong style="color:#0f172a; min-width:16px; flex-shrink:0; font-weight:700;">${gIdx + 1}.</strong>
+            <div style="color:#1e293b; flex:1; word-break:keep-all;">${rulesList}</div>
+          </div>
+        `;
+      }).join('') || '<div style="font-size:0.85rem; color:#64748b;">조건 없음</div>';
+
+      const scaleInText = (slot.scaleInDrop !== undefined && slot.scaleInDrop !== null && slot.scaleInDrop !== '') 
+        ? `-${slot.scaleInDrop}% (${slot.scaleInMultiplier || 1.0}배)` 
+        : "없음";
+      const stopLossText = slot.stopLoss ? `-${slot.stopLoss}%` : "없음";
+      const takeProfitText = slot.takeProfit ? `+${slot.takeProfit}%` : "없음";
+      const cooldownText = slot.cooldownDays ? `${slot.cooldownDays}일` : "없음";
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+          <div>
+            <div style="font-weight:700; font-size:1.05rem; color:#0f172a;">${slot.name}</div>
+            ${slot.memo ? `<div style="font-size:0.82rem; color:#64748b; margin-top:2px;">${slot.memo}</div>` : ''}
+          </div>
+        </div>
+
+        <div style="border-top:1px solid #e2e8f0; padding-top:10px; margin-bottom:10px;">
+          <div style="font-size:0.82rem; font-weight:700; color:#334155; margin-bottom:6px;">매수 전략</div>
+          ${buyGroupsHtml}
+        </div>
+
+        <div style="border-top:1px solid #e2e8f0; padding-top:10px; margin-bottom:10px;">
+          <div style="font-size:0.82rem; font-weight:700; color:#334155; margin-bottom:6px;">매도 전략</div>
+          ${sellGroupsHtml}
+        </div>
+
+        <div style="border-top:1px solid #e2e8f0; padding-top:10px; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; text-align:center;">
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 4px;">
+            <div style="font-size:0.68rem; color:#64748b;">물타기</div>
+            <div style="font-weight:700; font-size:0.80rem; color:#2563eb;">${scaleInText}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 4px;">
+            <div style="font-size:0.68rem; color:#64748b;">손절선</div>
+            <div style="font-weight:700; font-size:0.80rem; color:#dc2626;">${stopLossText}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 4px;">
+            <div style="font-size:0.68rem; color:#64748b;">익절선</div>
+            <div style="font-weight:700; font-size:0.80rem; color:#059669;">${takeProfitText}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 4px;">
+            <div style="font-size:0.68rem; color:#64748b;">쿨다운</div>
+            <div style="font-weight:700; font-size:0.80rem; color:#0284c7;">${cooldownText}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function applySelectedModalStrategy() {
+      const idx = modalSelectedSlotIndex;
+      currentActiveStrategySlotIndex = idx;
+      localStorage.setItem(ACTIVE_STRATEGY_KEY, String(idx));
+      closeStrategyDetailModal();
+      evaluateStrategyForDashboard();
+
+      // Cloud Synchronize active strategy slot (via GET for 100% reliable sync)
+      try {
+        const pinParam = userPin ? `&pin=${encodeURIComponent(userPin)}` : '';
+        fetch(`${GAS_WEBAPP_URL}?action=set_active_strategy_slot&slotId=${idx + 1}${pinParam}`).catch(() => {});
+      } catch(e) {}
+    }
+
+    // Rule Evaluation Helpers
+    function checkSingleRule(rule, row, prevRow, extraCtx) {
+      if (!rule || !rule.indicator) return false;
+      const ind = rule.indicator;
+      const cond = rule.condition_type;
+      const targetInd = rule.target_indicator;
+      const ruleVal = parseFloat(rule.value);
+
+      if (ind === 'return_rate' || ind === 'returnRate' || ind === 'return_pct') {
+        const avgP = (extraCtx && extraCtx.avgPrice > 0) ? extraCtx.avgPrice : ((extraCtx && extraCtx.buyPrice > 0) ? extraCtx.buyPrice : (row.buyPrice || row.BuyPrice || 0));
+        if (!avgP || avgP <= 0) return true;
+        const currP = parseFloat(row.ClosePrice !== undefined ? row.ClosePrice : (row.close !== undefined ? row.close : (row.CurrPrice || row.currPrice || 0)));
+        const returnRate = ((currP - avgP) / avgP) * 100.0;
+        if (cond === 'gte_value') return returnRate >= ruleVal;
+        if (cond === 'lte_value') return returnRate <= ruleVal;
+        if (cond === 'gt_value') return returnRate > ruleVal;
+        if (cond === 'lt_value') return returnRate < ruleVal;
+        return false;
+      }
+
+      function getIndicatorValue(indicatorKey, r) {
+        if (!r) return NaN;
+        switch (indicatorKey) {
+          case 'adx': return parseFloat(r.ADX !== undefined && r.ADX !== null && r.ADX !== '-' ? r.ADX : (r.adx !== undefined ? r.adx : (r.prev_ADX || r.prev_adx)));
+          case 'minus_di': return parseFloat(r.Minus_DI !== undefined && r.Minus_DI !== null && r.Minus_DI !== '-' ? r.Minus_DI : (r.minus_di !== undefined ? r.minus_di : (r.minusDi !== undefined ? r.minusDi : (r.prev_Minus_DI || r.prev_minus_di))));
+          case 'plus_di': return parseFloat(r.Plus_DI !== undefined && r.Plus_DI !== null && r.Plus_DI !== '-' ? r.Plus_DI : (r.plus_di !== undefined ? r.plus_di : (r.plusDi !== undefined ? r.plusDi : (r.prev_Plus_DI || r.prev_plus_di))));
+          case 'rsi': return parseFloat(r.RSI !== undefined && r.RSI !== null && r.RSI !== '-' ? r.RSI : (r.rsi !== undefined ? r.rsi : (r.prev_RSI || r.prev_rsi)));
+          case 'bb_pct': return parseFloat(r.b_band_pct !== undefined && r.b_band_pct !== null && r.b_band_pct !== '-' ? r.b_band_pct : (r.BB_Pct !== undefined && r.BB_Pct !== '-' ? r.BB_Pct : (r.prev_BB_Pct || r.prev_b_band_pct || r['BB_%b'])));
+          case 'macd': return parseFloat(r.macd !== undefined && r.macd !== null && r.macd !== '-' ? r.macd : (r.MACD !== undefined && r.MACD !== '-' ? r.MACD : (r.prev_MACD || r.prev_macd)));
+          case 'macd_signal': return parseFloat(r.macd_signal !== undefined && r.macd_signal !== null && r.macd_signal !== '-' ? r.macd_signal : (r.MACD_Signal !== undefined && r.MACD_Signal !== '-' ? r.MACD_Signal : (r.prev_MACD_Signal || r.prev_macd_signal)));
+          case 'macd_osc': return parseFloat(r.macd_osc !== undefined && r.macd_osc !== null && r.macd_osc !== '-' ? r.macd_osc : (r.MACD_Osc !== undefined && r.MACD_Osc !== '-' ? r.MACD_Osc : (r.prev_MACD_Osc || r.prev_macd_osc || r.macdOsc)));
+          case 'stoch_k': return parseFloat(r.stoch_k !== undefined && r.stoch_k !== null && r.stoch_k !== '-' ? r.stoch_k : (r.Stoch_K !== undefined && r.Stoch_K !== '-' ? r.Stoch_K : (r.prev_Stoch_K || r.prev_stoch_k)));
+          case 'stoch_d': return parseFloat(r.stoch_d !== undefined && r.stoch_d !== null && r.stoch_d !== '-' ? r.stoch_d : (r.Stoch_D !== undefined && r.Stoch_D !== '-' ? r.Stoch_D : (r.prev_Stoch_D || r.prev_stoch_d)));
+          case 'disparity20': return parseFloat(r.disparity20 !== undefined && r.disparity20 !== null && r.disparity20 !== '-' ? r.disparity20 : (r.Disparity20 !== undefined && r.Disparity20 !== '-' ? r.Disparity20 : (r.prev_Disparity20 || r.prev_disparity20)));
+          case 'volume_ratio': return parseFloat(r.VolumeRatio !== undefined && r.VolumeRatio !== null && r.VolumeRatio !== '-' ? r.VolumeRatio : (r.volume_ratio !== undefined ? r.volume_ratio : (r.prev_VolumeRatio || r.prev_volume_ratio || r.VR)));
+          case 'close': return parseFloat(r.ClosePrice !== undefined && r.ClosePrice !== null && r.ClosePrice !== '-' ? r.ClosePrice : (r.close !== undefined ? r.close : (r.prev_ClosePrice || r.prev_close)));
+          default: return NaN;
+        }
+      }
+
+      const currVal = getIndicatorValue(ind, row);
+      if (isNaN(currVal)) return false;
+
+      const prevVal = prevRow ? getIndicatorValue(ind, prevRow) : NaN;
+      const targetVal = targetInd ? getIndicatorValue(targetInd, row) : ruleVal;
+      const prevTargetVal = (targetInd && prevRow) ? getIndicatorValue(targetInd, prevRow) : ruleVal;
+
+      switch (cond) {
+        case 'gte_value': return currVal >= ruleVal;
+        case 'lte_value': return currVal <= ruleVal;
+        case 'gt_value': return currVal > ruleVal;
+        case 'lt_value': return currVal < ruleVal;
+        case 'cross_above_value': return !isNaN(prevVal) && prevVal <= ruleVal && currVal > ruleVal;
+        case 'cross_below_value': return !isNaN(prevVal) && prevVal >= ruleVal && currVal < ruleVal;
+        case 'turn_up': return !isNaN(prevVal) && prevVal <= 0 && currVal > 0;
+        case 'turn_down': return !isNaN(prevVal) && prevVal >= 0 && currVal < 0;
+        case 'gt_indicator': return !isNaN(targetVal) && currVal > targetVal;
+        case 'lt_indicator': return !isNaN(targetVal) && currVal < targetVal;
+        case 'gte_indicator': return !isNaN(targetVal) && currVal >= targetVal;
+        case 'lte_indicator': return !isNaN(targetVal) && currVal <= targetVal;
+        case 'cross_above_indicator':
+          return !isNaN(targetVal) && !isNaN(prevVal) && !isNaN(prevTargetVal) && (prevVal <= prevTargetVal && currVal > targetVal);
+        case 'cross_below_indicator':
+          return !isNaN(targetVal) && !isNaN(prevVal) && !isNaN(prevTargetVal) && (prevVal >= prevTargetVal && currVal < targetVal);
+        default: return false;
+      }
+    }
+
+    function checkGroupMatch(group, row, prevRow, extraCtx) {
+      if (!group || !Array.isArray(group.rules) || group.rules.length === 0) return false;
+      return group.rules.every(rule => checkSingleRule(rule, row, prevRow, extraCtx));
+    }
+
+    // Dynamic Strategy Evaluator for Dashboard
+    function evaluateStrategyForDashboard() {
+      const activeSlot = strategySlots[currentActiveStrategySlotIndex] || strategySlots[0] || DEFAULT_STRATEGY_PRESETS[0];
+
+      // Update Strategy Name Displays (Desktop & Mobile, clean and concise)
+      const fullName = `전략 ${activeSlot.id}. ${activeSlot.name}`;
+      const nameElDesktop = document.getElementById('current-strategy-name-desktop');
+      if (nameElDesktop) nameElDesktop.textContent = fullName;
+      const nameElMobile = document.getElementById('current-strategy-name-mobile');
+      if (nameElMobile) nameElMobile.textContent = fullName;
+
+      const latestKospi = window.latestMetricsCacheData || [];
+      const latestKosdaq = window.latestKosdaqMetricsCacheData || [];
+      const combinedStocks = [...latestKospi, ...latestKosdaq];
+      const allHistory = [...(allMetricsData || []), ...(kosdaqMetricsData || [])];
+
+      // Map previous indicators: Priority 1 = Real live bundled prev_ fields from Google Sheets (100% accurate trading-day continuity)
+      const prevRowMap = new Map();
+      combinedStocks.forEach(item => {
+        const tk = formatTicker(item.Ticker || item.ticker || item.code);
+        const hasPrevData = (item.prev_ADX !== undefined && item.prev_ADX !== null && item.prev_ADX !== '-') ||
+                            (item.prev_adx !== undefined && item.prev_adx !== null && item.prev_adx !== '-');
+        if (hasPrevData) {
+          prevRowMap.set(tk, {
+            Date: item.Date || item.date,
+            ClosePrice: item.prev_ClosePrice !== undefined ? item.prev_ClosePrice : item.prev_close,
+            ADX: item.prev_ADX !== undefined ? item.prev_ADX : item.prev_adx,
+            Plus_DI: item.prev_Plus_DI !== undefined ? item.prev_Plus_DI : item.prev_plus_di,
+            Minus_DI: item.prev_Minus_DI !== undefined ? item.prev_Minus_DI : item.prev_minus_di,
+            RSI: item.prev_RSI !== undefined ? item.prev_RSI : item.prev_rsi,
+            BB_Pct: item.prev_BB_Pct !== undefined ? item.prev_BB_Pct : item.prev_b_band_pct,
+            b_band_pct: item.prev_BB_Pct !== undefined ? item.prev_BB_Pct : item.prev_b_band_pct,
+            MACD: item.prev_MACD !== undefined ? item.prev_MACD : item.prev_macd,
+            MACD_Signal: item.prev_MACD_Signal !== undefined ? item.prev_MACD_Signal : item.prev_macd_signal,
+            MACD_Osc: item.prev_MACD_Osc !== undefined ? item.prev_MACD_Osc : item.prev_macd_osc,
+            Stoch_K: item.prev_Stoch_K !== undefined ? item.prev_Stoch_K : item.prev_stoch_k,
+            Stoch_D: item.prev_Stoch_D !== undefined ? item.prev_Stoch_D : item.prev_stoch_d,
+            Disparity20: item.prev_Disparity20 !== undefined ? item.prev_Disparity20 : item.prev_disparity20,
+            VolumeRatio: item.prev_VolumeRatio !== undefined ? item.prev_VolumeRatio : item.prev_volume_ratio
+          });
+        }
+      });
+
+      // Priority 2 = History metrics if available
+      combinedStocks.forEach(item => {
+        const tk = formatTicker(item.Ticker || item.ticker || item.code);
+        if (!prevRowMap.has(tk)) {
+          const hist = allHistory.filter(h => formatTicker(h.Ticker || h.ticker || h.code) === tk);
+          if (hist.length >= 2) {
+            prevRowMap.set(tk, hist[hist.length - 2]);
+          }
+        }
+      });
+
+      // Priority 3 = Fallback for legacy static preloaded data
+      if (prevRowMap.size === 0 && window.REAL_PRELOADED_DATA) {
+        Object.keys(window.REAL_PRELOADED_DATA).forEach(t => {
+          const rows = window.REAL_PRELOADED_DATA[t];
+          if (Array.isArray(rows) && rows.length >= 2) {
+            const rPrev = rows[rows.length - 2];
+            const tk = formatTicker(t);
+            if (Array.isArray(rPrev)) {
+              prevRowMap.set(tk, {
+                Date: rPrev[0],
+                ClosePrice: rPrev[4],
+                ADX: rPrev[6],
+                Plus_DI: rPrev[7],
+                Minus_DI: rPrev[8],
+                RSI: rPrev[9],
+                BB_Pct: rPrev[10],
+                b_band_pct: rPrev[10],
+                VolumeRatio: rPrev[14]
+              });
+            } else {
+              prevRowMap.set(tk, rPrev);
+            }
+          }
+        });
+      }
+
+      // Build set of currently held stocks to prevent duplicate 1st buy signals
+      const heldTickersSet = new Set();
+      const heldNamesSet = new Set();
+      (holdingsData || []).forEach(h => {
+        const tk = formatTicker(h.Ticker || h.ticker || h.code || '');
+        const nm = String(h.Name || h.name || '').trim().replace(/\s+/g, '');
+        if (tk && tk !== '-') heldTickersSet.add(tk);
+        if (nm) heldNamesSet.add(nm);
+      });
+
+      // 1. Evaluate Buy Candidates (OR Logic across buyGroups)
+      const evaluatedBuyCandidates = [];
+      const isCustomStrategy = activeSlot.buyRules && activeSlot.buyRules.length > 0;
+
+      if (isCustomStrategy) {
+        combinedStocks.forEach(item => {
+          const tk = formatTicker(item.Ticker || item.ticker || item.code);
+          const nm = String(item.Name || item.name || '').trim().replace(/\s+/g, '');
+          if (heldTickersSet.has(tk) || heldNamesSet.has(nm)) {
+            return; // Already held! Skip duplicate 1st buy signal.
+          }
+          const prevItem = prevRowMap.get(tk) || null;
+
+          // Check if ANY buy group matches
+          const isBuyMatch = activeSlot.buyRules.some(g => checkGroupMatch(g, item, prevItem));
+          if (isBuyMatch) {
+            evaluatedBuyCandidates.push({
+              Date: item.Date || item.date || item.Timestamp || (executionLogsData.length > 0 ? executionLogsData[executionLogsData.length - 1].Timestamp : new Date().toISOString()),
+              Name: item.Name || item.name,
+              Ticker: tk,
+              Stage: '전략매수 ★',
+              ADX: item.ADX || item.adx,
+              Minus_DI: item.Minus_DI || item.minus_di,
+              Plus_DI: item.Plus_DI || item.plus_di,
+              RSI: item.RSI || item.rsi,
+              b_band_pct: item.b_band_pct !== undefined ? item.b_band_pct : (item.BB_Pct !== undefined ? item.BB_Pct : item['BB_%b']),
+              VolumeRatio: item.VolumeRatio !== undefined ? item.VolumeRatio : (item.volume_ratio !== undefined ? item.volume_ratio : (item.VR !== undefined ? item.VR : item.vr)),
+              ClosePrice: item.ClosePrice || item.price || item.close,
+              Reason: `[${activeSlot.name}] 실시간 전략 매수 조건 충족`
+            });
+          }
+        });
+      }
+
+      // 2. Build Today's Watchlist / 진입대기
+      const todayWatchlistMap = new Map();
+      combinedStocks.forEach(item => {
+        const tk = formatTicker(item.Ticker || item.ticker || item.code);
+        const nm = String(item.Name || item.name || '').trim().replace(/\s+/g, '');
+        if (heldTickersSet.has(tk) || heldNamesSet.has(nm)) {
+          return; // Already held!
+        }
+        const rawStatus = String(item.Status || item.status || '');
+        const currAdx = Number(item.ADX || item.adx);
+        const currMdi = Number(item.Minus_DI || item.minus_di || item.minusDi);
+        const currRsi = Number(item.RSI || item.rsi);
+        const rawBB = item.b_band_pct !== undefined ? item.b_band_pct : (item.BB_Pct !== undefined ? item.BB_Pct : item['BB_%b']);
+        const currBB = (rawBB !== undefined && rawBB !== null && rawBB !== '') ? Number(rawBB) : NaN;
+
+        let isWatchlist = false;
+        let watchReason = '';
+
+        const isSniperActive = activeSlot.name && (activeSlot.name.includes('스나이퍼') || activeSlot.name.includes('바닥'));
+        if (isSniperActive) {
+          if (currRsi <= 28 && currBB <= 0.10) {
+            isWatchlist = true;
+            watchReason = `RSI: ${formatDec(currRsi)}, 볼린저%b: ${formatDec(currBB)} (과매도 바닥 구간 근접, 진입 대기)`;
+          }
+        } else {
+          if (currAdx >= 30 && currMdi > currAdx) {
+            isWatchlist = true;
+            watchReason = `ADX: ${formatDec(currAdx)}, -DI: ${formatDec(currMdi)} (강한 추세 형성, -DI 하향돌파 진입 대기)`;
+          }
+        }
+
+        if (isWatchlist) {
+          if (!todayWatchlistMap.has(tk)) {
+            todayWatchlistMap.set(tk, {
+              Date: item.Date || item.date || item.Timestamp || (executionLogsData.length > 0 ? executionLogsData[executionLogsData.length - 1].Timestamp : new Date().toISOString()),
+              Name: item.Name || item.name,
+              Ticker: tk,
+              Stage: '관심종목',
+              ADX: item.ADX || item.adx,
+              Minus_DI: item.Minus_DI || item.minus_di,
+              Plus_DI: item.Plus_DI || item.plus_di,
+              RSI: item.RSI || item.rsi,
+              b_band_pct: item.b_band_pct !== undefined ? item.b_band_pct : (item.BB_Pct !== undefined ? item.BB_Pct : item['BB_%b']),
+              VolumeRatio: item.VolumeRatio !== undefined ? item.VolumeRatio : (item.volume_ratio !== undefined ? item.volume_ratio : (item.VR !== undefined ? item.VR : item.vr)),
+              ClosePrice: item.ClosePrice || item.price || item.close,
+              Reason: watchReason
+            });
+          }
+        }
+      });
+      const todayWatchlist = Array.from(todayWatchlistMap.values());
+
+      // 3. Construct Unified Final Buy List
+      const finalBuyList = [];
+      const seenBuyMap = new Map();
+
+      // 1) Official Google Sheet Buy Signals (Preserved as '전략매수' with full history)
+      (buyCandidatesData || []).forEach(item => {
+        const tk = formatTicker(item.Ticker || item.ticker || item.code);
+        const dt = formatShortDate(item.Date || item.date || item.Timestamp);
+        const key = `${tk}_${dt}`;
+        const itemObj = {
+          ...item,
+          Stage: '전략매수'
+        };
+        seenBuyMap.set(key, itemObj);
+        finalBuyList.push(itemObj);
+      });
+
+      // 2) Real-time evaluated signals for currently active strategy (with '전략매수 ★')
+      evaluatedBuyCandidates.forEach(item => {
+        const tk = formatTicker(item.Ticker || item.ticker || item.code);
+        const dt = formatShortDate(item.Date || item.date || item.Timestamp);
+        const key = `${tk}_${dt}`;
+        if (seenBuyMap.has(key)) {
+          const existing = seenBuyMap.get(key);
+          existing.Stage = '전략매수 ★';
+          existing.Reason = item.Reason || existing.Reason;
+        } else {
+          seenBuyMap.set(key, item);
+          finalBuyList.push(item);
+        }
+      });
+
+      // 3) Today's Watchlist / 진입대기 (with '관심종목')
+      todayWatchlist.forEach(item => {
+        const tk = formatTicker(item.Ticker || item.ticker || item.code);
+        const dt = formatShortDate(item.Date || item.date || item.Timestamp);
+        const key = `${tk}_${dt}`;
+        if (!seenBuyMap.has(key) && !finalBuyList.some(b => formatTicker(b.Ticker || b.ticker || b.code) === tk)) {
+          seenBuyMap.set(key, item);
+          finalBuyList.push(item);
+        }
+      });
+
+      // 3. Evaluate Holdings & Sell Alerts
+      const evaluatedHoldingsStatus = [];
+      const evaluatedSellSignals = [];
+      let profitCount = 0;
+      let lossCount = 0;
+
+      const stopLossAbs = (activeSlot.stopLoss !== null && activeSlot.stopLoss !== undefined && activeSlot.stopLoss !== '') ? Math.abs(Number(activeSlot.stopLoss)) : null;
+      const takeProfitAbs = (activeSlot.takeProfit !== null && activeSlot.takeProfit !== undefined && activeSlot.takeProfit !== '') ? Math.abs(Number(activeSlot.takeProfit)) : null;
+      const scaleInDropAbs = (activeSlot.scaleInDrop !== null && activeSlot.scaleInDrop !== undefined && activeSlot.scaleInDrop !== '') ? Math.abs(Number(activeSlot.scaleInDrop)) : null;
+      const scaleInMult = (activeSlot.scaleInMultiplier !== null && activeSlot.scaleInMultiplier !== undefined && activeSlot.scaleInMultiplier !== '') ? Number(activeSlot.scaleInMultiplier) : 1.0;
+
+      holdingsData.forEach(holding => {
+        const rawTicker = formatTicker(holding.Ticker || holding.ticker || holding.code || '');
+        const rawName = String(holding.Name || holding.name || '').trim();
+        const buyPrice = Number(holding.BuyPrice || holding.buyPrice || 0);
+
+        const metric = combinedStocks.find(s => {
+          const sTicker = formatTicker(s.Ticker || s.ticker || '');
+          const sName = String(s.Name || s.name || '').trim();
+          return (rawTicker && rawTicker !== '-' && sTicker === rawTicker) || (rawName && sName === rawName);
+        });
+
+        const currPrice = metric ? Number(metric.ClosePrice || metric.close || metric.CurrPrice || metric.currPrice || 0) : 0;
+        const returnRate = (buyPrice > 0 && currPrice > 0) ? ((currPrice - buyPrice) / buyPrice) * 100 : 0;
+
+        if (buyPrice > 0 && currPrice > 0) {
+          if (returnRate > 0) profitCount++;
+          else if (returnRate < 0) lossCount++;
+        }
+
+        let signalLevel = '보유유지';
+        let signalReason = '보유 조건 유지 중';
+
+        if (stopLossAbs && stopLossAbs > 0 && returnRate <= -stopLossAbs) {
+          signalLevel = '손절매도';
+          signalReason = `손절선 (-${stopLossAbs}%) 도달 (수익률: ${returnRate.toFixed(2)}%)`;
+        } else if (takeProfitAbs && takeProfitAbs > 0 && returnRate >= takeProfitAbs) {
+          signalLevel = '익절매도';
+          signalReason = `익절선 (+${takeProfitAbs}%) 도달 (수익률: +${returnRate.toFixed(2)}%)`;
+        } else if (scaleInDropAbs && scaleInDropAbs > 0 && returnRate <= -scaleInDropAbs) {
+          signalLevel = '물타기매수';
+          signalReason = `물타기 기준 (-${scaleInDropAbs}%) 도달 (수익률: ${returnRate.toFixed(2)}% | 익일 시가 ${scaleInMult}배 추가매수)`;
+        } else if (metric && activeSlot.sellRules && activeSlot.sellRules.length > 0) {
+          const prevItem = prevRowMap.get(rawTicker) || null;
+          const isSellMatch = activeSlot.sellRules.some(g => checkGroupMatch(g, metric, prevItem, { avgPrice: buyPrice, buyPrice: buyPrice }));
+          if (isSellMatch) {
+            signalLevel = '전략매도';
+            signalReason = `[${activeSlot.name}] 매도 청산 조건 충족 (RSI: ${metric.RSI || metric.rsi})`;
+          }
+        }
+
+        if (signalLevel === '물타기매수') {
+          finalBuyList.push({
+            Date: metric ? (metric.Date || metric.date || new Date().toISOString()) : new Date().toISOString(),
+            Ticker: rawTicker,
+            Name: rawName,
+            Stage: '물타기매수',
+            priority: '물타기매수',
+            score: 999,
+            ADX: metric ? (metric.ADX || metric.adx) : '-',
+            Minus_DI: metric ? (metric.Minus_DI || metric.minus_di) : '-',
+            Plus_DI: metric ? (metric.Plus_DI || metric.plus_di) : '-',
+            RSI: metric ? (metric.RSI || metric.rsi) : '-',
+            b_band_pct: metric ? (metric.b_band_pct !== undefined ? metric.b_band_pct : (metric.BB_Pct !== undefined ? metric.BB_Pct : metric['BB_%b'])) : '-',
+            VolumeRatio: metric ? (metric.VolumeRatio !== undefined ? metric.VolumeRatio : (metric.volume_ratio !== undefined ? metric.volume_ratio : '-')) : '-',
+            ClosePrice: currPrice,
+            Reason: signalReason
+          });
+        }
+
+        const holdingStatusObj = {
+          Ticker: rawTicker,
+          Name: rawName,
+          BuyPrice: buyPrice,
+          CurrPrice: currPrice,
+          ReturnRate: returnRate,
+          ADX: metric ? (metric.ADX || metric.adx) : '-',
+          Minus_DI: metric ? (metric.Minus_DI || metric.minus_di) : '-',
+          Plus_DI: metric ? (metric.Plus_DI || metric.plus_di) : '-',
+          RSI: metric ? (metric.RSI || metric.rsi) : '-',
+          b_band_pct: metric ? (metric.b_band_pct !== undefined ? metric.b_band_pct : (metric.BB_Pct !== undefined ? metric.BB_Pct : metric['BB_%b'])) : '-',
+          VolumeRatio: metric ? (metric.VolumeRatio !== undefined ? metric.VolumeRatio : (metric.volume_ratio !== undefined ? metric.volume_ratio : '-')) : '-',
+          SignalLevel: signalLevel,
+          Status: signalLevel,
+          Details: signalReason
+        };
+        evaluatedHoldingsStatus.push(holdingStatusObj);
+
+        if (signalLevel === '전략매도' || signalLevel === '손절매도' || signalLevel === '익절매도' || signalLevel === '물타기매수') {
+          evaluatedSellSignals.push({
+            Date: metric ? (metric.Date || metric.date || new Date().toISOString()) : new Date().toISOString(),
+            Ticker: rawTicker,
+            Name: rawName,
+            BuyPrice: buyPrice,
+            CurrPrice: currPrice,
+            ReturnRate: returnRate,
+            ADX: metric ? (metric.ADX || metric.adx) : '-',
+            Minus_DI: metric ? (metric.Minus_DI || metric.minus_di) : '-',
+            Plus_DI: metric ? (metric.Plus_DI || metric.plus_di) : '-',
+            RSI: metric ? (metric.RSI || metric.rsi) : '-',
+            b_band_pct: metric ? (metric.b_band_pct !== undefined ? metric.b_band_pct : (metric.BB_Pct !== undefined ? metric.BB_Pct : metric['BB_%b'])) : '-',
+            VolumeRatio: metric ? (metric.VolumeRatio !== undefined ? metric.VolumeRatio : (metric.volume_ratio !== undefined ? metric.volume_ratio : '-')) : '-',
+            SignalLevel: signalLevel,
+            Status: signalLevel,
+            Details: signalReason
+          });
+        }
+      });
+
+      // Combine official sellSignalsData (from Google Sheets) + real-time evaluated sell triggers
+      const combinedSellMap = new Map();
+      (sellSignalsData || []).forEach(item => {
+        const tk = formatTicker(item.Ticker || item.ticker || item.code);
+        combinedSellMap.set(tk, item);
+      });
+      evaluatedSellSignals.forEach(item => {
+        const tk = formatTicker(item.Ticker || item.ticker || item.code);
+        combinedSellMap.set(tk, item);
+      });
+      const finalSellList = Array.from(combinedSellMap.values());
+
+      // 4. Dynamic evaluation for Kospi 200 & Kosdaq 150 tables
+      function evaluateStockStatus(stock, prevStock) {
+        if (!stock) return { status: '관망', reason: '관망 중' };
+        
+        if (activeSlot.buyRules && activeSlot.buyRules.length > 0) {
+          const isBuyMatch = activeSlot.buyRules.some(g => checkGroupMatch(g, stock, prevStock));
+          if (isBuyMatch) {
+            return { status: '전략매수', reason: `[${activeSlot.name}] 실시간 매수 조건 충족` };
+          }
+        }
+
+        const currAdx = Number(stock.ADX || stock.adx);
+        const currMdi = Number(stock.Minus_DI || stock.minus_di || stock.minusDi);
+        const currRsi = Number(stock.RSI || stock.rsi);
+        const rawBB = stock.b_band_pct !== undefined ? stock.b_band_pct : (stock.BB_Pct !== undefined ? stock.BB_Pct : stock['BB_%b']);
+        const currBB = (rawBB !== undefined && rawBB !== null && rawBB !== '') ? Number(rawBB) : NaN;
+
+        const isSniperActive = activeSlot.name && (activeSlot.name.includes('스나이퍼') || activeSlot.name.includes('바닥'));
+        if (isSniperActive) {
+          if (currRsi <= 28 && currBB <= 0.10) {
+            return { status: '관심종목', reason: `RSI: ${formatDec(currRsi)}, 볼린저%b: ${formatDec(currBB)} (과매도 바닥 구간 근접, 진입 대기)` };
+          }
+        } else {
+          if (currAdx >= 30 && currMdi > currAdx) {
+            return { status: '관심종목', reason: `ADX: ${formatDec(currAdx)}, -DI: ${formatDec(currMdi)} (강한 추세 형성, -DI 하향돌파 진입 대기)` };
+          }
+        }
+
+        return { status: '관망', reason: '조건 미충족' };
+      }
+
+      const dynamicKospi = latestKospi.map(s => {
+        const tk = formatTicker(s.Ticker || s.ticker || s.code);
+        const prev = prevRowMap.get(tk) || null;
+        const evalRes = evaluateStockStatus(s, prev);
+        return {
+          ...s,
+          Status: evalRes.status,
+          Reason: evalRes.reason
+        };
+      });
+
+      const dynamicKosdaq = latestKosdaq.map(s => {
+        const tk = formatTicker(s.Ticker || s.ticker || s.code);
+        const prev = prevRowMap.get(tk) || null;
+        const evalRes = evaluateStockStatus(s, prev);
+        return {
+          ...s,
+          Status: evalRes.status,
+          Reason: evalRes.reason
+        };
+      });
+
+      window.latestMetricsCacheData = dynamicKospi;
+      window.latestKosdaqMetricsCacheData = dynamicKosdaq;
+
+      // Deduplicate finalBuyList so that top metric count and table match exactly
+      const uniqueBuyList = [];
+      finalBuyList.forEach(item => {
+        const ticker = formatTicker(item.Ticker || item.ticker || item.code);
+        const ymd = formatDateOnly(item.Date || item.date || item.Timestamp);
+        const adx = formatDec(item.ADX || item.adx);
+        const close = Number(item.ClosePrice || item.price || item.close || 0);
+
+        const alreadyExists = uniqueBuyList.some(prev => {
+          const prevTicker = formatTicker(prev.Ticker || prev.ticker || prev.code);
+          const prevYmd = formatDateOnly(prev.Date || prev.date || prev.Timestamp);
+          const prevAdx = formatDec(prev.ADX || prev.adx);
+          const prevClose = Number(prev.ClosePrice || prev.price || prev.close || 0);
+          return prevTicker === ticker && (prevYmd === ymd || (prevAdx === adx && prevClose === close && prevClose > 0));
+        });
+
+        if (!alreadyExists) {
+          uniqueBuyList.push(item);
+        }
+      });
+
+      // Deduplicate finalSellList so that top metric count and table match exactly
+      const uniqueSellList = [];
+      finalSellList.forEach(item => {
+        const ticker = formatTicker(item.Ticker || item.ticker || item.code);
+        const price = Number(item.CurrPrice || item.currPrice || 0);
+        const adx = Number(item.ADX || item.adx);
+        const level = String(item.Status || item.signalLevel || '');
+
+        const alreadyExists = uniqueSellList.some(prev => {
+          const prevTicker = formatTicker(prev.Ticker || prev.ticker || prev.code);
+          if (prevTicker !== ticker) return false;
+          const prevPrice = Number(prev.CurrPrice || prev.currPrice || 0);
+          const prevAdx = Number(prev.ADX || prev.adx);
+          const prevLevel = String(prev.Status || prev.signalLevel || '');
+          return prevPrice === price && Math.abs(prevAdx - adx) < 0.01 && prevLevel === level;
+        });
+
+        if (!alreadyExists) {
+          uniqueSellList.push(item);
+        }
+      });
+
+      // Render Tables
+      const lastSyncText = document.getElementById('sync-time')?.textContent?.replace('최근 갱신: ', '').trim() || '';
+      renderBuyCandidates(uniqueBuyList, lastSyncText);
+      renderHoldings(holdingsData, allHistory, evaluatedHoldingsStatus);
+      renderSellSignals(uniqueSellList);
+      renderAllStocks(dynamicKospi);
+      renderKosdaqStocks(dynamicKosdaq);
+
+      // Update Metric Card Numbers (Count genuine buy signals separately from watchlist)
+      const genuineBuyCount = uniqueBuyList.filter(item => !String(item.Stage || item.stage || '').includes('관심종목')).length;
+      const watchCount = uniqueBuyList.length - genuineBuyCount;
+
+      document.getElementById('count-buy').textContent = genuineBuyCount;
+      const watchEl = document.getElementById('count-watch');
+      if (watchEl) watchEl.textContent = watchCount;
+      const watchWrap = document.getElementById('count-watch-wrapper');
+      if (watchWrap) watchWrap.style.display = watchCount > 0 ? '' : 'none';
+
+      document.getElementById('count-sell').textContent = uniqueSellList.length;
+      document.getElementById('count-holdings').textContent = holdingsData.length;
+      document.getElementById('count-profit').textContent = profitCount;
+      document.getElementById('count-loss').textContent = lossCount;
+    }
+
+    async function verifyPin() {
+      const pinVal = document.getElementById('input-pin').value.trim();
+      const pinBtn = document.getElementById('btn-pin-submit');
+      const errorEl = document.getElementById('pin-error');
+      if (!pinVal) return;
+
+      if (pinBtn) {
+        pinBtn.disabled = true;
+        pinBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin" style="margin-right: 6px;"></i> 확인 중...`;
+      }
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await loadDataFromGAS(pinVal);
+        if (res.success) {
+          userPin = pinVal;
+          document.getElementById('pin-modal').style.display = 'none';
+        } else {
+          userPin = "";
+          errorEl.textContent = res.message || '비밀번호가 올바르지 않습니다.';
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = '확인 중 오류가 발생했습니다: ' + err.message;
+        errorEl.style.display = 'block';
+      } finally {
+        if (pinBtn) {
+          pinBtn.disabled = false;
+          pinBtn.innerHTML = `대시보드 열기`;
+        }
+      }
+    }
+
+    async function refreshDataUI(btn) {
+      const targetBtn = btn || document.querySelector('.btn-header-refresh');
+      if (targetBtn) {
+        const icon = targetBtn.querySelector('i');
+        if (icon) icon.classList.add('fa-spin');
+      }
+      await loadDataFromGAS(userPin);
+      if (targetBtn) {
+        const icon = targetBtn.querySelector('i');
+        if (icon) icon.classList.remove('fa-spin');
+      }
+    }
+
+    function parseYMD(val) {
+      if (!val) return '';
+      const str = String(val).trim();
+      if (str.length >= 10) {
+        return str.substring(0, 10).replace(/[^0-9]/g, '');
+      }
+      return str.replace(/[^0-9]/g, '');
+    }
+
+    async function loadDataFromGAS(pin = userPin) {
+      const cleanPin = String(pin || '').trim();
+      try {
+        const url = GAS_WEBAPP_URL + "?action=all" + (cleanPin ? "&pin=" + encodeURIComponent(cleanPin) : "");
+        const resp = await fetch(url);
+        const data = await resp.json();
+        
+        if (data.status === "error" || data.success === false) {
+          console.warn("GAS Auth/Fetch Error:", data.message);
+          return { success: false, message: data.message };
+        }
+
+        buyCandidatesData = data.buyCandidates || [];
+        holdingsData = data.userHoldings || [];
+        const holdingsStatusData = data.holdingsStatus || [];
+        executionLogsData = data.executionLogs || [];
+        allMetricsData = data.allMetrics || [];
+        kosdaqMetricsData = data.kosdaqMetrics || [];
+        sellSignalsData = data.sellSignals || [];
+
+        if (data.activeSlotId) {
+          currentActiveStrategySlotIndex = data.activeSlotId - 1;
+          localStorage.setItem(ACTIVE_STRATEGY_KEY, String(currentActiveStrategySlotIndex));
+        }
+        let latestMetricsData = allMetricsData;
+        if (allMetricsData.length > 200) {
+          const latestDate = allMetricsData[allMetricsData.length - 1].Date || allMetricsData[allMetricsData.length - 1].date;
+          if (latestDate) {
+            const latestYMD = parseYMD(latestDate);
+            latestMetricsData = allMetricsData.filter(item => parseYMD(item.Date || item.date) === latestYMD);
+          }
+          if (latestMetricsData.length === 0) {
+            latestMetricsData = allMetricsData.slice(-200);
+          }
+        }
+
+        let latestKosdaqMetricsData = kosdaqMetricsData;
+        if (kosdaqMetricsData.length > 150) {
+          const latestDate = kosdaqMetricsData[kosdaqMetricsData.length - 1].Date || kosdaqMetricsData[kosdaqMetricsData.length - 1].date;
+          if (latestDate) {
+            const latestYMD = parseYMD(latestDate);
+            latestKosdaqMetricsData = kosdaqMetricsData.filter(item => parseYMD(item.Date || item.date) === latestYMD);
+          }
+          if (latestKosdaqMetricsData.length === 0) {
+            latestKosdaqMetricsData = kosdaqMetricsData.slice(-150);
+          }
+        }
+
+        window.latestMetricsCacheData = latestMetricsData;
+        window.latestKosdaqMetricsCacheData = latestKosdaqMetricsData;
+
+        initStrategySlotsForDashboard();
+        evaluateStrategyForDashboard();
+
+        if (executionLogsData.length > 0) {
+          const lastLog = executionLogsData[executionLogsData.length - 1];
+          document.getElementById('sync-time').textContent = `최근 갱신: ${formatShortDate(lastLog.Timestamp || lastLog.date)}`;
+        }
+
+        loadPreloadedRealData();
+
+        return { success: true };
+      } catch (err) {
+        console.error("Failed to load data from GAS:", err);
+        return { success: false, message: err.message };
+      }
+    }
+
+    async function loadPreloadedRealData() {
+      if (window.REAL_PRELOADED_DATA && Object.keys(window.REAL_PRELOADED_DATA).length > 0) return;
+      try {
+        window.REAL_PRELOADED_DATA = {};
+        
+        // Load recent chunks for dashboard display
+        const [resCurr, resRecent] = await Promise.allSettled([
+          fetch(`data/history_2026_current.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null),
+          fetch(`data/history_2021_2025.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null)
+        ]);
+
+        const assembled = {};
+        if (resRecent.status === 'fulfilled' && resRecent.value && resRecent.value.preloaded_data) {
+          for (const [sym, rows] of Object.entries(resRecent.value.preloaded_data)) {
+            if (!assembled[sym]) assembled[sym] = [];
+            if (rows) assembled[sym].push(...rows);
+          }
+        }
+        if (resCurr.status === 'fulfilled' && resCurr.value && resCurr.value.preloaded_data) {
+          for (const [sym, rows] of Object.entries(resCurr.value.preloaded_data)) {
+            if (!assembled[sym]) assembled[sym] = [];
+            if (rows) assembled[sym].push(...rows);
+          }
+        }
+
+        if (Object.keys(assembled).length > 0) {
+          window.REAL_PRELOADED_DATA = assembled;
+        } else {
+          // Fallback to legacy split files
+          const [resK, resKq] = await Promise.allSettled([
+            fetch(`data/stocks_kospi200_real.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null),
+            fetch(`data/stocks_kosdaq150_real.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null)
+          ]);
+          if (resK.status === 'fulfilled' && resK.value && resK.value.preloaded_data) {
+            Object.assign(window.REAL_PRELOADED_DATA, resK.value.preloaded_data);
+          }
+          if (resKq.status === 'fulfilled' && resKq.value && resKq.value.preloaded_data) {
+            Object.assign(window.REAL_PRELOADED_DATA, resKq.value.preloaded_data);
+          }
+        }
+
+        if (typeof evaluateStrategyForDashboard === 'function') {
+          evaluateStrategyForDashboard();
+        }
+      } catch(e) {}
+    }
+
+    function showIndicatorHelp(type) {
+      const helpData = {
+        'ADX': {
+          title: 'ADX (Average Directional Index)',
+          badge: '추세 강도',
+          badgeClass: 'badge-t2',
+          content: `[개념]
+ADX는 주가의 상승/하락 방향과 관계없이 현재 형성된 추세의 강도만을 0~100 수치로 측정하는 지표입니다.
+
+[수치별 의미]
+• 0 ~ 20 : 추세 없음 (관망 및 횡보 구간)
+• 25 이상 : 강한 추세 형성 (매매 고려 가능 구간)
+• 40 이상 : 매우 강력한 추세 진행 중
+
+[실전 활용 팁]
+ADX가 25 이상으로 올라설 때 -DI가 ADX 밑으로 하향 돌파하면 매수 신호, 반대로 상승 추세 후 ADX가 꺾이기 시작하면 익절 및 매도 준비 타점이 됩니다.`
+        },
+        '-DI': {
+          title: '-DI (Minus Directional Indicator)',
+          badge: '하락 방향성',
+          badgeClass: 'badge-sell-exit',
+          content: `[개념]
+최근 N일간 주가의 하락 변동 폭과 압력을 수치화한 지표입니다.
+
+[수치별 의미]
+• -DI > ADX : 하락 압력이 우세하여 주가가 눌려있는 상태
+• -DI가 ADX 밑으로 하향 돌파 : 하락 압력이 사라지며 상승 반전 가능성 급증
+
+[실전 활용 팁]
+ADX가 25 이상일 때 -DI가 ADX 아래로 떨어지는 순간이 본 스크리너의 핵심 매수 신호 타점입니다.`
+        },
+        '+DI': {
+          title: '+DI (Plus Directional Indicator)',
+          badge: '상승 방향성',
+          badgeClass: 'badge-t1',
+          content: `[개념]
+최근 N일간 주가의 상승 변동 폭과 매수 압력을 수치화한 지표입니다.
+
+[수치별 의미]
+• +DI > -DI : 매수세가 매도세보다 우세한 상승 국면
+• +DI 상승 + ADX 상승 : 상승 추세가 본격적으로 탄력을 받는 구간
+
+[실전 활용 팁]
++DI가 -DI보다 위에 있으면서 ADX가 함께 상승할 때 가장 안정적인 우상향 파동이 연출됩니다.`
+        },
+        'RSI': {
+          title: 'RSI (Relative Strength Index)',
+          badge: '상대강도지수',
+          badgeClass: 'badge-t1',
+          content: `[개념]
+최근 14일간 주가 상승폭과 하락폭의 비율을 0~100%로 나타내어 매수/매도 세력의 상대적 강도를 측정합니다.
+
+[수치별 의미]
+• 30 이하 : 과매도 (주가가 지나치게 떨어져 반등 가능성 높음)
+• 40 이하 : 과매도 접근 (본 시스템 3단계 강력매수 우선순위 조건)
+• 70 이상 : 과매수 (과열 구간, 매도 및 익절 고려)
+
+[실전 활용 팁]
+매수 신호가 떴을 때 RSI가 40 이하로 낮다면 바닥권 강력 매수(3단계) 타점이 됩니다.`
+        },
+        'BB_Pct': {
+          title: '볼린저 밴드 %b (Bollinger %b)',
+          badge: '밴드위치 비율',
+          badgeClass: 'badge-t2',
+          content: `[개념]
+주가가 볼린저 밴드(20일, 2표준편차)의 상단과 하단 사이에서 어디에 위치하는지 0~1 비율로 나타냅니다.
+
+[수치별 의미]
+• 0.0 이하 : 밴드 하단 이탈/터치 (주가 극단적 바닥권)
+• 0.5 : 밴드 중앙선 (20일 이동평균선 위치)
+• 1.0 이상 : 밴드 상단 이탈/터치 (주가 단기 과열 상단)
+
+[실전 활용 팁]
+%b가 0.0 근처에 도달해 있으면서 매수 신호가 발생하면 아주 이상적인 눌림목 및 바닥 매수 기회가 됩니다.`
+        },
+        'MACD': {
+          title: 'MACD 오실레이터 (MACD Oscillator)',
+          badge: '추세 모멘텀',
+          badgeClass: 'badge-t2',
+          content: `[개념]
+MACD(12일-26일 이평선 차이)와 Signal(9일 이평선)의 차이를 나타내는 오실레이터 수치입니다.
+
+[수치별 의미]
+• 양수 (+) : 상승 모멘텀 우세 (MACD가 Signal 위에 위치)
+• 음수 (-) : 하락 모멘텀 우세 (MACD가 Signal 아래에 위치)
+• 음수(-)에서 양수(+)로 전환 : MACD 골든크로스 발생
+
+[실전 활용 팁]
+MACD Osc 수치가 음수에서 양수로 막 돌아설 때 주가의 단기 상승 에너지가 강력하게 실립니다.`
+        },
+        'STOCH': {
+          title: '스토캐스틱 슬로우 (Stochastic Slow)',
+          badge: '단기 반전 지표',
+          badgeClass: 'badge-t3',
+          content: `[개념]
+최근 14일간의 최고가-최저가 범위 내에서 현재 주가의 상대적 위치(%K)와 그 이동평균(%D)을 나타냅니다.
+
+[수치별 의미]
+• 20 이하 : 단기 과매도 (바닥권 반등 임박)
+• 80 이상 : 단기 과매수 (단기 고점 과열)
+• %K가 %D를 상향 돌파 : 스토캐스틱 골든크로스
+
+[실전 활용 팁]
+%K 수치가 20 이하 바닥권에서 %D를 뚫고 올라갈 때 RSI 및 ADX 신호와 함께 활용하면 승률이 높아집니다.`
+        },
+        'DISPARITY': {
+          title: '20일 이격도 (Disparity 20)',
+          badge: '이동평균 이격률',
+          badgeClass: 'badge-t2',
+          content: `[개념]
+현재 주가가 20일 이동평균선과 얼마나 떨어져 있는지를 백분율(%)로 나타냅니다.
+
+[수치별 의미]
+• 95% 이하 : 20일선 대비 5% 이상 하락 (단기 과매도/눌림목)
+• 100% : 현재 주가가 20일 이동평균선과 일치
+• 105% 이상 : 20일선 대비 5% 이상 급등 (단기 이격 과열)
+
+[실전 활용 팁]
+이격도가 95% 이하인 상태에서 매수 신호가 발생하면 20일선 복귀에 따른 단기 반등 수익을 노리기 좋습니다.`
+        },
+        'VR': {
+          title: '거래량 비율 (Volume Ratio, VR5)',
+          badge: '수급 폭발 지표',
+          badgeClass: 'badge-t1',
+          content: `[개념]
+최근 5일간의 평균 거래량 대비 당일 거래량이 얼마나 터졌는지를 백분율(%)로 나타냅니다.
+
+[수치별 의미]
+• 100% : 최근 5일 평균과 동일한 거래량
+• 120% 이상 : 거래량 급증 (본 시스템 2단계 적극매수 조건)
+• 200% 이상 : 수급 대폭발 (세력/기관 강한 매수 유입)
+
+[실전 활용 팁]
+주가가 반전할 때 거래량 비율이 120%~200% 이상 터져줘야 신호의 신뢰도가 크게 상승합니다.`
+        },
+        'VOLUME': {
+          title: '거래량 비율 (Volume Ratio, VR5)',
+          badge: '수급 폭발 지표',
+          badgeClass: 'badge-t1',
+          content: `[개념]
+최근 5일간의 평균 거래량 대비 당일 거래량이 얼마나 터졌는지를 백분율(%)로 나타냅니다.
+
+[수치별 의미]
+• 100% : 최근 5일 평균과 동일한 거래량
+• 120% 이상 : 거래량 급증 (본 시스템 2단계 적극매수 조건)
+• 200% 이상 : 수급 대폭발 (세력/기관 강한 매수 유입)
+
+[실전 활용 팁]
+주가가 반전할 때 거래량 비율이 120%~200% 이상 터져줘야 신호의 신뢰도가 크게 상승합니다.`
+        }
+      };
+
+      const item = helpData[type] || helpData['VR'] || helpData['VOLUME'];
+      if (!item) return;
+
+      document.getElementById('info-modal-title').textContent = item.title;
+      const badgeEl = document.getElementById('info-modal-badge');
+      badgeEl.textContent = item.badge;
+      badgeEl.className = 'badge ' + item.badgeClass;
+      
+      document.getElementById('info-modal-body').textContent = item.content;
+      document.getElementById('info-modal').style.display = 'flex';
+    }
+
+    function showDetailsModal(stockName, statusText, detailsText, badgeClass = 'badge-t1') {
+      document.getElementById('info-modal-title').textContent = stockName;
+      const badgeEl = document.getElementById('info-modal-badge');
+      badgeEl.textContent = statusText;
+      badgeEl.className = 'badge ' + badgeClass;
+      
+      const desc = (detailsText && detailsText !== '-' && detailsText !== 'undefined') ? detailsText : "상세 사유 기록이 없습니다.";
+      document.getElementById('info-modal-body').textContent = desc;
+      document.getElementById('info-modal').style.display = 'flex';
+    }
+
+    function showInfoModal(title, text) {
+      document.getElementById('info-modal-title').textContent = title;
+      const badgeEl = document.getElementById('info-modal-badge');
+      badgeEl.textContent = '안내';
+      badgeEl.className = 'badge badge-t2';
+      document.getElementById('info-modal-body').textContent = text;
+      document.getElementById('info-modal').style.display = 'flex';
+    }
+
+    function closeInfoModal() {
+      document.getElementById('info-modal').style.display = 'none';
+    }
+
+    let confirmResolve = null;
+    function showConfirmModal(title, msg) {
+      document.getElementById('confirm-modal-title').textContent = title;
+      document.getElementById('confirm-modal-msg').textContent = msg;
+      document.getElementById('confirm-modal').style.display = 'flex';
+      return new Promise((resolve) => {
+        confirmResolve = resolve;
+      });
+    }
+
+    function closeConfirmModal(result) {
+      document.getElementById('confirm-modal').style.display = 'none';
+      if (confirmResolve) {
+        confirmResolve(result);
+        confirmResolve = null;
+      }
+    }
+
+    function formatDateOnly(rawDate) {
+      if (!rawDate) return '-';
+      try {
+        const d = new Date(rawDate);
+        if (!isNaN(d.getTime())) {
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${month}.${day}`;
+        }
+      } catch (e) {}
+
+      const str = String(rawDate).trim();
+      if (str.length >= 10) {
+        const parts = str.split('T')[0].split(' ')[0].split('-');
+        if (parts.length >= 3) {
+          return `${parts[1].padStart(2, '0')}.${parts[2].padStart(2, '0')}`;
+        }
+      }
+      return str.split(' ')[0];
+    }
+
+    function formatShortDate(rawDate) {
+      if (!rawDate) return '-';
+      try {
+        const d = new Date(rawDate);
+        if (!isNaN(d.getTime())) {
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          return `${month}.${day} ${hours}:${minutes}`;
+        }
+      } catch (e) {}
+
+      const str = String(rawDate).trim();
+      if (str.length >= 16) {
+        return str.substring(5, 16).replace('T', ' ').replace('-', '.');
+      }
+      return str;
+    }
+
+    function formatTicker(t) {
+      if (!t) return '-';
+      const str = String(t).trim();
+      const digits = str.replace(/[^0-9]/g, '');
+      if (digits.length > 0 && digits.length <= 6) {
+        return digits.padStart(6, '0');
+      }
+      return str;
+    }
+
+    function formatDec(val, decimals = 2) {
+      if (val === null || val === undefined || val === '-' || val === '') return '-';
+      const num = Number(val);
+      if (isNaN(num)) return String(val);
+      return num.toFixed(decimals);
+    }
+
+    function renderBuyCandidates(list, lastTime = "") {
+      const tbody = document.getElementById('buy-candidates-body');
+      if (!tbody) return;
+      let timeLabel = "";
+      if (typeof lastTime === 'string' && lastTime && !lastTime.includes('[object')) {
+        timeLabel = lastTime;
+      } else if (Array.isArray(lastTime) && lastTime.length > 0) {
+        const lastLog = lastTime[lastTime.length - 1];
+        timeLabel = formatShortDate(lastLog.Timestamp || lastLog.date || '');
+      }
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-sub); padding:32px 20px; font-size:0.9rem;">
+          <i class="fa-regular fa-circle-check" style="margin-right:6px; color:#22c55e;"></i>
+          ${timeLabel ? `[${timeLabel}] ` : ''}전체 350개 종목 검사 완료. 현재 선택된 전략 조건에 부합하는 매수 신호 종목이 없습니다.
+        </td></tr>`;
+        return;
+      }
+
+      const uniqueList = [];
+      list.forEach(item => {
+        const ticker = formatTicker(item.Ticker || item.ticker || item.code);
+        const ymd = formatDateOnly(item.Date || item.date || item.Timestamp);
+        const adx = formatDec(item.ADX || item.adx);
+        const close = Number(item.ClosePrice || item.price || item.close || 0);
+
+        const alreadyExists = uniqueList.some(prev => {
+          const prevTicker = formatTicker(prev.Ticker || prev.ticker || prev.code);
+          const prevYmd = formatDateOnly(prev.Date || prev.date || prev.Timestamp);
+          const prevAdx = formatDec(prev.ADX || prev.adx);
+          const prevClose = Number(prev.ClosePrice || prev.price || prev.close || 0);
+          return prevTicker === ticker && (prevYmd === ymd || (prevAdx === adx && prevClose === close && prevClose > 0));
+        });
+
+        if (!alreadyExists) {
+          uniqueList.push(item);
+        }
+      });
+
+      const reversedList = [...uniqueList].reverse();
+      tbody.innerHTML = reversedList.map(item => {
+        const rawStage = String(item.Stage || item.stage || item.Tier || item.tier || '전략매수');
+        let stageText = '전략매수';
+        let tierClass = 'badge-t1';
+        if (rawStage.includes('물타기매수') || rawStage.includes('물타기')) {
+          stageText = '물타기매수';
+          tierClass = 'badge-scale-in';
+        } else if (rawStage.includes('관심종목') || rawStage.includes('추세강함') || rawStage.includes('진입대기')) {
+          stageText = '관심종목';
+          tierClass = 'badge-sell-warn';
+        } else if (rawStage.includes('★')) {
+          stageText = '전략매수 ★';
+          tierClass = 'badge-t1';
+        } else {
+          stageText = '전략매수';
+          tierClass = 'badge-t1';
+        }
+
+        const ticker = formatTicker(item.Ticker || item.ticker || item.code);
+        const name = (item.Name || item.name || '').replace(/'/g, "\\'");
+        
+        const rawBB = (item.b_band_pct !== undefined ? item.b_band_pct : (item.BB_Pct !== undefined ? item.BB_Pct : item['BB_%b']));
+        const bBandPctVal = (rawBB !== undefined && rawBB !== null && rawBB !== '') ? Number(rawBB) : NaN;
+        const bBandPctStr = formatDec(rawBB);
+        let bbColor = 'inherit';
+        if (!isNaN(bBandPctVal)) {
+          if (bBandPctVal <= 0.0) bbColor = 'var(--accent-green)';
+          else if (bBandPctVal >= 1.0) bbColor = '#f87171';
+        }
+
+        const rawVR = (item.VolumeRatio !== undefined ? item.VolumeRatio : (item.volume_ratio !== undefined ? item.volume_ratio : (item.VR !== undefined ? item.VR : item.vr)));
+        const vrStr = (rawVR !== undefined && rawVR !== null && rawVR !== '' && !isNaN(Number(rawVR))) ? formatDec(rawVR, 0) + '%' : '-';
+        const vrNum = Number(rawVR);
+        const vrColor = (!isNaN(vrNum) && vrNum >= 150) ? 'var(--accent-warning)' : 'inherit';
+
+        const reason = (item.Reason || item.reason || item.Notes || item.notes || `ADX: ${formatDec(item.ADX || item.adx)}, -DI: ${formatDec(item.Minus_DI || item.minus_di || item.minusDi)}, RSI: ${formatDec(item.RSI || item.rsi)}, 볼린저%b: ${bBandPctStr}, VR: ${vrStr} 조건 충족`).replace(/'/g, "\\'");
+
+        return `
+          <tr>
+            <td style="text-align:center;"><span style="color:var(--text-sub); font-size:0.85rem; font-weight:500;">${formatShortDate(item.Date || item.date || item.Timestamp)}</span></td>
+            <td style="padding-left: 16px;"><strong>${item.Name || item.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub);">(${ticker})</span></td>
+            <td style="text-align:center;"><span class="badge ${tierClass}" onclick="showDetailsModal('${name}', '${stageText}', '${reason}', '${tierClass}')" title="클릭 시 포착 사유 확인">${stageText}</span></td>
+            <td style="text-align:center;"><strong style="color:var(--accent-cyan);">${formatDec(item.ADX || item.adx)}</strong></td>
+            <td style="text-align:center;">${formatDec(item.Minus_DI || item.minus_di || item.minusDi)}</td>
+            <td style="text-align:center;">${formatDec(item.Plus_DI || item.plus_di || item.plusDi)}</td>
+            <td style="text-align:center;"><span style="color: ${Number(item.RSI || item.rsi) <= 40 ? 'var(--accent-green)' : 'inherit'}">${formatDec(item.RSI || item.rsi)}</span></td>
+            <td style="text-align:center;"><span style="color: ${bbColor}">${bBandPctStr}</span></td>
+            <td style="text-align:center;"><span style="color: ${vrColor}">${vrStr}</span></td>
+            <td style="text-align:right; padding-right: 14px;">${(item.ClosePrice || item.price) ? Number(item.ClosePrice || item.price).toLocaleString() + ' 원' : '-'}</td>
+            <td style="text-align:center;"><button class="btn-buy-reg" style="padding: 4px 10px; font-size: 0.8rem;" onclick="quickRegister('${name}', '${ticker}', ${item.ClosePrice || item.price || 0})"><i class="fa-solid fa-plus"></i> 매수</button></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderAllStocks(list) {
+      const tbody = document.getElementById('all-stocks-body');
+      if (!tbody) return;
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-sub); padding:24px;">저장된 KOSPI 200 전체 종목 지표 데이터가 없습니다.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(item => {
+        const rawStatus = String(item.Status || item.status || '관망');
+        let statusText = rawStatus;
+        let badgeClass = 'badge-neutral';
+        if (rawStatus.includes('전략매수') || rawStatus.includes('매수') || rawStatus.includes('3단계') || rawStatus.includes('Tier 1')) { badgeClass = 'badge-t1'; statusText = '전략매수'; }
+        else if (rawStatus.includes('관심종목') || rawStatus.includes('추세강함')) { badgeClass = 'badge-sell-warn'; statusText = '관심종목'; }
+        else { statusText = '관망'; }
+
+        const name = (item.Name || item.name || '').replace(/'/g, "\\'");
+        const ticker = formatTicker(item.Ticker || item.ticker || item.code);
+        const currAdx = formatDec(item.ADX || item.adx);
+        const currMdi = formatDec(item.Minus_DI || item.minus_di);
+        const currPdi = formatDec(item.Plus_DI || item.plus_di);
+        const rsi = formatDec(item.RSI || item.rsi);
+
+        const rawBB = (item.b_band_pct !== undefined ? item.b_band_pct : (item.BB_Pct !== undefined ? item.BB_Pct : item['BB_%b']));
+        const bBandPctVal = (rawBB !== undefined && rawBB !== null && rawBB !== '') ? Number(rawBB) : NaN;
+        const bBandPctStr = formatDec(rawBB);
+        let bbColor = 'inherit';
+        if (!isNaN(bBandPctVal)) {
+          if (bBandPctVal <= 0.0) bbColor = 'var(--accent-green)';
+          else if (bBandPctVal >= 1.0) bbColor = '#f87171';
+        }
+
+        const macdOsc = formatDec(item.MACD_Osc !== undefined ? item.MACD_Osc : item.macd_osc);
+        const stochK = formatDec(item.Stoch_K !== undefined ? item.Stoch_K : item.stoch_k);
+        const stochD = formatDec(item.Stoch_D !== undefined ? item.Stoch_D : item.stoch_d);
+        const disparity = formatDec(item.Disparity20 !== undefined ? item.Disparity20 : item.disparity20);
+        const vr = formatDec(item.VolumeRatio !== undefined ? item.VolumeRatio : item.volume_ratio, 0);
+
+        const macdOscNum = Number(macdOsc);
+        let macdColor = 'inherit';
+        if (!isNaN(macdOscNum)) {
+          if (macdOscNum > 0) macdColor = '#f87171';
+          else if (macdOscNum < 0) macdColor = 'var(--accent-cyan)';
+        }
+
+        const reason = `ADX: ${currAdx}, -DI: ${currMdi}, +DI: ${currPdi}, RSI: ${rsi}, 볼린저%b: ${bBandPctStr}, MACD Oscill: ${macdOsc}, Stoch K/D: ${stochK}/${stochD}, 20일 이격도: ${disparity}%, 5일평균 대비 거래량: ${vr}%`;
+
+        return `
+          <tr>
+            <td style="padding-left: 16px;"><strong>${item.Name || item.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub);">(${ticker})</span></td>
+            <td style="text-align:center;"><strong style="color: ${Number(item.ADX || item.adx) >= 30 ? 'var(--accent-cyan)' : 'inherit'}">${currAdx}</strong></td>
+            <td style="text-align:center;">${currMdi}</td>
+            <td style="text-align:center;">${currPdi}</td>
+            <td style="text-align:center;"><span style="color: ${Number(item.RSI || item.rsi) <= 40 ? 'var(--accent-green)' : (Number(item.RSI || item.rsi) >= 65 ? '#f87171' : 'inherit')}">${rsi}</span></td>
+            <td style="text-align:center;"><span style="color: ${bbColor}">${bBandPctStr}</span></td>
+            <td style="text-align:center;"><span style="color: ${macdColor}">${macdOsc}</span></td>
+            <td style="text-align:center;">${stochK} / ${stochD}</td>
+            <td style="text-align:center;"><span style="color: ${Number(disparity) <= 95 ? 'var(--accent-green)' : (Number(disparity) >= 105 ? '#f87171' : 'inherit')}">${disparity}%</span></td>
+            <td style="text-align:center;"><span style="color: ${Number(vr) >= 150 ? 'var(--accent-warning)' : 'inherit'}">${vr}%</span></td>
+            <td style="text-align:right; padding-right: 14px;">${(item.ClosePrice || item.close) ? Number(item.ClosePrice || item.close).toLocaleString() + ' 원' : '-'}</td>
+            <td style="text-align:center;"><span class="badge ${badgeClass}" onclick="showDetailsModal('${name}', '${statusText}', '${reason}', '${badgeClass}')" style="cursor:pointer;" title="클릭 시 세부 지표 확인">${statusText}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterAllStocksTable() {
+      const query = document.getElementById('all-stocks-search').value.toLowerCase().trim().replace(/\s+/g, '');
+      const sourceList = (window.latestMetricsCacheData && window.latestMetricsCacheData.length > 0) ? window.latestMetricsCacheData : allMetricsData;
+      if (!query) {
+        renderAllStocks(sourceList);
+        return;
+      }
+      const filtered = sourceList.filter(item => {
+        const name = String(item.Name || item.name || '').toLowerCase().replace(/\s+/g, '');
+        const rawTicker = String(item.Ticker || item.ticker || item.code || '').toLowerCase().replace(/\s+/g, '');
+        const formattedTicker = formatTicker(item.Ticker || item.ticker || item.code).toLowerCase();
+        return name.includes(query) || rawTicker.includes(query) || formattedTicker.includes(query);
+      });
+      renderAllStocks(filtered);
+    }
+
+    function renderKosdaqStocks(list) {
+      const tbody = document.getElementById('kosdaq-stocks-body');
+      if (!tbody) return;
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-sub); padding:24px;">저장된 KOSDAQ 150 전체 종목 지표 데이터가 없습니다.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(item => {
+        const rawStatus = String(item.Status || item.status || '관망');
+        let statusText = rawStatus;
+        let badgeClass = 'badge-neutral';
+        if (rawStatus.includes('전략매수') || rawStatus.includes('매수') || rawStatus.includes('3단계') || rawStatus.includes('Tier 1')) { badgeClass = 'badge-t1'; statusText = '전략매수'; }
+        else if (rawStatus.includes('관심종목') || rawStatus.includes('추세강함')) { badgeClass = 'badge-sell-warn'; statusText = '관심종목'; }
+        else { statusText = '관망'; }
+
+        const name = (item.Name || item.name || '').replace(/'/g, "\\'");
+        const ticker = formatTicker(item.Ticker || item.ticker || item.code);
+        const currAdx = formatDec(item.ADX || item.adx);
+        const currMdi = formatDec(item.Minus_DI || item.minus_di);
+        const currPdi = formatDec(item.Plus_DI || item.plus_di);
+        const rsi = formatDec(item.RSI || item.rsi);
+
+        const rawBB = (item.b_band_pct !== undefined ? item.b_band_pct : (item.BB_Pct !== undefined ? item.BB_Pct : item['BB_%b']));
+        const bBandPctVal = (rawBB !== undefined && rawBB !== null && rawBB !== '') ? Number(rawBB) : NaN;
+        const bBandPctStr = formatDec(rawBB);
+        let bbColor = 'inherit';
+        if (!isNaN(bBandPctVal)) {
+          if (bBandPctVal <= 0.0) bbColor = 'var(--accent-green)';
+          else if (bBandPctVal >= 1.0) bbColor = '#f87171';
+        }
+
+        const macdOsc = formatDec(item.MACD_Osc !== undefined ? item.MACD_Osc : item.macd_osc);
+        const stochK = formatDec(item.Stoch_K !== undefined ? item.Stoch_K : item.stoch_k);
+        const stochD = formatDec(item.Stoch_D !== undefined ? item.Stoch_D : item.stoch_d);
+        const disparity = formatDec(item.Disparity20 !== undefined ? item.Disparity20 : item.disparity20);
+        const vr = formatDec(item.VolumeRatio !== undefined ? item.VolumeRatio : item.volume_ratio, 0);
+
+        const macdOscNum = Number(macdOsc);
+        let macdColor = 'inherit';
+        if (!isNaN(macdOscNum)) {
+          if (macdOscNum > 0) macdColor = '#f87171';
+          else if (macdOscNum < 0) macdColor = 'var(--accent-cyan)';
+        }
+
+        const reason = `ADX: ${currAdx}, -DI: ${currMdi}, +DI: ${currPdi}, RSI: ${rsi}, 볼린저%b: ${bBandPctStr}, MACD Oscill: ${macdOsc}, Stoch K/D: ${stochK}/${stochD}, 20일 이격도: ${disparity}%, 5일평균 대비 거래량: ${vr}%`;
+
+        return `
+          <tr>
+            <td style="padding-left: 16px;"><strong>${item.Name || item.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub);">(${ticker})</span></td>
+            <td style="text-align:center;"><strong style="color: ${Number(item.ADX || item.adx) >= 30 ? 'var(--accent-cyan)' : 'inherit'}">${currAdx}</strong></td>
+            <td style="text-align:center;">${currMdi}</td>
+            <td style="text-align:center;">${currPdi}</td>
+            <td style="text-align:center;"><span style="color: ${Number(item.RSI || item.rsi) <= 40 ? 'var(--accent-green)' : (Number(item.RSI || item.rsi) >= 65 ? '#f87171' : 'inherit')}">${rsi}</span></td>
+            <td style="text-align:center;"><span style="color: ${bbColor}">${bBandPctStr}</span></td>
+            <td style="text-align:center;"><span style="color: ${macdColor}">${macdOsc}</span></td>
+            <td style="text-align:center;">${stochK} / ${stochD}</td>
+            <td style="text-align:center;"><span style="color: ${Number(disparity) <= 95 ? 'var(--accent-green)' : (Number(disparity) >= 105 ? '#f87171' : 'inherit')}">${disparity}%</span></td>
+            <td style="text-align:center;"><span style="color: ${Number(vr) >= 150 ? 'var(--accent-warning)' : 'inherit'}">${vr}%</span></td>
+            <td style="text-align:right; padding-right: 14px;">${(item.ClosePrice || item.close) ? Number(item.ClosePrice || item.close).toLocaleString() + ' 원' : '-'}</td>
+            <td style="text-align:center;"><span class="badge ${badgeClass}" onclick="showDetailsModal('${name}', '${statusText}', '${reason}', '${badgeClass}')" style="cursor:pointer;" title="클릭 시 세부 지표 확인">${statusText}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterKosdaqStocksTable() {
+      const inputEl = document.getElementById('kosdaq-stocks-search');
+      if (!inputEl) return;
+      const query = inputEl.value.toLowerCase().trim().replace(/\s+/g, '');
+      const sourceList = (window.latestKosdaqMetricsCacheData && window.latestKosdaqMetricsCacheData.length > 0) ? window.latestKosdaqMetricsCacheData : kosdaqMetricsData;
+      if (!query) {
+        renderKosdaqStocks(sourceList);
+        return;
+      }
+      const filtered = sourceList.filter(item => {
+        const name = String(item.Name || item.name || '').toLowerCase().replace(/\s+/g, '');
+        const rawTicker = String(item.Ticker || item.ticker || item.code || '').toLowerCase().replace(/\s+/g, '');
+        const formattedTicker = formatTicker(item.Ticker || item.ticker || item.code).toLowerCase();
+        return name.includes(query) || rawTicker.includes(query) || formattedTicker.includes(query);
+      });
+      renderKosdaqStocks(filtered);
+    }
+
+    function renderHoldings(list, metricsList = [], statusList = []) {
+      const tbody = document.getElementById('holdings-body');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--text-sub); padding:24px;">매수 등록된 보유 종목이 없습니다.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(item => {
+        const rawTicker = formatTicker(item.Ticker || item.ticker || item.code || '');
+        const rawName = String(item.Name || item.name || '').trim();
+        
+        const statusItem = statusList.find(s => {
+          const sTicker = formatTicker(s.Ticker || s.ticker || '');
+          const sName = String(s.Name || s.name || '').trim();
+          return (rawTicker && rawTicker !== '-' && sTicker === rawTicker) || (rawName && sName === rawName);
+        });
+
+        // Prioritize allMetrics (metricsList) so that indicator values match 100% with All Stocks view
+        const allMetricItem = metricsList.find(m => {
+          const mTicker = formatTicker(m.Ticker || m.ticker || '');
+          const mName = String(m.Name || m.name || '').trim();
+          return (rawTicker && rawTicker !== '-' && mTicker === rawTicker) || (rawName && mName === rawName);
+        });
+
+        const metric = allMetricItem || statusItem;
+
+        const displayTicker = formatTicker(metric ? (metric.Ticker || metric.ticker || rawTicker) : rawTicker);
+        const displayName = metric ? (metric.Name || metric.name || rawName) : (rawName || rawTicker);
+
+        const buyPrice = Number(item.BuyPrice || item.buyPrice || 0);
+        const currPrice = metric ? Number(metric.ClosePrice || metric.close || metric.CurrPrice || metric.currPrice || 0) : 0;
+        const adx = formatDec(metric ? (metric.ADX || metric.adx || '-') : '-');
+        const pdi = formatDec(metric ? (metric.Plus_DI || metric.plus_di || metric.plusDi || '-') : '-');
+        const mdi = formatDec(metric ? (metric.Minus_DI || metric.minus_di || metric.minusDi || '-') : '-');
+        const rsi = formatDec(metric ? (metric.RSI || metric.rsi || '-') : '-');
+        
+        const rawBB = metric ? (metric.b_band_pct !== undefined ? metric.b_band_pct : (metric.BB_Pct !== undefined ? metric.BB_Pct : (metric.bBandPct || metric['BB_%b']))) : undefined;
+        const bBandPctVal = (rawBB !== undefined && rawBB !== null && rawBB !== '') ? Number(rawBB) : NaN;
+        const bBandPctStr = formatDec(rawBB);
+        let bbColor = 'inherit';
+        if (!isNaN(bBandPctVal)) {
+          if (bBandPctVal <= 0.0) bbColor = 'var(--accent-green)';
+          else if (bBandPctVal >= 1.0) bbColor = '#f87171';
+        }
+
+        const rawVR = metric ? (metric.VolumeRatio !== undefined ? metric.VolumeRatio : (metric.volume_ratio !== undefined ? metric.volume_ratio : (metric.VR !== undefined ? metric.VR : metric.vr))) : (item.VolumeRatio !== undefined ? item.VolumeRatio : item.volume_ratio);
+        const vrStr = (rawVR !== undefined && rawVR !== null && rawVR !== '' && !isNaN(Number(rawVR))) ? formatDec(rawVR, 0) + '%' : '-';
+        const vrNum = Number(rawVR);
+        const vrColor = (!isNaN(vrNum) && vrNum >= 150) ? 'var(--accent-warning)' : 'inherit';
+        
+        const statusText = statusItem ? (statusItem.SignalLevel || statusItem.Status || statusItem.signalLevel || '보유유지') : '보유유지';
+        let badgeClass = 'badge-neutral';
+        if (statusText.includes('손절매도') || statusText.includes('손절')) badgeClass = 'badge-sell-danger';
+        else if (statusText.includes('익절매도') || statusText.includes('익절')) badgeClass = 'badge-t1';
+        else if (statusText.includes('물타기매수') || statusText.includes('물타기')) badgeClass = 'badge-scale-in';
+        else if (statusText.includes('전략매도') || statusText.includes('매도')) badgeClass = 'badge-sell-warn';
+        else if (statusText.includes('전략매수') || statusText.includes('매수')) badgeClass = 'badge-t1';
+        else { badgeClass = 'badge-neutral'; }
+
+        let returnRateStr = '-';
+        let returnRateColor = 'inherit';
+        if (buyPrice > 0 && currPrice > 0) {
+          const rate = ((currPrice - buyPrice) / buyPrice) * 100;
+          returnRateColor = rate > 0 ? 'var(--accent-red)' : rate < 0 ? 'var(--accent-blue)' : 'inherit';
+          returnRateStr = (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
+        }
+
+        const detailsText = statusItem ? (statusItem.Details || statusItem.details || '-') : '-';
+        const escapedDetails = String(detailsText).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+        return `
+          <tr>
+            <td style="text-align:center;"><span style="color:var(--text-sub); font-size:0.85rem;">${formatDateOnly(item.DateAdded || item.date)}</span></td>
+            <td style="padding-left: 16px;"><strong>${displayName}</strong> <span style="font-size:0.8rem; color:var(--text-sub);">(${displayTicker})</span></td>
+            <td style="text-align:right; padding-right: 14px;">${buyPrice > 0 ? buyPrice.toLocaleString() + ' 원' : '-'}</td>
+            <td style="text-align:right; padding-right: 14px;">${currPrice > 0 ? currPrice.toLocaleString() + ' 원' : '-'}</td>
+            <td style="text-align:center;"><strong style="color:${returnRateColor}">${returnRateStr}</strong></td>
+            <td style="text-align:center;"><strong style="color:var(--accent-cyan);">${adx}</strong></td>
+            <td style="text-align:center;">${mdi}</td>
+            <td style="text-align:center;">${pdi}</td>
+            <td style="text-align:center;"><span style="color: ${Number(rsi) <= 40 ? 'var(--accent-green)' : 'inherit'}">${rsi}</span></td>
+            <td style="text-align:center;"><span style="color: ${bbColor}">${bBandPctStr}</span></td>
+            <td style="text-align:center;"><span style="color: ${vrColor}">${vrStr}</span></td>
+            <td style="text-align:center;"><span class="badge ${badgeClass}" onclick="showDetailsModal('${displayName}', '${statusText}', '${escapedDetails}', '${badgeClass}')" title="클릭 시 감시 사유 확인">${statusText}</span></td>
+            <td style="text-align:center;"><button style="background:none; border:none; color:var(--accent-red); cursor:pointer;" onclick="deleteHolding('${rawTicker !== '-' ? rawTicker : rawName}')" title="보유 종목 삭제"><i class="fa-solid fa-trash"></i></button></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderSellSignals(list) {
+      const tbody = document.getElementById('sell-signals-body');
+      if (!tbody) return;
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-sub); padding:24px;">
+          감지된 매도 경고 또는 매도 신호 이력이 없습니다.
+        </td></tr>`;
+        return;
+      }
+
+      const uniqueList = [];
+      list.forEach(item => {
+        const ticker = formatTicker(item.Ticker || item.ticker || item.code);
+        const price = Number(item.CurrPrice || item.currPrice || 0);
+        const adx = Number(item.ADX || item.adx);
+        const level = String(item.Status || item.signalLevel || '');
+
+        const alreadyExists = uniqueList.some(prev => {
+          const prevTicker = formatTicker(prev.Ticker || prev.ticker || prev.code);
+          if (prevTicker !== ticker) return false;
+          const prevPrice = Number(prev.CurrPrice || prev.currPrice || 0);
+          const prevAdx = Number(prev.ADX || prev.adx);
+          const prevLevel = String(prev.Status || prev.signalLevel || '');
+          return prevPrice === price && Math.abs(prevAdx - adx) < 0.01 && prevLevel === level;
+        });
+
+        if (!alreadyExists) {
+          uniqueList.push(item);
+        }
+      });
+
+      const reversedList = [...uniqueList].reverse();
+      tbody.innerHTML = reversedList.map(item => {
+        const rate = Number(item.ReturnRate || item.returnRate || 0);
+        const rateColor = rate > 0 ? 'var(--accent-red)' : rate < 0 ? 'var(--accent-blue)' : 'inherit';
+        const rateSign = rate > 0 ? '+' : '';
+        
+        let level = String(item.Status || item.signalLevel || '관망').trim();
+        if (!level || !isNaN(Number(level)) || level === 'undefined') {
+          level = '전략매도';
+        }
+
+        let badgeClass = 'badge-neutral';
+        if (level.includes('손절매도') || level.includes('손절') || level.includes('3단계')) badgeClass = 'badge-sell-danger';
+        else if (level.includes('전략매도') || level.includes('매도') || level.includes('2단계')) badgeClass = 'badge-sell-warn';
+        else if (level.includes('전략매수') || level.includes('매수') || level.includes('1단계')) badgeClass = 'badge-t1';
+
+        const ticker = formatTicker(item.Ticker || item.ticker || item.code);
+        const adx = formatDec(item.ADX || item.adx);
+        const pdi = formatDec(item.Plus_DI || item.plus_di || item.plusDi);
+        const mdi = formatDec(item.Minus_DI || item.minus_di || item.minusDi);
+        const rsi = formatDec(item.RSI || item.rsi);
+
+        const rawBB = (item.b_band_pct !== undefined ? item.b_band_pct : (item.BB_Pct !== undefined ? item.BB_Pct : item['BB_%b']));
+        const bBandPctVal = (rawBB !== undefined && rawBB !== null && rawBB !== '') ? Number(rawBB) : NaN;
+        const bBandPctStr = formatDec(rawBB);
+        let bbColor = 'inherit';
+        if (!isNaN(bBandPctVal)) {
+          if (bBandPctVal <= 0.0) bbColor = 'var(--accent-green)';
+          else if (bBandPctVal >= 1.0) bbColor = '#f87171';
+        }
+
+        const rawVR = (item.VolumeRatio !== undefined ? item.VolumeRatio : (item.volume_ratio !== undefined ? item.volume_ratio : (item.VR !== undefined ? item.VR : item.vr)));
+        const vrStr = (rawVR !== undefined && rawVR !== null && rawVR !== '' && !isNaN(Number(rawVR))) ? formatDec(rawVR, 0) + '%' : '-';
+        const vrNum = Number(rawVR);
+        const vrColor = (!isNaN(vrNum) && vrNum >= 150) ? 'var(--accent-warning)' : 'inherit';
+
+        let detailsText = String(item.Details || item.details || '-').trim();
+        if (!detailsText || detailsText === 'undefined' || !isNaN(Number(detailsText))) {
+          detailsText = '-';
+        }
+        const escapedDetails = String(detailsText).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+        return `
+          <tr>
+            <td style="text-align:center;"><span style="color:var(--text-sub); font-size:0.85rem; font-weight:500;">${formatShortDate(item.Date || item.date || item.Timestamp)}</span></td>
+            <td style="padding-left: 16px;"><strong>${item.Name || item.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub);">(${ticker})</span></td>
+            <td style="text-align:right; padding-right: 14px;">${Number(item.BuyPrice || item.buyPrice || 0).toLocaleString()} 원</td>
+            <td style="text-align:right; padding-right: 14px;">${Number(item.CurrPrice || item.currPrice || 0).toLocaleString()} 원</td>
+            <td style="text-align:center;"><strong style="color:${rateColor}">${rateSign}${rate.toFixed(2)}%</strong></td>
+            <td style="text-align:center;"><strong style="color:var(--accent-cyan);">${adx}</strong></td>
+            <td style="text-align:center;">${mdi}</td>
+            <td style="text-align:center;">${pdi}</td>
+            <td style="text-align:center;"><span style="color: ${Number(rsi) <= 40 ? 'var(--accent-green)' : 'inherit'}">${rsi}</span></td>
+            <td style="text-align:center;"><span style="color: ${bbColor}">${bBandPctStr}</span></td>
+            <td style="text-align:center;"><span style="color: ${vrColor}">${vrStr}</span></td>
+            <td style="text-align:center;"><span class="badge ${badgeClass}" onclick="showDetailsModal('${item.Name || item.name}', '${level}', '${escapedDetails}', '${badgeClass}')" title="클릭 시 감시 사유 확인">${level}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function switchTab(tabId) {
+      // Capture previous horizontal scroll position if switching between KOSPI and KOSDAQ
+      let prevScrollLeft = 0;
+      if (tabId === 'all-stocks-tab' || tabId === 'kosdaq-stocks-tab') {
+        const fromTabId = tabId === 'all-stocks-tab' ? 'kosdaq-stocks-tab' : 'all-stocks-tab';
+        const fromContainer = document.querySelector(`#${fromTabId} .table-container`);
+        if (fromContainer) prevScrollLeft = fromContainer.scrollLeft;
+      }
+
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      const targetContent = document.getElementById(tabId);
+      if (targetContent) targetContent.style.display = 'block';
+
+      // Restore horizontal scroll position so switching between KOSPI and KOSDAQ never jumps
+      if (tabId === 'all-stocks-tab' || tabId === 'kosdaq-stocks-tab') {
+        const toContainer = document.querySelector(`#${tabId} .table-container`);
+        if (toContainer && prevScrollLeft > 0) {
+          toContainer.scrollLeft = prevScrollLeft;
+        }
+      }
+
+      // Highlight matching tab button
+      const matchingBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => {
+        const onclickAttr = b.getAttribute('onclick') || '';
+        return onclickAttr.includes(`'${tabId}'`) || onclickAttr.includes(`"${tabId}"`);
+      });
+      if (matchingBtn) matchingBtn.classList.add('active');
+
+      // Highlight matching metric card
+      document.querySelectorAll('.metric-card').forEach(c => c.classList.remove('active-tab-card'));
+      if (tabId === 'buy-tab') {
+        document.getElementById('metric-card-buy')?.classList.add('active-tab-card');
+      } else if (tabId === 'sell-signals-tab') {
+        document.getElementById('metric-card-sell')?.classList.add('active-tab-card');
+      } else if (tabId === 'holdings-tab') {
+        document.getElementById('metric-card-holdings')?.classList.add('active-tab-card');
+      }
+    }
+
+    function onStockSearchInput() {
+      const input = document.getElementById('reg-stock-name').value.trim().toLowerCase();
+      const resultsDiv = document.getElementById('stock-search-results');
+      if (!input || !allMetricsData || allMetricsData.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+
+      const matches = allMetricsData.filter(m => {
+        const name = String(m.Name || m.name || '').toLowerCase();
+        const ticker = formatTicker(m.Ticker || m.ticker || '').toLowerCase();
+        return name.includes(input) || ticker.includes(input);
+      }).slice(0, 10);
+
+      if (matches.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+
+      resultsDiv.innerHTML = matches.map(m => {
+        const name = m.Name || m.name;
+        const ticker = formatTicker(m.Ticker || m.ticker);
+        const price = Number(m.ClosePrice || m.close || 0);
+        const priceStr = price > 0 ? price.toLocaleString() + '원' : '';
+        return `
+          <div class="search-item" onclick="selectStockSearchResult('${name}', '${ticker}', ${price})">
+            <div><strong>${name}</strong> <span style="color:var(--text-sub); font-size:0.8rem;">(${ticker})</span></div>
+            <div style="color:#2563eb; font-weight:600; font-size:0.85rem;">${priceStr}</div>
+          </div>
+        `;
+      }).join('');
+      resultsDiv.style.display = 'block';
+    }
+
+    function selectStockSearchResult(name, ticker, price) {
+      document.getElementById('reg-stock-name').value = `${name} (${ticker})`;
+      if (price > 0) {
+        document.getElementById('reg-stock-price').value = price;
+      }
+      document.getElementById('stock-search-results').style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+      const resultsDiv = document.getElementById('stock-search-results');
+      const input = document.getElementById('reg-stock-name');
+      if (resultsDiv && input && !input.contains(e.target) && !resultsDiv.contains(e.target)) {
+        resultsDiv.style.display = 'none';
+      }
+    });
+
+    function openRegisterModal() { 
+      document.getElementById('register-modal').style.display = 'flex'; 
+      const resultsDiv = document.getElementById('stock-search-results');
+      if (resultsDiv) resultsDiv.style.display = 'none';
+    }
+    function closeRegisterModal() { 
+      document.getElementById('register-modal').style.display = 'none'; 
+      const resultsDiv = document.getElementById('stock-search-results');
+      if (resultsDiv) resultsDiv.style.display = 'none';
+    }
+
+    function quickRegister(name, ticker, price) {
+      const cleanTicker = formatTicker(ticker);
+      document.getElementById('reg-stock-name').value = `${name} (${cleanTicker})`;
+      document.getElementById('reg-stock-price').value = price || '';
+      openRegisterModal();
+    }
+
+    async function saveHolding() {
+      const rawInput = document.getElementById('reg-stock-name').value.trim();
+      const buyPrice = document.getElementById('reg-stock-price').value.trim();
+      if (!rawInput || !buyPrice) {
+        alert("종목명(또는 코드)과 매수가격(원)을 모두 입력해주세요.");
+        return;
+      }
+
+      const saveBtn = document.getElementById('btn-reg-save');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin" style="margin-right: 6px;"></i> 등록 중...`;
+      }
+
+      let name = rawInput;
+      let ticker = "";
+      const match = rawInput.match(/\((.*?)\)/);
+      if (match) {
+        ticker = formatTicker(match[1]);
+        name = rawInput.replace(/\(.*?\)/, '').trim();
+      } else {
+        const cleanInput = rawInput.replace(/\s+/g, '');
+        const found = allMetricsData.find(m => {
+          const mName = String(m.Name || m.name || '').replace(/\s+/g, '');
+          const mTicker = formatTicker(m.Ticker || m.ticker || '').replace(/\s+/g, '');
+          return mName === cleanInput || mTicker === cleanInput;
+        });
+        if (found) {
+          name = found.Name || found.name;
+          ticker = formatTicker(found.Ticker || found.ticker);
+        } else {
+          name = rawInput;
+          ticker = formatTicker(rawInput);
+        }
+      }
+
+      try {
+        const resp = await fetch(GAS_WEBAPP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "add_user_holding",
+            pin: userPin,
+            ticker: ticker,
+            name: name,
+            buyPrice: Number(buyPrice)
+          })
+        });
+        const result = await resp.json();
+        if (result.success) {
+          showInfoModal('등록 완료', `[${name} (${ticker})] 보유 종목이 등록되었습니다.`);
+          closeRegisterModal();
+          loadDataFromGAS(userPin);
+        } else {
+          showInfoModal('등록 실패', result.message || "오류가 발생했습니다.");
+        }
+      } catch (err) {
+        showInfoModal('오류', "등록 중 네트워크 오류가 발생했습니다: " + err);
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = `등록하기`;
+        }
+      }
+    }
+
+    async function deleteHolding(ticker) {
+      const confirmed = await showConfirmModal('보유 종목 삭제', `종목코드 [${ticker}] 보유 종목을 삭제할까요?`);
+      if (!confirmed) return;
+      try {
+        const resp = await fetch(GAS_WEBAPP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "delete_user_holding",
+            pin: userPin,
+            ticker: ticker
+          })
+        });
+        const result = await resp.json();
+        if (result.success) {
+          loadDataFromGAS(userPin);
+        } else {
+          showInfoModal('삭제 실패', result.message || "오류가 발생했습니다.");
+        }
+      } catch (err) {
+        showInfoModal('오류', "삭제 중 오류가 발생했습니다: " + err);
+      }
+    }
+
+    async function triggerManualScreening() {
+      const confirmed = await showConfirmModal('수동 스크리닝', 'KOSPI 200 수동 스크리닝을 실행할까요?\n(약 1~2분 소요)');
+      if (!confirmed) return;
+      
+      const btn = document.getElementById('manual-trigger-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span class="label-desktop">분석 중...</span>';
+      }
+
+      try {
+        const resp = await fetch(GAS_WEBAPP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "trigger_screener",
+            pin: userPin,
+            slotId: currentActiveStrategySlotIndex + 1
+          })
+        });
+        const result = await resp.json();
+        if (result.success) {
+          showInfoModal('스크리닝 시작', '수동 스크리닝이 시작되었습니다.\n1~2분 후 결과가 자동 갱신됩니다.');
+          setTimeout(() => {
+            window.location.reload();
+          }, 90000);
+        } else {
+          showInfoModal('실패', result.message || "권한 또는 설정 오류가 발생했습니다.");
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> <span class="label-desktop">수동 실행</span>';
+          }
+        }
+      } catch (err) {
+        showInfoModal('오류', "스크리닝 요청 실패: " + err);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-play"></i> <span class="label-desktop">수동 실행</span>';
+        }
+      }
+    }
+
+    // PWA Installation Prompt Logic
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const installBtn = document.getElementById('pwa-install-btn');
+      if (installBtn) installBtn.style.display = 'inline-flex';
+    });
+
+    async function installPWA() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        const installBtn = document.getElementById('pwa-install-btn');
+        if (installBtn) installBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    }
+
+    // Register Service Worker for Mobile PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW reg failed:', err));
+      });
+    }
+
+    // Clear stored PINs from legacy sessions
+    try {
+      localStorage.removeItem('stock_signal_pin');
+      sessionStorage.removeItem('stock_signal_pin');
+    } catch(e) {}
+
+    // Startup check: display empty PIN modal for fresh input
+    const pinInput = document.getElementById('input-pin');
+    if (pinInput) pinInput.value = "";
+    const pEl = document.getElementById('pin-modal');
+    if (pEl) pEl.style.display = 'flex';
+  </script>
+
+  <!-- Indicator Help Modal -->
+  <div id="info-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); z-index:9999; justify-content:center; align-items:center;">
+    <div class="modal-content" style="background:#fff; border-radius:12px; width:92%; max-width:480px; padding:18px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); border:1px solid #e2e8f0;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:6px;">
+        <h4 id="info-modal-title" style="font-size:0.90rem; font-weight:700; color:#0f172a; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;">지표 설명</h4>
+        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+          <span id="info-modal-badge" class="badge badge-t2" style="white-space:nowrap !important; flex-shrink:0; font-size:0.72rem; padding:3px 7px; font-weight:600; display:inline-block;">안내</span>
+          <button onclick="closeInfoModal()" style="background:none; border:none; font-size:1.15rem; color:#64748b; cursor:pointer; padding:0; flex-shrink:0; line-height:1; margin-left:2px;">✕</button>
+        </div>
+      </div>
+      <div id="info-modal-body" style="font-size:0.82rem; color:#334155; line-height:1.6; white-space:pre-line; max-height:60vh; overflow-y:auto; padding-right:4px;"></div>
+      <div style="margin-top:16px; text-align:right;">
+        <button class="btn-sm-action" onclick="closeInfoModal()" style="background:#2563eb; color:#fff; padding:6px 16px; border:none; border-radius:6px; font-weight:600; cursor:pointer;">확인</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
