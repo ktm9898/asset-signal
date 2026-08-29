@@ -842,14 +842,15 @@
     <!-- Hero Banner -->
     <div class="hero-banner">
       <div class="hero-left">
-        <!-- Strategy Bar inside hero (replaces state-badge + title) -->
-        <div class="strategy-bar" onclick="openStrategySelectModal()" title="클릭하여 전략 선택 및 조건 확인" style="margin-bottom: 8px;">
+        <!-- Strategy Bar: button + name + benchmark tag -->
+        <div class="strategy-bar" onclick="openStrategySelectModal()" title="클릭하여 전략 선택 및 조건 확인" style="margin-bottom: 10px;">
           <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
           <span class="strategy-bar-name" id="currentStrategyNameDisplay">#1. 전략 로딩중...</span>
+          <span id="heroBenchmarkTag" style="font-size: 11px; color: var(--text-dim); font-weight: 500; padding-left: 4px; white-space: nowrap;">(나스닥100)</span>
         </div>
-        <!-- Benchmark display (replaces advice desc) -->
-        <div class="hero-desc" id="heroBenchmarkDesc" style="font-size: 13px; color: var(--text-dim); font-weight: 600;">
-          기준 지표 : 나스닥 100
+        <!-- Advice text -->
+        <div class="hero-desc" id="heroAdviceDesc" style="font-size: 13px; color: var(--text-dim); line-height: 1.5;">
+          현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.
         </div>
       </div>
 
@@ -1197,10 +1198,25 @@
       mddEl.textContent = `${mdd.toFixed(2)}%`;
       mddEl.style.color = isDrop ? 'var(--rose)' : 'var(--emerald)';
 
-      // Show benchmark name in desc slot
-      const bmDesc = document.getElementById('heroBenchmarkDesc');
-      if (bmDesc) bmDesc.textContent = `기준 지표 : ${formatTickerDisplay(liveSignalData.benchmark)}`;
-      bmDesc.style.color = isDrop ? 'var(--rose)' : 'var(--text-dim)';
+      // Update benchmark tag (inline) and advice desc
+      const bmTag = document.getElementById('heroBenchmarkTag');
+      if (bmTag) bmTag.textContent = `(${formatTickerDisplay(liveSignalData.benchmark)})`;
+
+      const adviceDesc = document.getElementById('heroAdviceDesc');
+      if (adviceDesc) {
+        const isDrop = mdd <= -20.0;
+        const isRecovery = liveSignalData.currentState && (liveSignalData.currentState.includes('반등') || liveSignalData.currentState.includes('복귀'));
+        if (isDrop) {
+          adviceDesc.textContent = '하락국면 무게 적용 중입니다. 사전 정의된 하락 비중으로 전환하여 수익 및 위험 관리를 진행합니다.';
+          adviceDesc.style.color = 'var(--rose)';
+        } else if (isRecovery) {
+          adviceDesc.textContent = '시장이 회복 국면에 있습니다. 복구 비중을 유지하며 리밸런싱 시점을 모니터링합니다.';
+          adviceDesc.style.color = 'var(--primary)';
+        } else {
+          adviceDesc.textContent = liveSignalData.advice || '현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.';
+          adviceDesc.style.color = 'var(--text-dim)';
+        }
+      }
 
       renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.currentWeights, liveSignalData.deltaWeights, liveSignalData.assetReturns);
       renderOrdersList(liveSignalData.targetWeights, liveSignalData.deltaWeights);
@@ -1605,9 +1621,10 @@
       const container = document.getElementById('strategySelectListContainer');
       container.innerHTML = '<div style="text-align:center; color: var(--text-dim); padding: 24px; font-size: 13px;"><i class="fa-solid fa-spinner fa-spin"></i> 전략 목록 불러오는 중...</div>';
 
-      // Always fetch fresh from GAS (online-first strategy storage)
+      // Always fetch fresh from GAS (online-only strategy storage)
       let slots = [];
       let activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
+      let fetchError = false;
       try {
         const resp = await fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`);
         if (resp.ok) {
@@ -1619,25 +1636,27 @@
               localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
             }
           }
+        } else {
+          fetchError = true;
         }
       } catch(e) {
-        console.warn("[WARN] GAS fetch failed, falling back to localStorage:", e);
-      }
-
-      // Fallback to localStorage if GAS is unreachable
-      if (!slots || slots.length === 0) {
-        const stored = localStorage.getItem("asset_strategy_slots_v4");
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            slots = parsed.filter(s => s.baseWeights && Object.keys(s.baseWeights).length > 0);
-          } catch(e){}
-        }
+        console.warn("[WARN] GAS fetch failed:", e);
+        fetchError = true;
       }
 
       container.innerHTML = '';
-      if (!slots || slots.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color: var(--text-dim); padding: 24px; font-size: 13px;">저장된 전략이 없습니다. 백테스트 스튜디오에서 전략을 먼저 저장해주세요.</div>';
+
+      // Error state — no localStorage fallback (user wants online-only)
+      if (fetchError || !slots || slots.length === 0) {
+        const msg = fetchError
+          ? '서버 연결에 실패했습니다. 인터넷 연결을 확인하시고 다시 시도해주세요.'
+          : '저장된 전략이 없습니다. 백테스트 스튜디오에서 전략을 먼저 저장해주세요.';
+        container.innerHTML = `
+          <div style="text-align:center; padding: 28px 16px;">
+            <div style="font-size: 32px; margin-bottom: 10px;">${fetchError ? '⚠️' : '📂'}</div>
+            <div style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;">${msg}</div>
+            ${fetchError ? `<button onclick="renderStrategySelectList()" style="padding: 8px 20px; border-radius: 8px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 13px; font-weight: 600;"><i class="fa-solid fa-rotate-right"></i> 다시 시도</button>` : ''}
+          </div>`;
         return;
       }
 
