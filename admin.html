@@ -678,7 +678,7 @@
       top: 0;
       background: #f1f5f9;
       padding: 9px 11px;
-      text-align: right;
+      text-align: center;
       color: #334155;
       font-weight: 700;
       border-bottom: 1px solid var(--border-color);
@@ -686,19 +686,19 @@
     }
 
     .history-table th:first-child {
-      text-align: left;
+      text-align: center;
     }
 
     .history-table td {
       padding: 8px 11px;
-      text-align: right;
+      text-align: center;
       border-bottom: 1px solid #f1f5f9;
       font-family: 'Outfit', sans-serif;
       color: var(--text-main);
     }
 
     .history-table td:first-child {
-      text-align: left;
+      text-align: center;
       font-family: 'Pretendard', sans-serif;
       font-weight: 600;
       color: var(--text-muted);
@@ -1077,8 +1077,6 @@
               <th>ADX(14)</th>
               <th>+DI</th>
               <th>-DI</th>
-              <th>Stoch %K</th>
-              <th>Stoch %D</th>
               <th>MACD</th>
               <th>Signal</th>
               <th>Osc</th>
@@ -1087,10 +1085,6 @@
               <th>SMA60</th>
               <th>SMA120</th>
               <th>SMA200</th>
-              <th>BB 상단</th>
-              <th>BB 하단</th>
-              <th>52주 최고</th>
-              <th>52주 최저</th>
             </tr>
           </thead>
           <tbody id="dataTableBody">
@@ -2231,6 +2225,27 @@
         mddArr[i] = peak > 0 ? ((closePrices[i] - peak) / peak) * 100.0 : 0;
       }
 
+      // Helper for formatting prices and indicators (no currency symbols for market indices ^NDX, ^GSPC, ^KS11)
+      function formatPriceDisplay(ticker, price) {
+        if (price === undefined || price === null || isNaN(price)) return '-';
+        if (ticker && ticker.startsWith('^')) {
+          return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        const isKRW = ticker && (ticker.endsWith('.KS') || ticker.endsWith('.KQ') || /^\d{6}/.test(ticker));
+        if (isKRW) {
+          return `${Math.round(price).toLocaleString()}원`;
+        } else {
+          return `$${price.toFixed(2)}`;
+        }
+      }
+
+      function formatSmaDisplay(ticker, val) {
+        if (!val || val <= 0) return '-';
+        if (ticker && ticker.startsWith('^')) return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const isKRW = ticker && (ticker.endsWith('.KS') || ticker.endsWith('.KQ') || /^\d{6}/.test(ticker));
+        return isKRW ? Math.round(val).toLocaleString() : val.toFixed(2);
+      }
+
       // Summary Bar Rendering
       const latestClose = closePrices[N - 1];
       const prevClose = N > 1 ? closePrices[N - 2] : latestClose;
@@ -2239,16 +2254,14 @@
       const latestMDD = mddArr[N - 1];
       const latestBB = bbArr[N - 1];
       const latestADX = adxObj.adx[N - 1];
-      const latestStochK = stochObj.stochK[N - 1];
+      const latestOsc = macdObj.macd[N - 1] - macdObj.signal[N - 1];
       const isUp = chg1D >= 0;
-
-      const currencyStr = asset.currency === 'KRW' ? `${Math.round(latestClose).toLocaleString()}원` : `$${latestClose.toFixed(2)}`;
 
       let mddSummaryColor = 'var(--text-muted)';
       let mddSummaryBadge = '';
       if (latestMDD >= -0.01) {
         mddSummaryColor = 'var(--emerald)';
-        mddSummaryBadge = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(16,185,129,0.15); color: var(--emerald); font-weight: 700; margin-left: 6px;">신고가 (ATH)</span>';
+        mddSummaryBadge = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #dcfce7; color: var(--emerald); font-weight: 700; margin-left: 6px;">신고가 (ATH)</span>';
       } else if (latestMDD <= -20.0) {
         mddSummaryColor = 'var(--rose)';
       } else if (latestMDD <= -10.0) {
@@ -2259,7 +2272,7 @@
       summaryBar.innerHTML = `
         <div class="data-summary-card">
           <span class="data-summary-lbl">현재가</span>
-          <span class="data-summary-val">${currencyStr}</span>
+          <span class="data-summary-val">${formatPriceDisplay(t, latestClose)}</span>
         </div>
         <div class="data-summary-card">
           <span class="data-summary-lbl">1일 등락률</span>
@@ -2286,8 +2299,8 @@
           <span class="data-summary-val">${latestADX > 0 ? latestADX.toFixed(1) : '-'}</span>
         </div>
         <div class="data-summary-card">
-          <span class="data-summary-lbl">Stoch %K</span>
-          <span class="data-summary-val">${latestStochK > 0 ? latestStochK.toFixed(1) : '-'}</span>
+          <span class="data-summary-lbl">MACD Osc</span>
+          <span class="data-summary-val" style="color: ${latestOsc >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${latestOsc.toFixed(2)}</span>
         </div>
       `;
 
@@ -2319,8 +2332,6 @@
         const adx = adxObj.adx[i];
         const pdi = adxObj.pdi[i];
         const mdi = adxObj.mdi[i];
-        const stochK = stochObj.stochK[i];
-        const stochD = stochObj.stochD[i];
 
         // Meaningful MDD Color Grading
         let mddHtml = `<span style="color: var(--text-muted);">${mdd.toFixed(2)}%</span>`;
@@ -2340,43 +2351,29 @@
           bbPctHtml = `<span style="color: var(--emerald); font-weight: 700;">${bb.pctB.toFixed(2)}</span>`;
         }
 
-        // 52-Week High / Low at index i
-        const lookbackStart = Math.max(0, i - 252);
-        let wHigh = -Infinity, wLow = Infinity;
-        for (let k = lookbackStart; k <= i; k++) {
-          if (closePrices[k] > wHigh) wHigh = closePrices[k];
-          if (closePrices[k] < wLow) wLow = closePrices[k];
-        }
-
         const tr = document.createElement('tr');
         const cColor = changePct >= 0 ? 'var(--emerald)' : 'var(--rose)';
         const rsiClass = rsi >= 70 ? 'tag-rsi-high' : (rsi <= 30 ? 'tag-rsi-low' : '');
 
         tr.innerHTML = `
           <td>${dates[i]}</td>
-          <td style="font-weight: 700;">${asset.currency === 'KRW' ? Math.round(c).toLocaleString() : c.toFixed(2)}</td>
+          <td style="font-weight: 700;">${formatPriceDisplay(t, c)}</td>
           <td style="color: ${cColor}; font-weight: 700;">${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%</td>
           <td>${mddHtml}</td>
-          <td class="${rsiClass}">${rsi.toFixed(1)}</td>
+          <td><span class="${rsiClass}">${rsi.toFixed(1)}</span></td>
           <td>${bbPctHtml}</td>
           <td>${disp20}%</td>
           <td>${adx > 0 ? adx.toFixed(1) : '-'}</td>
-          <td style="color: var(--emerald);">${pdi > 0 ? pdi.toFixed(1) : '-'}</td>
-          <td style="color: var(--rose);">${mdi > 0 ? mdi.toFixed(1) : '-'}</td>
-          <td>${stochK > 0 ? stochK.toFixed(1) : '-'}</td>
-          <td>${stochD > 0 ? stochD.toFixed(1) : '-'}</td>
+          <td style="color: var(--emerald); font-weight: 600;">${pdi > 0 ? pdi.toFixed(1) : '-'}</td>
+          <td style="color: var(--rose); font-weight: 600;">${mdi > 0 ? mdi.toFixed(1) : '-'}</td>
           <td style="color: ${macd >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${macd.toFixed(2)}</td>
           <td>${sig.toFixed(2)}</td>
-          <td style="color: ${osc >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${osc.toFixed(2)}</td>
-          <td>${sma5 > 0 ? (asset.currency === 'KRW' ? Math.round(sma5).toLocaleString() : sma5.toFixed(2)) : '-'}</td>
-          <td>${sma20 > 0 ? (asset.currency === 'KRW' ? Math.round(sma20).toLocaleString() : sma20.toFixed(2)) : '-'}</td>
-          <td>${sma60 > 0 ? (asset.currency === 'KRW' ? Math.round(sma60).toLocaleString() : sma60.toFixed(2)) : '-'}</td>
-          <td>${sma120 > 0 ? (asset.currency === 'KRW' ? Math.round(sma120).toLocaleString() : sma120.toFixed(2)) : '-'}</td>
-          <td>${sma200 > 0 ? (asset.currency === 'KRW' ? Math.round(sma200).toLocaleString() : sma200.toFixed(2)) : '-'}</td>
-          <td>${bb ? (asset.currency === 'KRW' ? Math.round(bb.upper).toLocaleString() : bb.upper.toFixed(2)) : '-'}</td>
-          <td>${bb ? (asset.currency === 'KRW' ? Math.round(bb.lower).toLocaleString() : bb.lower.toFixed(2)) : '-'}</td>
-          <td>${asset.currency === 'KRW' ? Math.round(wHigh).toLocaleString() : wHigh.toFixed(2)}</td>
-          <td>${asset.currency === 'KRW' ? Math.round(wLow).toLocaleString() : wLow.toFixed(2)}</td>
+          <td style="color: ${osc >= 0 ? 'var(--emerald)' : 'var(--rose)'}; font-weight: 600;">${osc.toFixed(2)}</td>
+          <td>${formatSmaDisplay(t, sma5)}</td>
+          <td>${formatSmaDisplay(t, sma20)}</td>
+          <td>${formatSmaDisplay(t, sma60)}</td>
+          <td>${formatSmaDisplay(t, sma120)}</td>
+          <td>${formatSmaDisplay(t, sma200)}</td>
         `;
         tbody.appendChild(tr);
       }
@@ -2512,30 +2509,12 @@
       return { pdi, mdi, adx };
     }
 
-    function computeFullStochastic(prices, period = 14, smoothK = 3, smoothD = 3) {
-      const N = prices.length;
-      const rawK = new Float64Array(N);
-      for (let i = 0; i < N; i++) {
-        const start = Math.max(0, i - period + 1);
-        let minP = Infinity, maxP = -Infinity;
-        for (let j = start; j <= i; j++) {
-          if (prices[j] < minP) minP = prices[j];
-          if (prices[j] > maxP) maxP = prices[j];
-        }
-        const denom = maxP - minP;
-        rawK[i] = denom > 0 ? ((prices[i] - minP) / denom) * 100 : 50;
-      }
-      const stochK = computeFullSMA(rawK, smoothK);
-      const stochD = computeFullSMA(stochK, smoothD);
-      return { stochK, stochD };
-    }
-
     function exportDataToCSV() {
       const t = selectedDataTicker;
       const asset = etfDataset.universe[t];
       if (!asset || !asset.close) return;
 
-      let csv = "Date,Close,ChangePct,MDD,RSI14,BollingerPctB,Disparity20,ADX14,PlusDI,MinusDI,StochK,StochD,MACD,Signal,MACD_Osc,SMA5,SMA20,SMA60,SMA120,SMA200,BBUpper,BBLower,W52High,W52Low\n";
+      let csv = "Date,Close,ChangePct,MDD,RSI14,BollingerPctB,Disparity20,ADX14,PlusDI,MinusDI,MACD,Signal,MACD_Osc,SMA5,SMA20,SMA60,SMA120,SMA200\n";
       const dates = etfDataset.dates;
       const closePrices = asset.close;
       const rsiArr = computeFullRSI(closePrices, 14);
@@ -2547,7 +2526,6 @@
       const bbArr = computeFullBollinger(closePrices, 20, 2);
       const macdObj = computeFullMACD(closePrices, 12, 26, 9);
       const adxObj = computeFullADX(closePrices, 14);
-      const stochObj = computeFullStochastic(closePrices, 14, 3, 3);
 
       let peak = 0;
       for (let i = 0; i < dates.length; i++) {
@@ -2559,14 +2537,7 @@
         const disp20 = sma20Arr[i] > 0 ? ((c / sma20Arr[i]) * 100).toFixed(2) : '';
         const osc = macdObj.macd[i] - macdObj.signal[i];
 
-        const lookbackStart = Math.max(0, i - 252);
-        let wHigh = -Infinity, wLow = Infinity;
-        for (let k = lookbackStart; k <= i; k++) {
-          if (closePrices[k] > wHigh) wHigh = closePrices[k];
-          if (closePrices[k] < wLow) wLow = closePrices[k];
-        }
-
-        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${disp20},${adxObj.adx[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${stochObj.stochK[i].toFixed(2)},${stochObj.stochD[i].toFixed(2)},${macdObj.macd[i].toFixed(2)},${macdObj.signal[i].toFixed(2)},${osc.toFixed(2)},${sma5Arr[i].toFixed(2)},${sma20Arr[i].toFixed(2)},${sma60Arr[i].toFixed(2)},${sma120Arr[i].toFixed(2)},${sma200Arr[i].toFixed(2)},${bbArr[i].upper.toFixed(2)},${bbArr[i].lower.toFixed(2)},${wHigh.toFixed(2)},${wLow.toFixed(2)}\n`;
+        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${disp20},${adxObj.adx[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${macdObj.macd[i].toFixed(2)},${macdObj.signal[i].toFixed(2)},${osc.toFixed(2)},${sma5Arr[i].toFixed(2)},${sma20Arr[i].toFixed(2)},${sma60Arr[i].toFixed(2)},${sma120Arr[i].toFixed(2)},${sma200Arr[i].toFixed(2)}\n`;
       }
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
