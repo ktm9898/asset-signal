@@ -533,6 +533,120 @@
       gap: 8px;
       z-index: 2000;
     }
+
+    /* ========================================== */
+    /* Mobile First & Responsive Design System    */
+    /* ========================================== */
+    @media (max-width: 768px) {
+      .header-inner {
+        padding: 0 12px;
+      }
+      .brand-title {
+        font-size: 16px;
+      }
+      .brand-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+      .header-actions {
+        gap: 4px;
+      }
+      .nav-btn {
+        padding: 5px 8px;
+        font-size: 11.5px;
+        gap: 4px;
+      }
+      .container {
+        padding: 0 12px 60px;
+        margin: 10px auto;
+        gap: 12px;
+      }
+      .hero-banner {
+        padding: 16px 18px;
+        gap: 14px;
+      }
+      .hero-title {
+        font-size: 17px;
+      }
+      .hero-desc {
+        font-size: 12.5px;
+      }
+      .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        width: 100%;
+        gap: 8px;
+      }
+      .hero-stat-box {
+        min-width: 0;
+        padding: 8px 10px;
+      }
+      .stat-value {
+        font-size: 16px;
+      }
+      .dashboard-card {
+        padding: 16px 14px;
+      }
+      .allocation-wrapper {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 14px;
+      }
+      .chart-donut-container {
+        width: 150px;
+        height: 150px;
+      }
+      .weights-list {
+        width: 100%;
+      }
+      .calc-input-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .calc-input-box > div:last-child {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+      }
+      .calc-input {
+        width: 100% !important;
+        max-width: 180px;
+      }
+      .strategy-meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+      }
+      .strategy-meta-row .meta-val {
+        text-align: left;
+        width: 100%;
+        font-size: 12px;
+      }
+      .history-table {
+        font-size: 11.5px;
+      }
+      .history-table th, .history-table td {
+        padding: 8px 6px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .brand-title {
+        display: none;
+      }
+      .hero-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      .stat-label {
+        font-size: 10px;
+      }
+      .stat-value {
+        font-size: 14.5px;
+      }
+    }
   </style>
 </head>
 <body>
