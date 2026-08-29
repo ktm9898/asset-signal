@@ -344,7 +344,7 @@
     }
 
     .asset-ticker {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
     }
 
@@ -550,7 +550,7 @@
           QQQ 고점 대비 -3.25% 안정권 유지 | 기본 자산 배분 비중 운용
         </div>
         <div class="hero-desc" id="heroAdviceDesc">
-          현재 기준 지수(QQQ)가 최고가 대비 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중(QQQ 60% : SCHD 40%)을 그대로 유지하며 복리 수익 및 배당을 수취합니다.
+          현재 기준 지수(QQQ)가 최고가 대비 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중(QQQ 60% : SCHD 40%)을 그대로 유지하며 복리 성장 및 배당을 수취합니다.
         </div>
       </div>
 
@@ -595,11 +595,11 @@
         <div class="calc-input-box">
           <div>
             <div style="font-weight: 700;">내 총 투자자산 규모 입력 (선택)</div>
-            <div style="font-size: 11px; color: var(--text-dim);">금액 입력 시 ETF별 목표 매수/보유 금액이 자동 계산됩니다.</div>
+            <div style="font-size: 11px; color: var(--text-dim);">금액 입력 시 ETF별 목표 매수/보유 원화 금액이 자동 계산됩니다.</div>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <input type="number" class="calc-input" id="userTotalCapital" value="50000" step="1000" onchange="onCapitalChange()">
-            <span style="font-weight: 700;">$</span>
+            <input type="number" class="calc-input" id="userTotalCapital" value="50000000" step="1000000" onchange="onCapitalChange()" style="width: 160px;">
+            <span style="font-weight: 700;">원</span>
           </div>
         </div>
       </div>
@@ -678,13 +678,50 @@
   </div>
 
   <script>
+    const KOREAN_ETF_DICT = {
+      "069500.KS": "KODEX 200 (069500)",
+      "069500": "KODEX 200 (069500)",
+      "122630.KS": "KODEX 레버리지 (122630)",
+      "122630": "KODEX 레버리지 (122630)",
+      "379800.KS": "KODEX 미국나스닥100TR (379800)",
+      "379800": "KODEX 미국나스닥100TR (379800)",
+      "379810.KS": "KODEX 미국S&P500TR (379810)",
+      "379810": "KODEX 미국S&P500TR (379810)",
+      "448290.KS": "ACE 미국배당다우존스 (448290)",
+      "448290": "ACE 미국배당다우존스 (448290)",
+      "453850.KS": "ACE 미국30년국채액티브 (453850)",
+      "453850": "ACE 미국30년국채액티브 (453850)",
+      "252670.KS": "KODEX 200선물인버스2X (252670)",
+      "252670": "KODEX 200선물인버스2X (252670)",
+    };
+
+    function formatTickerDisplay(t) {
+      if (!t) return "";
+      const clean = String(t).trim().toUpperCase();
+      if (KOREAN_ETF_DICT[clean]) return KOREAN_ETF_DICT[clean];
+      if (clean.endsWith(".KS")) {
+        const code = clean.replace(".KS", "");
+        return `${code} (${code})`;
+      }
+      return clean;
+    }
+
+    function formatKRW(val) {
+      if (val >= 100000000) {
+        return (val / 100000000).toFixed(2) + '억원';
+      }
+      if (val >= 10000) {
+        return Math.round(val / 10000).toLocaleString() + '만원';
+      }
+      return Math.round(val).toLocaleString() + '원';
+    }
+
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwnJXm6B3ZrS0jp5dsoKV6n3ghCOOtjxcSzAVtVlZ3nCk6MwZIKgMVV6e7FJcdM0PaZ4A/exec";
     const COLOR_PALETTE = ['#38bdf8', '#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#a855f7', '#ec4899', '#14b8a6'];
 
     let donutChartInstance = null;
     let liveSignalData = null;
-    let activeStrategy = null;
-    let totalCapital = 50000;
+    let totalCapital = 50000000; // 5천만원 기본
 
     window.addEventListener('DOMContentLoaded', async () => {
       loadInitialData();
@@ -692,7 +729,6 @@
     });
 
     function loadInitialData() {
-      // Default Fallback Signal
       liveSignalData = {
         benchmark: "QQQ",
         benchmarkPrice: 721.11,
@@ -701,7 +737,7 @@
         currentState: "평시 (Normal)",
         targetWeights: { "QQQ": 60.0, "SCHD": 40.0 },
         deltaWeights: { "QQQ": 0.0, "SCHD": 0.0 },
-        advice: "✅ [평시 정상 운용] QQQ 고점 대비 -3.3%로 안정권 유지. 기본 자산 배분 비중 유지."
+        advice: "[평시 정상 운용] QQQ 고점 대비 -3.3%로 안정권 유지. 기본 자산 배분 비중 유지."
       };
       renderDashboardUI();
     }
@@ -743,7 +779,6 @@
       const isDrop = mdd <= -20.0;
       const isRecovery = liveSignalData.currentState.includes("반등") || liveSignalData.currentState.includes("복귀");
 
-      // Hero UI
       const badge = document.getElementById('heroStateBadge');
       badge.innerHTML = `<i class="fa-solid fa-circle-${isDrop ? 'exclamation' : 'check'}"></i> <span>${liveSignalData.currentState}</span>`;
       badge.style.background = isDrop ? 'rgba(244, 63, 94, 0.15)' : (isRecovery ? 'rgba(56, 189, 248, 0.15)' : 'rgba(16, 185, 129, 0.15)');
@@ -760,7 +795,6 @@
       document.getElementById('heroAdviceTitle').textContent = `${liveSignalData.benchmark} 낙폭 ${mdd.toFixed(1)}% | ${liveSignalData.currentState}`;
       document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice || "사전 설정된 퀀트 자산배분 모델에 따른 최적 목표 비중입니다.";
 
-      // Target Weights & Donut Chart
       renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.deltaWeights);
       renderOrdersList(liveSignalData.targetWeights, liveSignalData.deltaWeights);
     }
@@ -769,14 +803,15 @@
       const container = document.getElementById('weightsListContainer');
       container.innerHTML = '';
 
-      const labels = Object.keys(targetWeights || {});
+      const rawLabels = Object.keys(targetWeights || {});
+      const displayLabels = rawLabels.map(t => formatTickerDisplay(t));
       const values = Object.values(targetWeights || {});
-      const colors = labels.map((_, i) => COLOR_PALETTE[i % COLOR_PALETTE.length]);
+      const colors = rawLabels.map((_, i) => COLOR_PALETTE[i % COLOR_PALETTE.length]);
 
-      labels.forEach((ticker, idx) => {
+      rawLabels.forEach((ticker, idx) => {
         const pct = targetWeights[ticker];
         const delta = deltaWeights ? (deltaWeights[ticker] || 0) : 0;
-        const targetAmount = (totalCapital * (pct / 100.0)).toLocaleString();
+        const targetAmount = Math.round(totalCapital * (pct / 100.0));
 
         let deltaBadgeHtml = '';
         if (delta > 0) {
@@ -793,8 +828,8 @@
           <div class="asset-info">
             <div class="asset-color-dot" style="background: ${colors[idx]};"></div>
             <div>
-              <div class="asset-ticker">${ticker} ${deltaBadgeHtml}</div>
-              <div class="asset-name">목표금액: $${targetAmount}</div>
+              <div class="asset-ticker">${formatTickerDisplay(ticker)} ${deltaBadgeHtml}</div>
+              <div class="asset-name">목표금액: ${formatKRW(targetAmount)} (${targetAmount.toLocaleString()}원)</div>
             </div>
           </div>
           <div class="asset-pct">${pct.toFixed(1)}%</div>
@@ -802,14 +837,13 @@
         container.appendChild(card);
       });
 
-      // Render Donut Chart
       const ctx = document.getElementById('allocationDonutChart').getContext('2d');
       if (donutChartInstance) donutChartInstance.destroy();
 
       donutChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: labels,
+          labels: displayLabels,
           datasets: [{
             data: values,
             backgroundColor: colors,
@@ -847,11 +881,11 @@
             <div>
               <div class="order-action-title">
                 <i class="fa-solid fa-${isBuy ? 'circle-plus text-emerald' : 'circle-minus text-rose'}"></i>
-                <span>${ticker} ${isBuy ? '매수 (비중 확대)' : '매도 (비중 축소)'}</span>
+                <span>${formatTickerDisplay(ticker)} ${isBuy ? '매수 (비중 확대)' : '매도 (비중 축소)'}</span>
                 <span class="delta-badge ${isBuy ? 'delta-plus' : 'delta-minus'}">${isBuy ? '+' : ''}${delta}%p</span>
               </div>
               <div class="order-action-sub">
-                목표 비중 <strong>${tgtPct.toFixed(1)}%</strong> 맞춤 ($${targetAmount.toLocaleString()})
+                목표 비중 <strong>${tgtPct.toFixed(1)}%</strong> 맞춤 (${formatKRW(targetAmount)})
               </div>
             </div>
             <div style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800; color: ${isBuy ? 'var(--emerald)' : 'var(--rose)'};">
@@ -912,10 +946,10 @@
           body: JSON.stringify({ action: "trigger_screener" })
         });
         if (resp.ok) {
-          showToast("⚡ 클라우드 신호 계산이 시작되었습니다! (약 1분 후 자동 반영)");
+          showToast("[완료] 클라우드 신호 계산이 시작되었습니다! (약 1분 후 자동 반영)");
         }
       } catch (err) {
-        showToast("⚠️ 신호 요청 전송 실패");
+        showToast("신호 요청 전송 실패");
       }
     }
 

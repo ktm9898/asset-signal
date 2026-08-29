@@ -508,6 +508,9 @@
       border: 1px solid var(--border-color);
       color: var(--text-muted);
       transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .chart-tab.active {
@@ -592,7 +595,7 @@
       border: 1px solid var(--border-accent);
       border-radius: var(--radius-lg);
       width: 90%;
-      max-width: 500px;
+      max-width: 540px;
       padding: 28px;
       display: flex;
       flex-direction: column;
@@ -683,7 +686,7 @@
             <option value="QQQ">Invesco QQQ (나스닥 100)</option>
             <option value="SPY">SPDR S&P 500 Trust</option>
             <option value="SOXX">iShares Semiconductor (반도체)</option>
-            <option value="069500.KS">KODEX 200 (한국 코스피)</option>
+            <option value="069500.KS">KODEX 200 (069500)</option>
           </select>
         </div>
 
@@ -704,7 +707,7 @@
         <!-- Drawdown Drop Stages -->
         <div class="form-group">
           <div class="form-label">
-            <span>📉 낙폭 진입 국면 (MDD Escalation)</span>
+            <span>낙폭 진입 국면 (MDD Escalation)</span>
             <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addDropStage()">
               <i class="fa-solid fa-plus"></i> 하락 단계 추가
             </button>
@@ -717,7 +720,7 @@
         <!-- Staircase Recovery Stages -->
         <div class="form-group">
           <div class="form-label">
-            <span>📈 계단식 복귀 국면 (Hysteresis Recovery)</span>
+            <span>계단식 복귀 국면 (Hysteresis Recovery)</span>
             <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addRecoveryStage()">
               <i class="fa-solid fa-plus"></i> 복귀 단계 추가
             </button>
@@ -727,29 +730,37 @@
           </div>
         </div>
 
-        <!-- Gain & Drift Rebalance Parameters -->
+        <!-- Tax, Fee & Gain Threshold Parameters -->
         <div class="form-group">
           <div class="panel-section-title" style="margin-top: 10px;">
-            <i class="fa-solid fa-arrows-spin text-primary"></i> 이익실현 & 리밸런싱 필터
+            <i class="fa-solid fa-scale-balanced text-primary"></i> 세금, 거래비용 & 이익실현 모델
+          </div>
+          <div class="form-group" style="margin-top: 8px;">
+            <label class="form-label">과세 모델 (Tax Setting)</label>
+            <select class="form-select" id="cfgTaxModel" onchange="onConfigChange()">
+              <option value="0.22">미국 양도소득세 22% (연 250만원 기본공제 반영)</option>
+              <option value="0.154">국내 상장 ETF 배당소득세 15.4%</option>
+              <option value="0.0">비과세 계좌 (ISA / 연금저축 0%)</option>
+            </select>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
             <div class="form-group">
-              <label class="form-label">총자산 상승 이익실현</label>
+              <label class="form-label">수수료 + 슬리피지 (%)</label>
+              <input type="number" class="form-input" id="cfgFeeRate" value="0.15" step="0.05" onchange="onConfigChange()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">총자산 상승 이익실현 (%)</label>
               <input type="number" class="form-input" id="cfgGainThreshold" value="20" step="5" onchange="onConfigChange()">
             </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
             <div class="form-group">
               <label class="form-label">비중 이탈 허용폭 (±%p)</label>
               <input type="number" class="form-input" id="cfgTolerance" value="5" step="1" onchange="onConfigChange()">
             </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
             <div class="form-group">
               <label class="form-label">최소 쿨다운 (영업일)</label>
               <input type="number" class="form-input" id="cfgCooldown" value="5" step="1" onchange="onConfigChange()">
-            </div>
-            <div class="form-group">
-              <label class="form-label">거래 수수료/슬리피지</label>
-              <input type="number" class="form-input" id="cfgFeeRate" value="0.1" step="0.05" onchange="onConfigChange()">
             </div>
           </div>
         </div>
@@ -765,12 +776,12 @@
         <!-- Top Metrics Cards -->
         <div class="metrics-grid">
           <div class="metric-card">
-            <div class="metric-title">총 누적 수익률</div>
+            <div class="metric-title">세후 총 누적 수익률</div>
             <div class="metric-value" id="mTotalReturn" style="color: var(--emerald);">+0.0%</div>
             <div class="metric-sub" id="mInitialToFinal">$100k → $0</div>
           </div>
           <div class="metric-card">
-            <div class="metric-title">CAGR (연평균 복리)</div>
+            <div class="metric-title">세후 CAGR (연복리)</div>
             <div class="metric-value" id="mCAGR" style="color: var(--primary);">0.0%</div>
             <div class="metric-sub" id="mYears">16.5년 시뮬레이션</div>
           </div>
@@ -798,8 +809,12 @@
               <i class="fa-solid fa-chart-line text-primary"></i> 백테스트 성과 분석 차트
             </div>
             <div class="chart-tabs">
-              <button class="chart-tab active" onclick="switchChartTab('nav')">📈 자산 성장 곡선</button>
-              <button class="chart-tab" onclick="switchChartTab('drawdown')">🌊 고점 대비 낙폭</button>
+              <button class="chart-tab active" onclick="switchChartTab('nav')">
+                <i class="fa-solid fa-chart-line"></i> 자산 성장 곡선
+              </button>
+              <button class="chart-tab" onclick="switchChartTab('drawdown')">
+                <i class="fa-solid fa-chart-area"></i> 고점 대비 낙폭
+              </button>
             </div>
           </div>
 
@@ -817,7 +832,7 @@
             <thead>
               <tr>
                 <th>전략 및 벤치마크</th>
-                <th>총 수익률</th>
+                <th>세후 총 수익률</th>
                 <th>CAGR</th>
                 <th>MDD</th>
                 <th>Sharpe</th>
@@ -890,13 +905,15 @@
         <button class="btn-icon-del" onclick="closeEtfSelectModal()"><i class="fa-solid fa-xmark" style="font-size: 18px;"></i></button>
       </div>
       <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
-        현재 16년치 배당재투자 데이터셋에 포함된 검증된 ETF 목록입니다. 원하는 종목을 클릭하시면 포트폴리오에 추가됩니다.
+        검증된 ETF 목록입니다. 원하는 종목을 클릭하시면 포트폴리오에 추가되며, 하단에서 임의의 티커를 직접 입력할 수도 있습니다.
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 6px;">
         <!-- Group 1: US Tech & Leverage -->
         <div>
-          <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px;">🚀 미국 테크 & 레버리지</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-microchip"></i> 미국 테크 & 레버리지
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <div class="slot-tab" onclick="selectUniverseItem('QQQ')"><strong>QQQ</strong> <span class="text-dim" style="font-size: 11px;">나스닥 100 1X</span></div>
             <div class="slot-tab" onclick="selectUniverseItem('QLD')"><strong>QLD</strong> <span class="text-dim" style="font-size: 11px;">나스닥 2X 레버리지</span></div>
@@ -907,7 +924,9 @@
 
         <!-- Group 2: US Broad & Dividend -->
         <div>
-          <div style="font-size: 11px; font-weight: 700; color: var(--emerald); margin-bottom: 6px;">🏛️ 미국 시장 & 배당/가치</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--emerald); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-building-columns"></i> 미국 시장 & 배당/가치
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <div class="slot-tab" onclick="selectUniverseItem('SCHD')"><strong>SCHD</strong> <span class="text-dim" style="font-size: 11px;">미국 배당다우존스</span></div>
             <div class="slot-tab" onclick="selectUniverseItem('SPY')"><strong>SPY</strong> <span class="text-dim" style="font-size: 11px;">S&P 500 1X</span></div>
@@ -919,7 +938,9 @@
 
         <!-- Group 3: Fixed Income & Cash -->
         <div>
-          <div style="font-size: 11px; font-weight: 700; color: var(--amber); margin-bottom: 6px;">🛡️ 미국 채권 & 현금성</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--amber); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-shield-halved"></i> 미국 채권 & 현금성
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <div class="slot-tab" onclick="selectUniverseItem('TLT')"><strong>TLT</strong> <span class="text-dim" style="font-size: 11px;">미국 20년+ 국채</span></div>
             <div class="slot-tab" onclick="selectUniverseItem('BIL')"><strong>BIL</strong> <span class="text-dim" style="font-size: 11px;">1-3M 단기국채(현금)</span></div>
@@ -928,12 +949,14 @@
 
         <!-- Group 4: Korean ETFs -->
         <div>
-          <div style="font-size: 11px; font-weight: 700; color: #a855f7; margin-bottom: 6px;">🇰🇷 한국 상장 ETF</div>
+          <div style="font-size: 11px; font-weight: 700; color: #a855f7; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-won-sign"></i> 한국 상장 ETF
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="slot-tab" onclick="selectUniverseItem('069500.KS')"><strong>069500.KS</strong> <span class="text-dim" style="font-size: 11px;">KODEX 200</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('122630.KS')"><strong>122630.KS</strong> <span class="text-dim" style="font-size: 11px;">KODEX 레버리지 (2X)</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('379800.KS')"><strong>379800.KS</strong> <span class="text-dim" style="font-size: 11px;">KODEX 나스닥100TR</span></div>
-            <div class="slot-tab" onclick="selectUniverseItem('448290.KS')"><strong>448290.KS</strong> <span class="text-dim" style="font-size: 11px;">ACE 미국배당다우존스</span></div>
+            <div class="slot-tab" onclick="selectUniverseItem('069500.KS')"><strong>KODEX 200 (069500)</strong></div>
+            <div class="slot-tab" onclick="selectUniverseItem('122630.KS')"><strong>KODEX 레버리지 (122630)</strong></div>
+            <div class="slot-tab" onclick="selectUniverseItem('379800.KS')"><strong>KODEX 나스닥100TR (379800)</strong></div>
+            <div class="slot-tab" onclick="selectUniverseItem('448290.KS')"><strong>ACE 미국배당다우존스 (448290)</strong></div>
           </div>
         </div>
 
@@ -957,6 +980,37 @@
 
   <script>
     // ==========================================
+    // Korean ETF Name Dictionary & Formatter
+    // ==========================================
+    const KOREAN_ETF_DICT = {
+      "069500.KS": "KODEX 200 (069500)",
+      "069500": "KODEX 200 (069500)",
+      "122630.KS": "KODEX 레버리지 (122630)",
+      "122630": "KODEX 레버리지 (122630)",
+      "379800.KS": "KODEX 미국나스닥100TR (379800)",
+      "379800": "KODEX 미국나스닥100TR (379800)",
+      "379810.KS": "KODEX 미국S&P500TR (379810)",
+      "379810": "KODEX 미국S&P500TR (379810)",
+      "448290.KS": "ACE 미국배당다우존스 (448290)",
+      "448290": "ACE 미국배당다우존스 (448290)",
+      "453850.KS": "ACE 미국30년국채액티브 (453850)",
+      "453850": "ACE 미국30년국채액티브 (453850)",
+      "252670.KS": "KODEX 200선물인버스2X (252670)",
+      "252670": "KODEX 200선물인버스2X (252670)",
+    };
+
+    function formatTickerDisplay(t) {
+      if (!t) return "";
+      const clean = String(t).trim().toUpperCase();
+      if (KOREAN_ETF_DICT[clean]) return KOREAN_ETF_DICT[clean];
+      if (clean.endsWith(".KS")) {
+        const code = clean.replace(".KS", "");
+        return `${code} (${code})`;
+      }
+      return clean;
+    }
+
+    // ==========================================
     // Configuration & Global State
     // ==========================================
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwnJXm6B3ZrS0jp5dsoKV6n3ghCOOtjxcSzAVtVlZ3nCk6MwZIKgMVV6e7FJcdM0PaZ4A/exec";
@@ -967,10 +1021,9 @@
     let currentSlotId = 1;
     let activeSlotId = 1;
     let chartInstance = null;
-    let currentChartTab = 'nav'; // 'nav' or 'drawdown'
+    let currentChartTab = 'nav';
     let lastBacktestResult = null;
 
-    // Preset Default Strategies (10 Slots)
     const DEFAULT_PRESETS = [
       {
         id: 1,
@@ -991,7 +1044,8 @@
         gainThresholdPct: 20.0,
         toleranceBandPct: 5.0,
         cooldownDays: 5,
-        feeRate: 0.1
+        feeRate: 0.15,
+        taxRate: 0.22
       },
       {
         id: 2,
@@ -1010,7 +1064,8 @@
         gainThresholdPct: 20.0,
         toleranceBandPct: 5.0,
         cooldownDays: 5,
-        feeRate: 0.1
+        feeRate: 0.15,
+        taxRate: 0.22
       },
       {
         id: 3,
@@ -1029,7 +1084,8 @@
         gainThresholdPct: 20.0,
         toleranceBandPct: 5.0,
         cooldownDays: 5,
-        feeRate: 0.1
+        feeRate: 0.15,
+        taxRate: 0.22
       }
     ];
 
@@ -1049,7 +1105,8 @@
         gainThresholdPct: 20.0,
         toleranceBandPct: 5.0,
         cooldownDays: 5,
-        feeRate: 0.1
+        feeRate: 0.15,
+        taxRate: 0.22
       });
     }
 
@@ -1087,7 +1144,6 @@
         const resp = await fetch('data/etf_history.json');
         if (resp.ok) {
           etfDataset = await resp.json();
-          console.log("[INFO] ETF Dataset loaded:", Object.keys(etfDataset.universe).length, "tickers");
         }
       } catch (err) {
         console.warn("[WARN] Local fetch of etf_history.json failed:", err);
@@ -1152,10 +1208,11 @@
       const s = getCurrentSlot();
       document.getElementById('currentSlotTitleDisplay').textContent = `슬롯 ${s.id}: ${s.name}`;
       document.getElementById('cfgBenchmark').value = s.benchmark || "QQQ";
+      document.getElementById('cfgTaxModel').value = s.taxRate !== undefined ? s.taxRate : "0.22";
       document.getElementById('cfgGainThreshold').value = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20;
       document.getElementById('cfgTolerance').value = s.toleranceBandPct !== undefined ? s.toleranceBandPct : 5;
       document.getElementById('cfgCooldown').value = s.cooldownDays !== undefined ? s.cooldownDays : 5;
-      document.getElementById('cfgFeeRate').value = s.feeRate !== undefined ? s.feeRate : 0.1;
+      document.getElementById('cfgFeeRate').value = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate : s.feeRate * 100) : 0.15;
 
       renderBaseWeightsTable(s.baseWeights || {});
       renderDropStages(s.dropStages || []);
@@ -1176,7 +1233,7 @@
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${ticker}</strong></td>
+          <td><strong>${formatTickerDisplay(ticker)}</strong></td>
           <td style="text-align: right;">
             <input type="number" class="weight-input" value="${pct}" min="0" max="100" 
               onchange="updateBaseWeight('${ticker}', this.value)"> %
@@ -1245,13 +1302,12 @@
         return;
       }
 
-      showToast(`[${val}] 과거 15년치 일봉 데이터를 실시간 수집 중...`);
+      showToast(`[${formatTickerDisplay(val)}] 과거 일봉 데이터를 실시간 수집 중...`);
       try {
         const resp = await fetch(`${GAS_WEBAPP_URL}?action=fetch_ticker_history&ticker=${encodeURIComponent(val)}`);
         if (resp.ok) {
           const data = await resp.json();
           if (data.success && data.dates && data.dates.length > 0) {
-            // Align dates to etfDataset
             const dateMap = {};
             for (let i = 0; i < data.dates.length; i++) {
               dateMap[data.dates[i]] = data.adjClose[i];
@@ -1275,15 +1331,15 @@
               latestPrice: data.latestPrice
             };
 
-            showToast(`✅ [${val}] 데이터 로드 완료! 포트폴리오에 추가되었습니다.`);
+            showToast(`[${formatTickerDisplay(val)}] 데이터 로드 완료!`);
             selectUniverseItem(val);
             input.value = '';
             return;
           }
         }
-        showToast(`⚠️ [${val}] 티커 정보를 찾을 수 없습니다. (미국 티커는 VOO, 한국 티커는 069500.KS 형태로 입력)`);
+        showToast(`[${val}] 티커 정보를 찾을 수 없습니다. (미국은 VOO, 한국은 069500.KS 형태 입력)`);
       } catch (err) {
-        showToast(`⚠️ 통신 오류: ${err.message}`);
+        showToast(`통신 오류: ${err.message}`);
       }
     }
 
@@ -1308,7 +1364,7 @@
           const pct = Math.round((stg.weights[t] || 0) * 100);
           weightInputs += `
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
-              <span>${t}</span>
+              <span>${formatTickerDisplay(t)}</span>
               <span><input type="number" class="weight-input" style="padding: 4px 6px; font-size: 11px;" value="${pct}" 
                 onchange="updateDropStageWeight(${idx}, '${t}', this.value)"> %</span>
             </div>
@@ -1384,7 +1440,7 @@
           const pct = Math.round((stg.weights[t] || 0) * 100);
           weightInputs += `
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
-              <span>${t}</span>
+              <span>${formatTickerDisplay(t)}</span>
               <span><input type="number" class="weight-input" style="padding: 4px 6px; font-size: 11px;" value="${pct}" 
                 onchange="updateRecoveryStageWeight(${idx}, '${t}', this.value)"> %</span>
             </div>
@@ -1443,34 +1499,43 @@
     function onConfigChange() {
       const s = getCurrentSlot();
       s.benchmark = document.getElementById('cfgBenchmark').value;
+      s.taxRate = parseFloat(document.getElementById('cfgTaxModel').value);
       s.gainThresholdPct = parseFloat(document.getElementById('cfgGainThreshold').value);
       s.toleranceBandPct = parseFloat(document.getElementById('cfgTolerance').value);
       s.cooldownDays = parseInt(document.getElementById('cfgCooldown').value);
-      s.feeRate = parseFloat(document.getElementById('cfgFeeRate').value);
+      s.feeRate = parseFloat(document.getElementById('cfgFeeRate').value) / 100.0;
       saveLocalSlots();
       runInteractiveBacktest();
     }
 
     // ==========================================
-    // Client-Side Fast Backtester Engine
+    // Client-Side Fast Backtester Engine (After-Tax & Fee Modeling)
     // ==========================================
+    function formatKRW(val) {
+      if (val >= 100000000) {
+        return (val / 100000000).toFixed(2) + '억원';
+      }
+      if (val >= 10000) {
+        return Math.round(val / 10000).toLocaleString() + '만원';
+      }
+      return Math.round(val).toLocaleString() + '원';
+    }
+
     function runInteractiveBacktest() {
       if (!etfDataset || !etfDataset.dates || !etfDataset.universe) return;
 
       const s = getCurrentSlot();
       const dates = etfDataset.dates;
       const numDays = dates.length;
-      const initialCapital = 100000;
+      const initialCapital = 100000000; // 1억원 기본
       const benchmarkTicker = s.benchmark || "QQQ";
 
-      // Collect all active tickers
       const allTickers = new Set(Object.keys(s.baseWeights || {}));
       allTickers.add(benchmarkTicker);
       (s.dropStages || []).forEach(stg => Object.keys(stg.weights || {}).forEach(t => allTickers.add(t)));
       (s.recoveryStages || []).forEach(stg => Object.keys(stg.weights || {}).forEach(t => allTickers.add(t)));
       ["SPY", "TQQQ", "QLD"].forEach(t => { if (etfDataset.universe[t]) allTickers.add(t); });
 
-      // Get Price Arrays
       const prices = {};
       allTickers.forEach(t => {
         if (etfDataset.universe[t] && etfDataset.universe[t].adjClose) {
@@ -1480,7 +1545,6 @@
         }
       });
 
-      // Benchmark Drawdowns
       const bmPrices = prices[benchmarkTicker];
       const bmDrawdowns = new Float64Array(numDays);
       let bmMax = 0;
@@ -1489,12 +1553,17 @@
         bmDrawdowns[i] = bmMax > 0 ? ((bmPrices[i] - bmMax) / bmMax) * 100.0 : 0;
       }
 
-      // Initial Holdings
       const normBase = normalizeWeights(s.baseWeights || {});
       const holdings = {};
+      const costBasis = {};
+      const feeRate = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate / 100 : s.feeRate) : 0.0015;
+      const taxRate = s.taxRate !== undefined ? parseFloat(s.taxRate) : 0.22;
+      const taxDeduction = 2500000.0; // 연 250만원 기본공제
+
       allTickers.forEach(t => {
         const w = normBase[t] || 0;
-        holdings[t] = prices[t][0] > 0 ? (initialCapital * w * 0.999) / prices[t][0] : 0;
+        holdings[t] = prices[t][0] > 0 ? (initialCapital * w * (1.0 - feeRate)) / prices[t][0] : 0;
+        costBasis[t] = prices[t][0];
       });
 
       const stratNAV = new Float64Array(numDays);
@@ -1504,9 +1573,27 @@
       let lastRebalanceDay = 0;
       let lastRebalanceNAV = initialCapital;
       const cooldownDays = s.cooldownDays || 5;
+      let annualRealizedProfit = 0.0;
+      let currentYear = dates[0].substring(0, 4);
 
       for (let day = 0; day < numDays; day++) {
-        // Calculate NAV
+        const currentYearStr = dates[day].substring(0, 4);
+        
+        // Year-end Tax Deduction
+        if (currentYearStr !== currentYear) {
+          if (taxRate > 0 && annualRealizedProfit > taxDeduction) {
+            const taxDue = (annualRealizedProfit - taxDeduction) * taxRate;
+            let tot = 0;
+            allTickers.forEach(t => tot += holdings[t] * prices[t][day]);
+            if (tot > taxDue) {
+              const taxRatio = (tot - taxDue) / tot;
+              allTickers.forEach(t => holdings[t] *= taxRatio);
+            }
+          }
+          annualRealizedProfit = 0.0;
+          currentYear = currentYearStr;
+        }
+
         let currentNAV = 0;
         allTickers.forEach(t => {
           currentNAV += holdings[t] * prices[t][day];
@@ -1536,17 +1623,16 @@
           const candidate = matchedDrop.name || `하락 ${matchedDrop.threshold}%`;
           if (candidate !== currentState && (daysSinceRebal >= cooldownDays || currentState === "평시 (Normal)")) {
             targetWeights = normalizeWeights(matchedDrop.weights);
-            triggerReason = `📉 낙폭 ${currentBM_DD.toFixed(1)}% 도달 (${matchedDrop.threshold}% 이하)`;
+            triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}% (기준 ${matchedDrop.threshold}% 이하)`;
             nextState = candidate;
           }
         } else if (deepestDrop <= -15.0 && currentState !== "평시 (Normal)") {
-          // Check Recovery
           for (const rec of (s.recoveryStages || [])) {
             if (currentBM_DD >= rec.recovery && deepestDrop <= (rec.fromDrop || -20)) {
               const candidate = rec.name || `반등 ${rec.recovery}%`;
               if (candidate !== currentState && daysSinceRebal >= cooldownDays) {
                 targetWeights = normalizeWeights(rec.weights);
-                triggerReason = `📈 반등 ${currentBM_DD.toFixed(1)}% 회복 (저점 ${deepestDrop.toFixed(1)}%)`;
+                triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% 회복 (저점 ${deepestDrop.toFixed(1)}%)`;
                 nextState = candidate;
                 break;
               }
@@ -1554,7 +1640,7 @@
           }
           if (currentBM_DD >= -5.0 && currentState !== "평시 (Normal)") {
             targetWeights = normalizeWeights(s.baseWeights);
-            triggerReason = `✅ 상승 복귀 (${currentBM_DD.toFixed(1)}% ≥ -5.0%) -> 평시 원복`;
+            triggerReason = `[상승 복귀] ${currentBM_DD.toFixed(1)}% -> 평시 원복`;
             nextState = "평시 (Normal)";
             deepestDrop = 0.0;
           }
@@ -1565,18 +1651,31 @@
           const navGainPct = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
           if (s.gainThresholdPct > 0 && navGainPct >= s.gainThresholdPct) {
             targetWeights = normalizeWeights(s.baseWeights);
-            triggerReason = `💰 자산 성장 이익실현 (+${navGainPct.toFixed(1)}% 상승) -> 비중 재정렬`;
+            triggerReason = `[이익실현] 총자산 +${navGainPct.toFixed(1)}% 상승 -> 비중 재정렬`;
             nextState = "평시 (이익실현)";
           }
         }
 
         // Execute Rebalance
         if (targetWeights) {
-          let feeCost = currentNAV * 0.001;
-          let netNAV = currentNAV - feeCost;
+          let tradeVol = 0.0;
+          allTickers.forEach(t => {
+            const oldVal = holdings[t] * prices[t][day];
+            const newVal = currentNAV * (targetWeights[t] || 0);
+            if (newVal < oldVal) {
+              const soldQty = (oldVal - newVal) / prices[t][day];
+              annualRealizedProfit += soldQty * (prices[t][day] - (costBasis[t] || prices[t][day]));
+            }
+            tradeVol += Math.abs(newVal - oldVal);
+          });
+
+          const feeCost = (tradeVol / 2.0) * feeRate;
+          const netNAV = currentNAV - feeCost;
+
           allTickers.forEach(t => {
             const tgtVal = netNAV * (targetWeights[t] || 0);
             holdings[t] = prices[t][day] > 0 ? tgtVal / prices[t][day] : 0;
+            costBasis[t] = prices[t][day];
           });
 
           currentState = nextState;
@@ -1589,12 +1688,12 @@
             state: currentState,
             benchmarkDD: currentBM_DD.toFixed(1),
             nav: Math.round(netNAV),
-            weights: Object.fromEntries(Object.entries(targetWeights).map(([k, v]) => [k, Math.round(v * 100)]))
+            weights: Object.fromEntries(Object.entries(targetWeights).map(([k, v]) => [formatTickerDisplay(k), Math.round(v * 100)]))
           });
         }
       }
 
-      // Calculate Benchmarks Series
+      // Benchmarks Series
       const bmQQQ = new Float64Array(numDays);
       const bmTQQQ = new Float64Array(numDays);
       const bmSPY = new Float64Array(numDays);
@@ -1674,7 +1773,6 @@
         if (dd < maxDD) maxDD = dd;
       }
 
-      // Daily returns
       const rets = [];
       for (let i = 1; i < navSeries.length; i++) {
         rets.push((navSeries[i] - navSeries[i - 1]) / navSeries[i - 1]);
@@ -1702,21 +1800,21 @@
 
     function updateMetricsUI(m, years, rebalCount, initCap) {
       document.getElementById('mTotalReturn').textContent = `+${m.totalReturnPct}%`;
-      document.getElementById('mInitialToFinal').textContent = `$${(initCap/1000).toFixed(0)}k → $${(m.finalNAV/1000).toFixed(0)}k`;
+      document.getElementById('mInitialToFinal').textContent = `${formatKRW(initCap)} → ${formatKRW(m.finalNAV)}`;
       document.getElementById('mCAGR').textContent = `${m.cagrPct}%`;
       document.getElementById('mYears').textContent = `${years.toFixed(1)}년 장기 시뮬레이션`;
       document.getElementById('mMDD').textContent = `${m.mddPct}%`;
       document.getElementById('mSharpe').textContent = m.sharpe;
       document.getElementById('mSortino').textContent = `Sortino: ${m.sortino}`;
       document.getElementById('mRebalanceCount').textContent = `${rebalCount}회`;
-      document.getElementById('mRebalanceAnnual').textContent = `연평균 ${(rebalCount / years).toFixed(1)}회 (최소 거래비용)`;
+      document.getElementById('mRebalanceAnnual').textContent = `연평균 ${(rebalCount / years).toFixed(1)}회 (절세형)`;
     }
 
     function updateBenchmarkTableUI(strat, qqq, tqqq, stat, spy) {
       const tbody = document.getElementById('bmTableBody');
       tbody.innerHTML = `
         <tr class="row-highlight">
-          <td><i class="fa-solid fa-crown text-primary"></i> <strong>동적 자산배분 (본 전략)</strong></td>
+          <td><i class="fa-solid fa-star text-primary"></i> <strong>동적 자산배분 (본 전략, 세후)</strong></td>
           <td>+${strat.totalReturnPct}%</td>
           <td>${strat.cagrPct}%</td>
           <td>${strat.mddPct}%</td>
@@ -1777,7 +1875,7 @@
           <td style="text-align: center;"><span class="stage-badge-drop" style="font-size: 11px;">${ev.state}</span></td>
           <td style="color: var(--rose);">${ev.benchmarkDD}%</td>
           <td style="text-align: left; font-size: 12px; color: var(--text-muted);">${weightsStr}</td>
-          <td>$${ev.nav.toLocaleString()}</td>
+          <td>${formatKRW(ev.nav)}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -1789,7 +1887,7 @@
     function switchChartTab(tab) {
       currentChartTab = tab;
       document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
+      event.currentTarget.classList.add('active');
       renderChart();
     }
 
@@ -1815,7 +1913,7 @@
             labels: sampleDates,
             datasets: [
               {
-                label: '동적 자산배분 (본 전략)',
+                label: '동적 자산배분 (본 전략, 세후)',
                 data: stratSample,
                 borderColor: '#38bdf8',
                 backgroundColor: 'rgba(56, 189, 248, 0.08)',
@@ -1854,7 +1952,7 @@
                 grid: { color: 'rgba(255,255,255,0.06)' }, 
                 ticks: { 
                   color: '#64748b',
-                  callback: val => '$' + (val >= 1000000 ? (val/1000000).toFixed(1) + 'M' : (val/1000).toFixed(0) + 'k')
+                  callback: val => val >= 100000000 ? (val / 100000000).toFixed(1) + '억원' : Math.round(val / 10000).toLocaleString() + '만원'
                 } 
               }
             },
@@ -1864,7 +1962,6 @@
           }
         });
       } else {
-        // Drawdown Chart
         const stratDD = Array.from(lastBacktestResult.stratMetrics.dds).filter((_, i) => i % step === 0);
         const bmDD = Array.from(lastBacktestResult.bmDrawdowns).filter((_, i) => i % step === 0);
 
@@ -1930,12 +2027,12 @@
           })
         });
         if (resp.ok) {
-          showToast("✅ 구글 시트(Strategy_Slots)에 전략이 성공적으로 저장되었습니다!");
+          showToast("구글 시트(Strategy_Slots)에 전략이 성공적으로 저장되었습니다!");
         } else {
-          showToast("⚠️ 구글 시트 저장 중 응답 오류가 발생했습니다.");
+          showToast("구글 시트 저장 중 응답 오류가 발생했습니다.");
         }
       } catch (err) {
-        showToast("⚠️ 통신 오류 (로컬에는 저장 완료)");
+        showToast("통신 오류 (로컬에는 저장 완료)");
       }
     }
 
@@ -1954,10 +2051,10 @@
           })
         });
         if (resp.ok) {
-          showToast(`⚡ [슬롯 ${activeSlotId}] ${getCurrentSlot().name} 전략이 실전 활성화되었습니다!`);
+          showToast(`[슬롯 ${activeSlotId}] ${getCurrentSlot().name} 전략이 실전 활성화되었습니다!`);
         }
       } catch (err) {
-        showToast("⚠️ 실전 적용 신호 전송 실패 (로컬 지정 완료)");
+        showToast("실전 적용 신호 전송 실패 (로컬 지정 완료)");
       }
     }
 

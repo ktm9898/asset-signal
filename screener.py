@@ -1,43 +1,49 @@
 """
-Daily Dynamic Asset Allocation & Portfolio Signal Engine
-Automated daily execution via GitHub Actions or manual trigger.
-Fetches active strategy rules from Google Apps Script, evaluates benchmark drawdown & state machine,
-computes target asset weights (%) and adjustment delta (%p), and updates Google Sheets DB.
+Daily Portfolio Rebalancing & Market Signal Screener
+Fetches live ETF prices, tracks Benchmark Rolling ATH / MDD, evaluates Dynamic Allocation state,
+and sends actionable rebalancing weights (%) and weight deltas (%p) to Google Apps Script.
 """
 
 import os
-import sys
 import json
 import datetime
 import requests
 import yfinance as yf
-import numpy as np
 import pandas as pd
 
-if sys.platform == "win32":
-    try:
-        sys.stdout.reconfigure(encoding='utf-8')
-    except Exception:
-        pass
+GAS_WEBAPP_URL = os.environ.get("GAS_WEBAPP_URL", "")
+GAS_AUTH_PIN = os.environ.get("GAS_AUTH_PIN", "")
+ACTIVE_SLOT_ID = os.environ.get("ACTIVE_SLOT_ID", "1")
 
-def post_to_gas(url, action, data, pin=""):
-    try:
-        payload = {"action": action, "pin": pin, **data}
-        resp = requests.post(
-            url,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=25
-        )
-        if resp.status_code == 200:
-            return resp.json()
-        else:
-            print(f"[ERROR] GAS response {resp.status_code}: {resp.text}")
-    except Exception as e:
-        print(f"[ERROR] Failed to post to GAS ({action}): {e}")
-    return None
+KOREAN_ETF_NAMES = {
+    "069500.KS": "KODEX 200 (069500)",
+    "069500": "KODEX 200 (069500)",
+    "122630.KS": "KODEX 레버리지 (122630)",
+    "122630": "KODEX 레버리지 (122630)",
+    "379800.KS": "KODEX 미국나스닥100TR (379800)",
+    "379800": "KODEX 미국나스닥100TR (379800)",
+    "379810.KS": "KODEX 미국S&P500TR (379810)",
+    "379810": "KODEX 미국S&P500TR (379810)",
+    "448290.KS": "ACE 미국배당다우존스 (448290)",
+    "448290": "ACE 미국배당다우존스 (448290)",
+    "453850.KS": "ACE 미국30년국채액티브 (453850)",
+    "453850": "ACE 미국30년국채액티브 (453850)",
+    "252670.KS": "KODEX 200선물인버스2X (252670)",
+    "252670": "KODEX 200선물인버스2X (252670)",
+}
 
-def fetch_active_strategy(gas_url, pin=""):
+def format_ticker_display(ticker):
+    t_clean = str(ticker).strip().upper()
+    if t_clean in KOREAN_ETF_NAMES:
+        return KOREAN_ETF_NAMES[t_clean]
+    if t_clean.endswith(".KS"):
+        code = t_clean.replace(".KS", "")
+        return f"{code} ({code})"
+    return t_clean
+
+def fetch_active_strategy_from_gas(gas_url, pin=""):
+    if not gas_url:
+        return None, 1
     req_url = f"{gas_url}?action=get_strategy_slots"
     if pin:
         req_url += f"&pin={pin}"
@@ -46,16 +52,20 @@ def fetch_active_strategy(gas_url, pin=""):
         if resp.status_code == 200:
             data = resp.json()
             if data.get("success"):
-                active_id = data.get("activeSlotId", 1)
                 slots = data.get("slots", [])
-                active_slot = next((s for s in slots if s.get("id") == active_id), None)
-                if active_slot:
-                    return active_slot, slots
+                active_id = data.get("activeSlotId", 1)
+                for s in slots:
+                    if s.get("id") == active_id or s.get("isActive"):
+                        return s, active_id
+                if slots:
+                    return slots[0], active_id
     except Exception as e:
-        print(f"[WARN] Could not fetch strategy from GAS: {e}")
-    return None, []
+        print(f"[WARN] Failed to fetch strategy slots from GAS: {e}")
+    return None, 1
 
-def fetch_user_holdings(gas_url, pin=""):
+def fetch_user_holdings_from_gas(gas_url, pin=""):
+    if not gas_url:
+        return []
     req_url = f"{gas_url}?action=holdings"
     if pin:
         req_url += f"&pin={pin}"
@@ -71,7 +81,7 @@ def fetch_user_holdings(gas_url, pin=""):
 
 def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
     print("=" * 60)
-    print("🚀 Running Daily Dynamic Asset Allocation Signal Engine")
+    print("[INFO] Running Daily Dynamic Asset Allocation Signal Engine")
     print(f"Timestamp: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
@@ -130,7 +140,7 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
     bm_ath = float(bm_series.max())
     bm_mdd_pct = ((bm_current_adj - bm_ath) / bm_ath) * 100.0 if bm_ath > 0 else 0.0
 
-    print(f"\n📊 [시장 지표 분석]")
+    print(f"\n[시장 지표 분석]")
     print(f" - 기준 지수 ({benchmark_ticker}) 현재가: ${bm_current_close:,.2f}")
     print(f" - 최고가 (ATH): ${bm_ath:,.2f}")
     print(f" - 고점 대비 하락률 (MDD): {bm_mdd_pct:.2f}%")
@@ -142,7 +152,7 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
 
     # Check Drop Stages
     matched_drop = None
-    for stage in sorted(drop_stages, key=lambda x: x["threshold"]): # check deepest first
+    for stage in sorted(drop_stages, key=lambda x: x["threshold"]):
         if bm_mdd_pct <= stage["threshold"]:
             matched_drop = stage
             break
@@ -150,7 +160,7 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
     if matched_drop is not None:
         current_state = matched_drop.get("name", f"하락 {matched_drop['threshold']}%")
         target_weights = {k: float(v) for k, v in matched_drop.get("weights", {}).items()}
-        advice_msg = f"📉 [낙폭 국면 진입] {benchmark_ticker} 고점 대비 {bm_mdd_pct:.1f}% 하락! {current_state} 비중으로 리밸런싱 실행 권장."
+        advice_msg = f"[낙폭 국면 진입] {benchmark_ticker} 고점 대비 {bm_mdd_pct:.1f}% 하락. {current_state} 비중으로 리밸런싱 실행 권장."
     else:
         # Check if recently recovered from deep drop (last 60 days min MDD)
         recent_60d_min_dd = float(bm_series.tail(60).apply(lambda p: (p - bm_ath) / bm_ath * 100.0).min())
@@ -159,39 +169,35 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
                 if bm_mdd_pct >= rec.get("recovery", -10.0) and recent_60d_min_dd <= rec.get("fromDrop", -20.0):
                     current_state = rec.get("name", f"반등 회복 ({rec.get('recovery')}%)")
                     target_weights = {k: float(v) for k, v in rec.get("weights", {}).items()}
-                    advice_msg = f"📈 [반등 계단식 복귀] {benchmark_ticker} 낙폭 {bm_mdd_pct:.1f}%로 회복 (최근 저점 {recent_60d_min_dd:.1f}%). 레버리지 비중 선제 축소."
+                    advice_msg = f"[반등 계단식 복귀] {benchmark_ticker} 낙폭 {bm_mdd_pct:.1f}%로 회복 (최근 저점 {recent_60d_min_dd:.1f}%). 레버리지 비중 선제 축소."
                     break
         
         if not advice_msg:
             current_state = "평시 (Normal)"
             target_weights = {k: float(v) for k, v in base_weights.items()}
-            advice_msg = f"✅ [평시 정상 운용] {benchmark_ticker} 고점 대비 {bm_mdd_pct:.1f}%로 안정권 유지. 기본 자산 배분 비중 유지."
+            advice_msg = f"[평시 정상 운용] {benchmark_ticker} 고점 대비 {bm_mdd_pct:.1f}%로 안정권 유지. 기본 자산 배분 비중 유지."
 
     # Normalize target weights to 100%
     tot_w = sum(target_weights.values())
     if tot_w > 0:
         target_weights = {k: round((v / tot_w) * 100.0, 1) for k, v in target_weights.items()}
 
-    # Calculate delta against base weights (or user current holdings if available)
     delta_weights = {}
     for t in all_tickers:
         tgt = target_weights.get(t, 0.0)
         base = base_weights.get(t, 0.0) * 100.0
         delta = tgt - base
-        if abs(delta) > 0.01 or tgt > 0:
+        if abs(delta) > 0.01:
             delta_weights[t] = round(delta, 1)
 
-    print(f"\n🎯 [금일 권장 포트폴리오 목표 비중]")
-    print(f" - 국면 상태: {current_state}")
-    for t, w in target_weights.items():
-        d_val = delta_weights.get(t, 0.0)
-        d_str = f"({d_val:+5.1f}%p)" if d_val != 0 else "(유지)"
-        print(f"   • {t:6s}: {w:5.1f}%  {d_str}")
-    print(f"\n💡 [운용 조언]\n {advice_msg}")
+    print(f"\n[최종 산출 신호]")
+    print(f" - 현재 국면 상태: {current_state}")
+    print(f" - 목표 비중 (%): {target_weights}")
+    print(f" - 비중 변동 (%p): {delta_weights}")
+    print(f" - 운용 가이드: {advice_msg}")
 
-    # 5. Build Signal Object
-    signal_obj = {
-        "date": datetime.datetime.now().strftime("%Y-%m-%d"),
+    signal_payload = {
+        "date": datetime.date.today().strftime("%Y-%m-%d"),
         "benchmark": benchmark_ticker,
         "benchmarkPrice": round(bm_current_close, 2),
         "benchmarkATH": round(bm_ath, 2),
@@ -202,27 +208,31 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
         "advice": advice_msg
     }
 
-    # 6. Post to Google Sheets if gas_url configured
+    # 5. Send to Google Apps Script
     if gas_url:
-        print(f"\n[INFO] Posting signal to Google Apps Script...")
-        res = post_to_gas(gas_url, "update_portfolio_signal", {"signal": signal_obj}, pin=pin)
-        if res and res.get("success"):
-            print(" -> [SUCCESS] Google Sheets successfully updated!")
-        else:
-            print(" -> [WARN] Failed to update Google Sheets.")
+        print(f"\n[INFO] Sending signal payload to GAS WebApp...")
+        try:
+            resp = requests.post(
+                gas_url,
+                json={
+                    "action": "update_portfolio_signal",
+                    "pin": GAS_AUTH_PIN,
+                    "signal": signal_payload
+                },
+                timeout=15
+            )
+            print(f"[GAS Response] Status {resp.status_code}: {resp.text[:120]}")
+        except Exception as e:
+            print(f"[WARN] Failed to send update to GAS: {e}")
 
-    return signal_obj
+    return signal_payload
 
 def main():
-    gas_url = os.environ.get("GAS_WEBAPP_URL", "https://script.google.com/macros/s/AKfycbwnJXm6B3ZrS0jp5dsoKV6n3ghCOOtjxcSzAVtVlZ3nCk6MwZIKgMVV6e7FJcdM0PaZ4A/exec")
-    pin = os.environ.get("AUTH_PIN", "")
-
-    active_slot = None
-    if gas_url:
-        print("[INFO] Loading active strategy from Google Apps Script...")
-        active_slot, _ = fetch_active_strategy(gas_url, pin)
-
-    evaluate_portfolio_signal(strategy_config=active_slot, gas_url=gas_url, pin=pin)
+    gas_url = GAS_WEBAPP_URL.strip()
+    pin = GAS_AUTH_PIN.strip()
+    
+    active_strat, active_id = fetch_active_strategy_from_gas(gas_url, pin)
+    evaluate_portfolio_signal(active_strat, gas_url)
 
 if __name__ == "__main__":
     main()
