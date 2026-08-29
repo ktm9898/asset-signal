@@ -1031,15 +1031,23 @@
     <!-- VIEW 2: 데이터조회 뷰 (Comprehensive Daily Historical Table & Technical Indicators) -->
     <div id="viewData" style="display: none; flex-direction: column; gap: 20px;">
       
-      <!-- Top Control Bar: Ticker Selection & Range Filter -->
+      <!-- Top Control Bar: Market Filter, Ticker Selection & Range Filter -->
       <div class="slots-wrapper">
         <div class="slots-header">
-          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div class="slots-title">
               <i class="fa-solid fa-table-list text-primary"></i> 일별 시세 & 보조지표 정밀 데이터조회
             </div>
+            
+            <!-- Market Selection Tabs: 전체, 미국, 한국 -->
+            <div class="chart-tabs">
+              <button class="chart-tab active" id="marketBtnAll" onclick="setDataMarketFilter('ALL')">전체</button>
+              <button class="chart-tab" id="marketBtnUS" onclick="setDataMarketFilter('US')">미국</button>
+              <button class="chart-tab" id="marketBtnKR" onclick="setDataMarketFilter('KR')">한국</button>
+            </div>
+
             <div style="display: flex; align-items: center; gap: 8px;">
-              <select class="form-select" id="dataTickerSelect" style="width: 220px; font-weight: 700;" onchange="onDataTickerChange()">
+              <select class="form-select" id="dataTickerSelect" style="width: 250px; font-weight: 700;" onchange="onDataTickerChange()">
                 <!-- Populated dynamically -->
               </select>
             </div>
@@ -2167,18 +2175,82 @@
     // ==========================================
     // VIEW 2: 데이터조회 정밀 계산 & 렌더링 엔진
     // ==========================================
+    let currentDataMarket = 'ALL'; // 'ALL', 'US', 'KR'
+
+    function isKoreanTicker(ticker) {
+      if (!ticker) return false;
+      if (ticker === '^KS11' || ticker.endsWith('.KS') || ticker.endsWith('.KQ') || /^\d{6}/.test(ticker)) return true;
+      if (etfDataset && etfDataset.universe && etfDataset.universe[ticker] && etfDataset.universe[ticker].currency === 'KRW') return true;
+      return false;
+    }
+
+    function setDataMarketFilter(market) {
+      currentDataMarket = market;
+      document.querySelectorAll('#marketBtnAll, #marketBtnUS, #marketBtnKR').forEach(b => b.classList.remove('active'));
+      if (market === 'US') document.getElementById('marketBtnUS').classList.add('active');
+      else if (market === 'KR') document.getElementById('marketBtnKR').classList.add('active');
+      else document.getElementById('marketBtnAll').classList.add('active');
+
+      populateDataTickerDropdown();
+      renderDataTable();
+    }
+
     function populateDataTickerDropdown() {
       if (!etfDataset || !etfDataset.universe) return;
       const sel = document.getElementById('dataTickerSelect');
       sel.innerHTML = '';
 
-      Object.keys(etfDataset.universe).forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = formatTickerDisplay(t);
-        sel.appendChild(opt);
-      });
-      sel.value = selectedDataTicker;
+      const allTickers = Object.keys(etfDataset.universe);
+      let filteredTickers = allTickers;
+
+      if (currentDataMarket === 'US') {
+        filteredTickers = allTickers.filter(t => !isKoreanTicker(t));
+      } else if (currentDataMarket === 'KR') {
+        filteredTickers = allTickers.filter(t => isKoreanTicker(t));
+      }
+
+      if (currentDataMarket === 'ALL') {
+        const usTickers = allTickers.filter(t => !isKoreanTicker(t));
+        const krTickers = allTickers.filter(t => isKoreanTicker(t));
+
+        if (usTickers.length > 0) {
+          const usGroup = document.createElement('optgroup');
+          usGroup.label = '미국 시장 (US)';
+          usTickers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = formatTickerDisplay(t);
+            usGroup.appendChild(opt);
+          });
+          sel.appendChild(usGroup);
+        }
+
+        if (krTickers.length > 0) {
+          const krGroup = document.createElement('optgroup');
+          krGroup.label = '한국 시장 (KR)';
+          krTickers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = formatTickerDisplay(t);
+            krGroup.appendChild(opt);
+          });
+          sel.appendChild(krGroup);
+        }
+      } else {
+        filteredTickers.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = formatTickerDisplay(t);
+          sel.appendChild(opt);
+        });
+      }
+
+      if (filteredTickers.includes(selectedDataTicker)) {
+        sel.value = selectedDataTicker;
+      } else if (filteredTickers.length > 0) {
+        selectedDataTicker = filteredTickers[0];
+        sel.value = selectedDataTicker;
+      }
     }
 
     function onDataTickerChange() {
