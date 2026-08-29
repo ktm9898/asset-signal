@@ -694,9 +694,21 @@
     /* Data Table View Styles */
     .data-summary-bar {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      margin-bottom: 10px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 1100px) {
+      .data-summary-bar {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .data-summary-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .data-summary-card {
@@ -707,13 +719,14 @@
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
     }
 
     .data-summary-lbl {
       font-size: 11px;
       color: var(--text-dim);
       font-weight: 600;
+      text-align: left;
     }
 
     .data-summary-val {
@@ -721,6 +734,10 @@
       font-size: 18px;
       font-weight: 800;
       color: var(--text-main);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .history-table-container {
@@ -3123,19 +3140,7 @@
           <span class="data-summary-val" style="color: ${latestBB.pctB >= 1.0 ? 'var(--rose)' : (latestBB.pctB <= 0.0 ? 'var(--emerald)' : 'var(--text-main)')};">${latestBB.pctB.toFixed(2)}</span>
         </div>
         <div class="data-summary-card">
-          <span class="data-summary-lbl">SMA20 이격도</span>
-          <span class="data-summary-val">${sma20Arr[N-1] > 0 ? ((latestClose / sma20Arr[N-1]) * 100).toFixed(1) + '%' : '-'}</span>
-        </div>
-        <div class="data-summary-card">
-          <span class="data-summary-lbl">ADX (14)</span>
-          <span class="data-summary-val">${latestADX > 0 ? latestADX.toFixed(1) : '-'}</span>
-        </div>
-        <div class="data-summary-card">
-          <span class="data-summary-lbl">STOCH (14,3,3)</span>
-          <span class="data-summary-val">${latestStochK > 0 ? latestStochK.toFixed(1) : '-'}/${latestStochD > 0 ? latestStochD.toFixed(1) : '-'}</span>
-        </div>
-        <div class="data-summary-card">
-          <span class="data-summary-lbl">MACD Osc</span>
+          <span class="data-summary-lbl">MACD (Osc)</span>
           <span class="data-summary-val" style="color: ${latestOsc >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${latestOsc.toFixed(2)}</span>
         </div>
       `;
