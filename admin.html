@@ -1088,6 +1088,7 @@
               <th>MACD</th>
               <th>Signal</th>
               <th>Osc</th>
+              <th>STOCH(K/D)</th>
               <th>SMA5</th>
               <th>SMA20</th>
               <th>SMA60</th>
@@ -2327,6 +2328,8 @@
       const latestBB = bbArr[N - 1];
       const latestADX = adxObj.adx[N - 1];
       const latestOsc = macdObj.macd[N - 1] - macdObj.signal[N - 1];
+      const latestStochK = stochObj.stochK[N - 1];
+      const latestStochD = stochObj.stochD[N - 1];
       const isUp = chg1D >= 0;
 
       let mddSummaryColor = 'var(--text-muted)';
@@ -2371,6 +2374,10 @@
           <span class="data-summary-val">${latestADX > 0 ? latestADX.toFixed(1) : '-'}</span>
         </div>
         <div class="data-summary-card">
+          <span class="data-summary-lbl">STOCH (14,3,3)</span>
+          <span class="data-summary-val">${latestStochK > 0 ? latestStochK.toFixed(1) : '-'}/${latestStochD > 0 ? latestStochD.toFixed(1) : '-'}</span>
+        </div>
+        <div class="data-summary-card">
           <span class="data-summary-lbl">MACD Osc</span>
           <span class="data-summary-val" style="color: ${latestOsc >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${latestOsc.toFixed(2)}</span>
         </div>
@@ -2404,6 +2411,8 @@
         const adx = adxObj.adx[i];
         const pdi = adxObj.pdi[i];
         const mdi = adxObj.mdi[i];
+        const stochK = stochObj.stochK[i];
+        const stochD = stochObj.stochD[i];
 
         // Meaningful MDD Color Grading
         let mddHtml = `<span style="color: var(--text-muted);">${mdd.toFixed(2)}%</span>`;
@@ -2441,6 +2450,7 @@
           <td style="color: ${macd >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${macd.toFixed(2)}</td>
           <td>${sig.toFixed(2)}</td>
           <td style="color: ${osc >= 0 ? 'var(--emerald)' : 'var(--rose)'}; font-weight: 600;">${osc.toFixed(2)}</td>
+          <td style="font-weight: 600;">${stochK > 0 ? stochK.toFixed(1) : '-'}/${stochD > 0 ? stochD.toFixed(1) : '-'}</td>
           <td>${formatSmaDisplay(t, sma5)}</td>
           <td>${formatSmaDisplay(t, sma20)}</td>
           <td>${formatSmaDisplay(t, sma60)}</td>
@@ -2581,12 +2591,30 @@
       return { pdi, mdi, adx };
     }
 
+    function computeFullStochastic(prices, period = 14, smoothK = 3, smoothD = 3) {
+      const N = prices.length;
+      const rawK = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        const start = Math.max(0, i - period + 1);
+        let minP = Infinity, maxP = -Infinity;
+        for (let j = start; j <= i; j++) {
+          if (prices[j] < minP) minP = prices[j];
+          if (prices[j] > maxP) maxP = prices[j];
+        }
+        const denom = maxP - minP;
+        rawK[i] = denom > 0 ? ((prices[i] - minP) / denom) * 100 : 50;
+      }
+      const stochK = computeFullSMA(rawK, smoothK);
+      const stochD = computeFullSMA(stochK, smoothD);
+      return { stochK, stochD };
+    }
+
     function exportDataToCSV() {
       const t = selectedDataTicker;
       const asset = etfDataset.universe[t];
       if (!asset || !asset.close) return;
 
-      let csv = "Date,Close,ChangePct,MDD,RSI14,BollingerPctB,Disparity20,ADX14,PlusDI,MinusDI,MACD,Signal,MACD_Osc,SMA5,SMA20,SMA60,SMA120,SMA200\n";
+      let csv = "Date,Close,ChangePct,MDD,RSI14,BollingerPctB,Disparity20,ADX14,PlusDI,MinusDI,MACD,Signal,MACD_Osc,StochK,StochD,SMA5,SMA20,SMA60,SMA120,SMA200\n";
       const dates = etfDataset.dates;
       const closePrices = asset.close;
       const rsiArr = computeFullRSI(closePrices, 14);
@@ -2598,6 +2626,7 @@
       const bbArr = computeFullBollinger(closePrices, 20, 2);
       const macdObj = computeFullMACD(closePrices, 12, 26, 9);
       const adxObj = computeFullADX(closePrices, 14);
+      const stochObj = computeFullStochastic(closePrices, 14, 3, 3);
 
       let peak = 0;
       for (let i = 0; i < dates.length; i++) {
@@ -2609,7 +2638,7 @@
         const disp20 = sma20Arr[i] > 0 ? ((c / sma20Arr[i]) * 100).toFixed(2) : '';
         const osc = macdObj.macd[i] - macdObj.signal[i];
 
-        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${disp20},${adxObj.adx[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${macdObj.macd[i].toFixed(2)},${macdObj.signal[i].toFixed(2)},${osc.toFixed(2)},${sma5Arr[i].toFixed(2)},${sma20Arr[i].toFixed(2)},${sma60Arr[i].toFixed(2)},${sma120Arr[i].toFixed(2)},${sma200Arr[i].toFixed(2)}\n`;
+        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${disp20},${adxObj.adx[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${macdObj.macd[i].toFixed(2)},${macdObj.signal[i].toFixed(2)},${osc.toFixed(2)},${stochObj.stochK[i].toFixed(2)},${stochObj.stochD[i].toFixed(2)},${sma5Arr[i].toFixed(2)},${sma20Arr[i].toFixed(2)},${sma60Arr[i].toFixed(2)},${sma120Arr[i].toFixed(2)},${sma200Arr[i].toFixed(2)}\n`;
       }
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
