@@ -16,10 +16,10 @@ GAS_AUTH_PIN = os.environ.get("GAS_AUTH_PIN", "")
 ACTIVE_SLOT_ID = os.environ.get("ACTIVE_SLOT_ID", "1")
 
 KOREAN_ETF_NAMES = {
-    "^NDX": "나스닥 지수 (^NDX)",
+    "^NDX": "나스닥 100 지수 (^NDX)",
     "^GSPC": "S&P 500 지수 (^GSPC)",
     "^KS11": "코스피 지수 (^KS11)",
-    "^IXIC": "나스닥 지수 (^IXIC)",
+    "^IXIC": "나스닥 종합지수 (^IXIC)",
     "069500.KS": "KODEX 200 (069500)",
     "069500": "KODEX 200 (069500)",
     "122630.KS": "KODEX 레버리지 (122630)",
