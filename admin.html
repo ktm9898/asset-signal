@@ -1928,7 +1928,7 @@
 
       const stratNAV = new Float64Array(numDays);
       const rebalanceEvents = [];
-      let currentState = "평시 (Normal)";
+      let currentState = "기본 (정상 운용)";
       let deepestDrop = 0.0;
       let lastRebalanceDay = 0;
       let lastRebalanceNAV = initialCapital;
@@ -1962,12 +1962,12 @@
 
         if (matchedDrop) {
           const candidate = matchedDrop.name || `하락 ${matchedDrop.threshold}%`;
-          if (candidate !== currentState && (daysSinceRebal >= cooldownDays || currentState === "평시 (Normal)")) {
+          if (candidate !== currentState && (daysSinceRebal >= cooldownDays || currentState === "기본 (정상 운용)")) {
             targetWeights = normalizeWeights(matchedDrop.weights);
             triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}% (기준 ${matchedDrop.threshold}% 이하)`;
             nextState = candidate;
           }
-        } else if (deepestDrop <= -15.0 && currentState !== "평시 (Normal)") {
+        } else if (deepestDrop <= -15.0 && currentState !== "기본 (정상 운용)") {
           for (const rec of (s.recoveryStages || [])) {
             if (currentBM_DD >= rec.recovery && deepestDrop <= (rec.fromDrop || -20)) {
               const candidate = rec.name || `반등 ${rec.recovery}%`;
@@ -1979,21 +1979,21 @@
               }
             }
           }
-          if (currentBM_DD >= -5.0 && currentState !== "평시 (Normal)") {
+          if (currentBM_DD >= -5.0 && currentState !== "기본 (정상 운용)") {
             targetWeights = normalizeWeights(s.baseWeights);
-            triggerReason = `[상승 복귀] ${currentBM_DD.toFixed(1)}% -> 평시 원복`;
-            nextState = "평시 (Normal)";
+            triggerReason = `[상승 복귀] ${currentBM_DD.toFixed(1)}% -> 기본 비중 원복`;
+            nextState = "기본 (정상 운용)";
             deepestDrop = 0.0;
           }
         }
 
         // Check Gain Rebalance
-        if (!targetWeights && currentState === "평시 (Normal)" && daysSinceRebal >= 20) {
+        if (!targetWeights && currentState === "기본 (정상 운용)" && daysSinceRebal >= 20) {
           const navGainPct = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
           if (s.gainThresholdPct > 0 && navGainPct >= s.gainThresholdPct) {
             targetWeights = normalizeWeights(s.baseWeights);
             triggerReason = `[이익실현] 총자산 +${navGainPct.toFixed(1)}% 상승 -> 비중 재정렬`;
-            nextState = "평시 (이익실현)";
+            nextState = "기본 (이익실현)";
           }
         }
 
