@@ -683,6 +683,14 @@
       white-space: nowrap !important;
     }
 
+    .table-center th {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      z-index: 2;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
     /* Data Table View Styles */
     .data-summary-bar {
       display: grid;
@@ -1116,7 +1124,7 @@
               <span><i class="fa-solid fa-list-check text-primary"></i> 최근 리밸런싱 이력</span>
               <span class="text-dim" style="font-size: 12px;" id="rebalanceCountText">총 0건</span>
             </div>
-            <div style="max-height: 260px; overflow-y: auto; overflow-x: auto;">
+            <div style="max-height: 720px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
               <table class="bm-table table-center">
                 <thead>
                   <tr>
