@@ -14,6 +14,7 @@ import numpy as np
 
 MARKET_UNIVERSE = [
     # 1. Major Benchmark Market Indices
+    {"ticker": "^IXIC", "name": "나스닥 지수", "category": "INDEX", "currency": "USD", "isIndex": True},
     {"ticker": "^NDX", "name": "나스닥 100 지수", "category": "INDEX", "currency": "USD", "isIndex": True},
     {"ticker": "^GSPC", "name": "S&P 500 지수", "category": "INDEX", "currency": "USD", "isIndex": True},
     {"ticker": "^KS11", "name": "코스피 지수", "category": "INDEX", "currency": "KRW", "isIndex": True},
@@ -32,6 +33,7 @@ MARKET_UNIVERSE = [
     {"ticker": "SCHD", "name": "Schwab US Dividend Equity (배당다우존스)", "category": "US_DIVIDEND", "currency": "USD"},
     {"ticker": "JEPI", "name": "JPMorgan Equity Premium Income (커버드콜)", "category": "US_INCOME", "currency": "USD"},
     {"ticker": "TLT", "name": "iShares 20+ Year Treasury Bond (미국장기채)", "category": "US_BOND", "currency": "USD"},
+    {"ticker": "SGOV", "name": "iShares 0-3 Month Treasury Bond (초단기채/현금)", "category": "US_CASH", "currency": "USD"},
     {"ticker": "BIL", "name": "SPDR 1-3 Month T-Bill (단기국채/현금성)", "category": "US_CASH", "currency": "USD"},
     
     # 4. Korean ETFs
