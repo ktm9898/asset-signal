@@ -731,16 +731,16 @@
 
       <div class="hero-stats">
         <div class="hero-stat-box">
-          <div class="stat-label">현재가</div>
-          <div class="stat-value" id="heroPrice">$721.11</div>
+          <div class="stat-label" id="heroPriceLabel">현재 지수</div>
+          <div class="stat-value" id="heroPrice">29,641.56</div>
         </div>
         <div class="hero-stat-box">
-          <div class="stat-label">MDD</div>
+          <div class="stat-label">낙폭 (MDD)</div>
           <div class="stat-value" id="heroMDD" style="color: var(--emerald);">-3.25%</div>
         </div>
         <div class="hero-stat-box">
-          <div class="stat-label">최고가</div>
-          <div class="stat-value" id="heroATH">$745.34</div>
+          <div class="stat-label" id="heroATHLabel">최고 지수</div>
+          <div class="stat-value" id="heroATH">30,634.20</div>
         </div>
       </div>
     </div>
@@ -1046,8 +1046,17 @@
       badge.style.color = isDrop ? 'var(--rose)' : (isRecovery ? 'var(--primary)' : 'var(--emerald)');
       badge.style.borderColor = isDrop ? '#fca5a5' : (isRecovery ? '#bae6fd' : '#bbf7d0');
 
-      document.getElementById('heroPrice').textContent = `$${liveSignalData.benchmarkPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      document.getElementById('heroATH').textContent = `$${liveSignalData.benchmarkATH.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const isIndex = String(liveSignalData.benchmark || '').startsWith('^');
+      const prefix = isIndex ? '' : '$';
+      const curFormatted = liveSignalData.benchmarkPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const athFormatted = liveSignalData.benchmarkATH.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      document.getElementById('heroPrice').textContent = `${prefix}${curFormatted}`;
+      document.getElementById('heroATH').textContent = `${prefix}${athFormatted}`;
+      const priceLbl = document.getElementById('heroPriceLabel');
+      const athLbl = document.getElementById('heroATHLabel');
+      if (priceLbl) priceLbl.textContent = isIndex ? '현재 지수' : '현재가';
+      if (athLbl) athLbl.textContent = isIndex ? '최고 지수' : '최고가';
       
       const mddEl = document.getElementById('heroMDD');
       mddEl.textContent = `${mdd.toFixed(2)}%`;
