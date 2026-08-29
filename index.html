@@ -550,13 +550,16 @@
     /* Modal Styles */
     .modal-overlay {
       position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.4);
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.5);
       backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
+      z-index: 9999;
       padding: 12px;
       box-sizing: border-box;
     }
@@ -794,11 +797,11 @@
     <!-- Hero Banner: Market State & Benchmark Signal -->
     <div class="hero-banner">
       <div class="hero-left">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
-          <div class="state-badge" id="heroStrategyBadge" style="cursor: pointer; background: #eff6ff; color: var(--primary); border-color: #bfdbfe; font-size: 13px; font-weight: 700;" onclick="openStrategySelectModal()">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin-bottom: 6px;">
+          <div class="state-badge" id="heroStrategyBadge" style="cursor: pointer; background: #eff6ff; color: var(--primary); border-color: #bfdbfe; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;" onclick="openStrategySelectModal()" title="클릭하여 전략 변경">
             <i class="fa-solid fa-layer-group text-primary"></i> <span id="heroStrategyText">#1. 전략 로딩중...</span>
           </div>
-          <button class="nav-btn btn-sm btn-primary" onclick="openStrategySelectModal()" title="전략 선택">
+          <button class="nav-btn btn-sm btn-primary" id="btnOpenStrategyModal" onclick="openStrategySelectModal()" title="전략 선택" style="cursor: pointer;">
             <i class="fa-solid fa-folder-open"></i> <span class="nav-text">전략선택</span>
           </button>
         </div>
@@ -954,7 +957,7 @@
   </div>
 
   <!-- Strategy Selection Modal -->
-  <div class="modal-overlay" id="strategySelectModal">
+  <div class="modal-overlay" id="strategySelectModal" onclick="if(event.target === this) closeStrategySelectModal()">
     <div class="modal-content" style="max-width: 520px; width: 92vw; max-height: 85vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 18px 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <div style="font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
@@ -1621,12 +1624,12 @@
       
       // Auto sync active slot ID to Google Apps Script
       try {
-        await fetch(`${GAS_WEBAPP_URL}?action=saveActiveSlot&activeSlotId=${slotId}`);
+        fetch(`${GAS_WEBAPP_URL}?action=saveActiveSlot&activeSlotId=${slotId}`).catch(() => {});
       } catch (err) {
         console.warn("[WARN] Failed to sync active slot to GAS:", err);
       }
 
-      initDefaultOrLiveState();
+      loadInitialData();
       syncActiveStrategySpecs();
       renderDashboardUI();
       calculateAndRenderLiveReturn();
@@ -1634,6 +1637,14 @@
       closeStrategySelectModal();
       showToast(`전략 #${slotId}이(가) 실전 대시보드 전략으로 적용되었습니다.`);
     }
+
+    // Attach click listeners on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('btnOpenStrategyModal');
+      if (btn) btn.onclick = openStrategySelectModal;
+      const badge = document.getElementById('heroStrategyBadge');
+      if (badge) badge.onclick = openStrategySelectModal;
+    });
   </script>
 </body>
 </html>
