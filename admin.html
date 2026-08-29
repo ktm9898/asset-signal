@@ -1079,21 +1079,16 @@
               <th>종가</th>
               <th>등락률</th>
               <th>MDD</th>
+              <th>ADX(14)</th>
+              <th>-DI</th>
+              <th>+DI</th>
               <th>RSI(14)</th>
               <th>볼린저 %b</th>
-              <th>이격도(20)</th>
-              <th>ADX(14)</th>
-              <th>+DI</th>
-              <th>-DI</th>
               <th>MACD</th>
               <th>Signal</th>
               <th>Osc</th>
               <th>STOCH(K/D)</th>
-              <th>SMA5</th>
-              <th>SMA20</th>
-              <th>SMA60</th>
-              <th>SMA120</th>
-              <th>SMA200</th>
+              <th>이격도(20)</th>
             </tr>
           </thead>
           <tbody id="dataTableBody">
@@ -2441,21 +2436,16 @@
           <td style="font-weight: 700;">${formatPriceDisplay(t, c)}</td>
           <td style="color: ${cColor}; font-weight: 700;">${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%</td>
           <td>${mddHtml}</td>
+          <td>${adx > 0 ? adx.toFixed(1) : '-'}</td>
+          <td style="color: var(--rose); font-weight: 600;">${mdi > 0 ? mdi.toFixed(1) : '-'}</td>
+          <td style="color: var(--emerald); font-weight: 600;">${pdi > 0 ? pdi.toFixed(1) : '-'}</td>
           <td><span class="${rsiClass}">${rsi.toFixed(1)}</span></td>
           <td>${bbPctHtml}</td>
-          <td>${disp20}%</td>
-          <td>${adx > 0 ? adx.toFixed(1) : '-'}</td>
-          <td style="color: var(--emerald); font-weight: 600;">${pdi > 0 ? pdi.toFixed(1) : '-'}</td>
-          <td style="color: var(--rose); font-weight: 600;">${mdi > 0 ? mdi.toFixed(1) : '-'}</td>
           <td style="color: ${macd >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${macd.toFixed(2)}</td>
           <td>${sig.toFixed(2)}</td>
           <td style="color: ${osc >= 0 ? 'var(--emerald)' : 'var(--rose)'}; font-weight: 600;">${osc.toFixed(2)}</td>
           <td style="font-weight: 600;">${stochK > 0 ? stochK.toFixed(1) : '-'}/${stochD > 0 ? stochD.toFixed(1) : '-'}</td>
-          <td>${formatSmaDisplay(t, sma5)}</td>
-          <td>${formatSmaDisplay(t, sma20)}</td>
-          <td>${formatSmaDisplay(t, sma60)}</td>
-          <td>${formatSmaDisplay(t, sma120)}</td>
-          <td>${formatSmaDisplay(t, sma200)}</td>
+          <td>${disp20}%</td>
         `;
         tbody.appendChild(tr);
       }
@@ -2614,15 +2604,11 @@
       const asset = etfDataset.universe[t];
       if (!asset || !asset.close) return;
 
-      let csv = "Date,Close,ChangePct,MDD,RSI14,BollingerPctB,Disparity20,ADX14,PlusDI,MinusDI,MACD,Signal,MACD_Osc,StochK,StochD,SMA5,SMA20,SMA60,SMA120,SMA200\n";
+      let csv = "Date,Close,ChangePct,MDD,ADX14,MinusDI,PlusDI,RSI14,BollingerPctB,MACD,Signal,MACD_Osc,StochK,StochD,Disparity20\n";
       const dates = etfDataset.dates;
       const closePrices = asset.close;
       const rsiArr = computeFullRSI(closePrices, 14);
-      const sma5Arr = computeFullSMA(closePrices, 5);
       const sma20Arr = computeFullSMA(closePrices, 20);
-      const sma60Arr = computeFullSMA(closePrices, 60);
-      const sma120Arr = computeFullSMA(closePrices, 120);
-      const sma200Arr = computeFullSMA(closePrices, 200);
       const bbArr = computeFullBollinger(closePrices, 20, 2);
       const macdObj = computeFullMACD(closePrices, 12, 26, 9);
       const adxObj = computeFullADX(closePrices, 14);
@@ -2638,7 +2624,7 @@
         const disp20 = sma20Arr[i] > 0 ? ((c / sma20Arr[i]) * 100).toFixed(2) : '';
         const osc = macdObj.macd[i] - macdObj.signal[i];
 
-        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${disp20},${adxObj.adx[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${macdObj.macd[i].toFixed(2)},${macdObj.signal[i].toFixed(2)},${osc.toFixed(2)},${stochObj.stochK[i].toFixed(2)},${stochObj.stochD[i].toFixed(2)},${sma5Arr[i].toFixed(2)},${sma20Arr[i].toFixed(2)},${sma60Arr[i].toFixed(2)},${sma120Arr[i].toFixed(2)},${sma200Arr[i].toFixed(2)}\n`;
+        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${adxObj.adx[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${macdObj.macd[i].toFixed(2)},${macdObj.signal[i].toFixed(2)},${osc.toFixed(2)},${stochObj.stochK[i].toFixed(2)},${stochObj.stochD[i].toFixed(2)},${disp20}\n`;
       }
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
