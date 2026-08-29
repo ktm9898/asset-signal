@@ -638,6 +638,11 @@
       color: var(--primary);
     }
 
+    .table-center th, .table-center td {
+      text-align: center !important;
+      white-space: nowrap !important;
+    }
+
     /* Data Table View Styles */
     .data-summary-bar {
       display: grid;
@@ -1047,15 +1052,14 @@
               <span><i class="fa-solid fa-list-check text-primary"></i> 최근 리밸런싱 이력</span>
               <span class="text-dim" style="font-size: 12px;" id="rebalanceCountText">총 0건</span>
             </div>
-            <div style="max-height: 260px; overflow-y: auto;">
-              <table class="bm-table">
+            <div style="max-height: 260px; overflow-y: auto; overflow-x: auto;">
+              <table class="bm-table table-center">
                 <thead>
                   <tr>
                     <th>일자</th>
                     <th>발동 사유</th>
                     <th>상태</th>
                     <th>기준 MDD</th>
-                    <th>조정 후 비중</th>
                     <th>평가액</th>
                   </tr>
                 </thead>
@@ -2008,7 +2012,7 @@
           const candidate = matchedDrop.name || `하락 ${matchedDrop.threshold}%`;
           if (candidate !== currentState && (daysSinceRebal >= cooldownDays || currentState === "기본 (정상 운용)")) {
             targetWeights = normalizeWeights(matchedDrop.weights);
-            triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}% (기준 ${matchedDrop.threshold}% 이하)`;
+            triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}%`;
             nextState = candidate;
           }
         } else if (deepestDrop <= -15.0 && currentState !== "기본 (정상 운용)") {
@@ -2017,7 +2021,7 @@
               const candidate = rec.name || `반등 ${rec.recovery}%`;
               if (candidate !== currentState && daysSinceRebal >= cooldownDays) {
                 targetWeights = normalizeWeights(rec.weights);
-                triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% 회복 (저점 ${deepestDrop.toFixed(1)}%)`;
+                triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}%`;
                 nextState = candidate;
                 break;
               }
@@ -2025,7 +2029,7 @@
           }
           if (currentBM_DD >= -5.0 && currentState !== "기본 (정상 운용)") {
             targetWeights = normalizeWeights(s.baseWeights);
-            triggerReason = `[상승 복귀] ${currentBM_DD.toFixed(1)}% -> 기본 비중 원복`;
+            triggerReason = `[기본 복귀] ${currentBM_DD.toFixed(1)}%`;
             nextState = "기본 (정상 운용)";
             deepestDrop = 0.0;
           }
@@ -2036,7 +2040,7 @@
           const navGainPct = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
           if (s.gainThresholdPct > 0 && navGainPct >= s.gainThresholdPct) {
             targetWeights = normalizeWeights(s.baseWeights);
-            triggerReason = `[이익실현] 총자산 +${navGainPct.toFixed(1)}% 상승 -> 비중 재정렬`;
+            triggerReason = `[이익실현] +${navGainPct.toFixed(1)}%`;
             nextState = "기본 (이익실현)";
           }
         }
@@ -2228,20 +2232,37 @@
       tbody.innerHTML = '';
 
       if (events.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-dim);">리밸런싱 이력이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim);">리밸런싱 이력이 없습니다.</td></tr>';
         return;
       }
 
-      [...events].reverse().slice(0, 15).forEach(ev => {
+      [...events].reverse().slice(0, 20).forEach(ev => {
         const tr = document.createElement('tr');
-        const weightsStr = Object.entries(ev.weights).map(([k, v]) => `${k} ${v}%`).join(', ');
+        let badgeBg = '#f1f5f9';
+        let badgeColor = '#475569';
+        let badgeBorder = '#cbd5e1';
+        if (ev.state.includes('하락')) {
+          badgeBg = '#fee2e2';
+          badgeColor = 'var(--rose)';
+          badgeBorder = '#fca5a5';
+        } else if (ev.state.includes('반등')) {
+          badgeBg = '#e0f2fe';
+          badgeColor = 'var(--primary)';
+          badgeBorder = '#bae6fd';
+        } else if (ev.state.includes('기본')) {
+          badgeBg = '#dcfce7';
+          badgeColor = 'var(--emerald)';
+          badgeBorder = '#bbf7d0';
+        }
+
         tr.innerHTML = `
-          <td>${ev.date}</td>
-          <td style="text-align: left; font-size: 12px;">${ev.reason}</td>
-          <td style="text-align: center;"><span class="stage-badge-drop" style="font-size: 11px;">${ev.state}</span></td>
-          <td style="color: var(--rose);">${ev.benchmarkDD}%</td>
-          <td style="text-align: left; font-size: 12px; color: var(--text-muted);">${weightsStr}</td>
-          <td>${formatKRW(ev.nav)}</td>
+          <td style="white-space: nowrap; text-align: center;">${ev.date}</td>
+          <td style="white-space: nowrap; text-align: center; font-weight: 600;">${ev.reason}</td>
+          <td style="white-space: nowrap; text-align: center;">
+            <span class="brand-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; font-size: 11.5px; padding: 2px 8px; border-radius: 4px;">${ev.state}</span>
+          </td>
+          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-family: 'Outfit', sans-serif; font-weight: 700;">${ev.benchmarkDD}%</td>
+          <td style="white-space: nowrap; text-align: center; font-family: 'Outfit', sans-serif; font-weight: 700;">${formatKRW(ev.nav)}</td>
         `;
         tbody.appendChild(tr);
       });
