@@ -931,16 +931,6 @@
                 <input type="number" class="form-input" id="cfgGainThreshold" value="20" step="5" onchange="onConfigChange()">
               </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
-              <div class="form-group">
-                <label class="form-label">비중 이탈 허용폭 (±%p)</label>
-                <input type="number" class="form-input" id="cfgTolerance" value="5" step="1" onchange="onConfigChange()">
-              </div>
-              <div class="form-group">
-                <label class="form-label">최소 쿨다운 (영업일)</label>
-                <input type="number" class="form-input" id="cfgCooldown" value="5" step="1" onchange="onConfigChange()">
-              </div>
-            </div>
           </div>
 
           <button class="nav-btn btn-primary" style="padding: 12px; font-size: 14px; justify-content: center;" onclick="runInteractiveBacktest()">
@@ -1568,8 +1558,6 @@
       document.getElementById('currentSlotTitleDisplay').textContent = `전략 ${s.id}: ${s.name}`;
       document.getElementById('cfgBenchmark').value = s.benchmark || "^NDX";
       document.getElementById('cfgGainThreshold').value = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20;
-      document.getElementById('cfgTolerance').value = s.toleranceBandPct !== undefined ? s.toleranceBandPct : 5;
-      document.getElementById('cfgCooldown').value = s.cooldownDays !== undefined ? s.cooldownDays : 5;
       document.getElementById('cfgFeeRate').value = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate : s.feeRate * 100) : 0.15;
 
       renderBaseWeightsTable(s.baseWeights || {});
@@ -1889,8 +1877,6 @@
       const s = getCurrentSlot();
       s.benchmark = document.getElementById('cfgBenchmark').value;
       s.gainThresholdPct = parseFloat(document.getElementById('cfgGainThreshold').value);
-      s.toleranceBandPct = parseFloat(document.getElementById('cfgTolerance').value);
-      s.cooldownDays = parseInt(document.getElementById('cfgCooldown').value);
       s.feeRate = parseFloat(document.getElementById('cfgFeeRate').value) / 100.0;
       saveLocalSlots();
       runInteractiveBacktest();
