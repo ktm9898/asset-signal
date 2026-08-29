@@ -735,15 +735,42 @@
           </div>
         </div>
 
-        <!-- Total Capital Calculator -->
+        <!-- Total Capital & Investment Start Date Tracker -->
         <div class="calc-input-box">
-          <div>
-            <div style="font-weight: 700;">총 투자자산</div>
-            <div style="font-size: 11px; color: var(--text-dim);">금액 입력 시 ETF별 목표 매수/보유 금액이 자동 계산됩니다.</div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <input type="number" class="calc-input" id="userTotalCapital" value="50000000" step="1000000" onchange="onCapitalChange()" style="width: 160px;">
-            <span style="font-weight: 700;">원</span>
+          <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+            <!-- 1. Total Capital Input -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <div style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-coins text-primary"></i> 총 투자자산
+                </div>
+                <div style="font-size: 11px; color: var(--text-dim);">금액 입력 시 ETF별 목표 매수/보유 금액이 자동 계산됩니다.</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <input type="number" class="calc-input" id="userTotalCapital" value="50000000" step="1000000" onchange="onCapitalChange()" style="width: 150px;">
+                <span style="font-weight: 700;">원</span>
+              </div>
+            </div>
+
+            <!-- 2. Investment Start Date (Anchor Date for +20% Profit Tracking) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+              <div>
+                <div style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-calendar-day text-indigo"></i> 운용 시작일 (최근 리밸런싱일)
+                </div>
+                <div style="font-size: 11px; color: var(--text-dim);">이 날짜의 매수 시세 대비 +20% 이익실현 신호를 추적합니다.</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <input type="date" class="calc-input" id="userStartDate" style="width: 145px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
+              </div>
+            </div>
+
+            <!-- 3. Realtime Return Tracker Snapshot -->
+            <div id="liveReturnTrackerBox" style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px;">
+              <span style="color: var(--text-dim);">시작일 대비 누적 수익률:</span>
+              <span id="trackerReturnVal" style="font-weight: 800; font-size: 14px; color: var(--emerald);">+0.0%</span>
+              <span id="trackerTargetBadge" style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: #eff6ff; color: var(--primary); font-weight: 700;">목표 +20% 추적중</span>
+            </div>
           </div>
         </div>
       </div>
@@ -871,6 +898,13 @@
 
     function loadInitialData() {
       let initBase = { "SCHD": 60.0, "QQQ": 40.0 };
+      const savedCap = localStorage.getItem("asset_user_capital");
+      if (savedCap && parseFloat(savedCap) > 0) {
+        totalCapital = parseFloat(savedCap);
+        const capInput = document.getElementById('userTotalCapital');
+        if (capInput) capInput.value = totalCapital;
+      }
+
       try {
         const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
         const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
@@ -898,6 +932,7 @@
       };
       syncActiveStrategySpecs();
       renderDashboardUI();
+      calculateAndRenderLiveReturn();
     }
 
     async function fetchLiveDashboardData() {
@@ -1141,11 +1176,115 @@
       });
     }
 
+    let etfDatasetCache = null;
+    let userStartDateStr = "";
+
     function onCapitalChange() {
       const val = parseFloat(document.getElementById('userTotalCapital').value);
       if (val > 0) {
         totalCapital = val;
+        localStorage.setItem("asset_user_capital", String(val));
         renderDashboardUI();
+      }
+    }
+
+    function onStartDateChange() {
+      const dateVal = document.getElementById('userStartDate').value;
+      if (dateVal) {
+        userStartDateStr = dateVal;
+        localStorage.setItem("asset_user_start_date", dateVal);
+        calculateAndRenderLiveReturn();
+      }
+    }
+
+    async function loadEtfDatasetForReturn() {
+      if (!etfDatasetCache) {
+        try {
+          const resp = await fetch('data/etf_history.json');
+          if (resp.ok) {
+            etfDatasetCache = await resp.json();
+          }
+        } catch (e) {}
+      }
+      return etfDatasetCache;
+    }
+
+    async function calculateAndRenderLiveReturn() {
+      const returnEl = document.getElementById('trackerReturnVal');
+      const badgeEl = document.getElementById('trackerTargetBadge');
+      if (!returnEl || !badgeEl) return;
+
+      const ds = await loadEtfDatasetForReturn();
+      if (!ds || !ds.dates || !ds.universe) return;
+
+      let sDate = userStartDateStr || localStorage.getItem("asset_user_start_date");
+      if (!sDate) {
+        // Default to first day of current year
+        const curYear = new Date().getFullYear();
+        sDate = `${curYear}-01-02`;
+        userStartDateStr = sDate;
+      }
+      document.getElementById('userStartDate').value = sDate;
+
+      // Find closest date index >= sDate
+      let sIdx = ds.dates.findIndex(d => d >= sDate);
+      if (sIdx === -1) sIdx = 0;
+
+      // Get active strategy base weights
+      let baseWeights = { "SCHD": 0.60, "QQQ": 0.40 };
+      try {
+        const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
+        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
+        if (storedSlots) {
+          const slots = JSON.parse(storedSlots);
+          const activeStrat = slots.find(s => s.id === activeId) || slots[0];
+          if (activeStrat && activeStrat.baseWeights) {
+            baseWeights = activeStrat.baseWeights;
+          }
+        }
+      } catch (e) {}
+
+      let totalReturn = 0.0;
+      let totalW = 0.0;
+
+      Object.entries(baseWeights).forEach(([ticker, w]) => {
+        const asset = ds.universe[ticker];
+        if (asset && asset.close && asset.close.length > 0) {
+          const startPrice = asset.close[sIdx] || asset.close[0];
+          const latestPrice = asset.close[asset.close.length - 1] || asset.latestPrice || startPrice;
+          const ret = ((latestPrice - startPrice) / startPrice) * 100.0;
+          totalReturn += w * ret;
+          totalW += w;
+        }
+      });
+
+      if (totalW > 0) {
+        totalReturn = totalReturn / totalW;
+      }
+
+      const isPlus = totalReturn >= 0;
+      returnEl.textContent = `${isPlus ? '+' : ''}${totalReturn.toFixed(1)}%`;
+      returnEl.style.color = isPlus ? 'var(--emerald)' : 'var(--rose)';
+
+      const gainThreshold = 20.0;
+      if (totalReturn >= gainThreshold) {
+        badgeEl.textContent = `🎯 +${gainThreshold}% 이익실현 달성!`;
+        badgeEl.style.background = '#dcfce7';
+        badgeEl.style.color = 'var(--emerald)';
+        badgeEl.style.border = '1px solid #bbf7d0';
+
+        // Update dashboard state to Take-Profit if in normal state
+        if (liveSignalData && (!liveSignalData.currentState || liveSignalData.currentState.includes("정상") || liveSignalData.currentState.includes("기본"))) {
+          liveSignalData.currentState = "기본 (이익실현 권장)";
+          liveSignalData.advice = `시작일(${sDate}) 대비 총자산이 +${totalReturn.toFixed(1)}% 상승하여 목표(+${gainThreshold}%)에 도달했습니다. 기본 비중으로 재정렬하여 이익을 확정하세요.`;
+          renderDashboardUI();
+        }
+      } else {
+        const remain = gainThreshold - totalReturn;
+        badgeEl.textContent = `익절까지 +${remain.toFixed(1)}%p 남음`;
+        badgeEl.style.background = '#eff6ff';
+        badgeEl.style.color = 'var(--primary)';
+        badgeEl.style.border = '1px solid #dbeafe';
       }
     }
 
