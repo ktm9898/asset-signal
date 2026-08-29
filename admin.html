@@ -984,6 +984,32 @@
         font-size: 10.5px;
       }
 
+      .period-tabs-desktop {
+        display: none !important;
+      }
+      .period-select-mobile {
+        display: block !important;
+        width: 88px !important;
+        height: 30px !important;
+        font-size: 11px !important;
+        padding: 4px 4px !important;
+        flex-shrink: 0 !important;
+      }
+      .date-range-box {
+        flex: 1 !important;
+        min-width: 0 !important;
+        padding: 2px 4px !important;
+        font-size: 10.5px !important;
+        justify-content: space-between !important;
+        gap: 2px !important;
+      }
+      .date-range-box .date-picker-input {
+        width: 46% !important;
+        min-width: 0 !important;
+        font-size: 10px !important;
+        padding: 2px 0 !important;
+      }
+
       .chart-panel {
         padding: 12px 14px;
         border-radius: var(--radius-md);
@@ -1100,18 +1126,10 @@
 
         <!-- Left: Strategy Configuration Panel -->
         <div class="config-panel">
-          <div class="panel-section-title" style="justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-sliders text-primary"></i> <span id="currentSlotTitleDisplay">전략 1번 설정</span>
-            </div>
-            <button class="btn-icon-del" title="이름 수정" onclick="openRenameModal()"><i class="fa-solid fa-pen" style="font-size: 12px;"></i></button>
-          </div>
-
           <!-- Benchmark Index Selection (3 Major Indices Only) -->
           <div class="form-group">
             <label class="form-label">
               <span>기준 지표</span>
-              <span class="text-dim">낙폭 추적 순수 지수</span>
             </label>
             <select class="form-select" id="cfgBenchmark" onchange="onConfigChange()">
               <option value="^NDX">나스닥 100</option>
@@ -1222,19 +1240,31 @@
                 </div>
               </div>
 
-              <!-- Row 2: Period Dropdown + Date Range Pickers (Single Line) -->
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; padding-top: 8px; border-top: 1px dashed var(--border-color); flex-wrap: nowrap;">
-                <select class="form-select" id="periodSelectDropdown" style="font-size: 11px; padding: 4px 4px; width: 88px; flex-shrink: 0; font-weight: 600; height: 30px;" onchange="setBacktestPeriod(this.value)">
+              <!-- Row 2: Period Controls (Buttons on PC, Dropdown on Mobile) + Date Range Pickers -->
+              <div class="chart-period-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding-top: 8px; border-top: 1px dashed var(--border-color); flex-wrap: nowrap;">
+                <!-- Desktop Period Button Tabs -->
+                <div class="period-tabs period-tabs-desktop">
+                  <button class="period-tab active" data-period="ALL" onclick="setBacktestPeriod('ALL')">전체 (MAX)</button>
+                  <button class="period-tab" data-period="10Y" onclick="setBacktestPeriod('10Y')">10년</button>
+                  <button class="period-tab" data-period="5Y" onclick="setBacktestPeriod('5Y')">5년</button>
+                  <button class="period-tab" data-period="3Y" onclick="setBacktestPeriod('3Y')">3년</button>
+                  <button class="period-tab" data-period="1Y" onclick="setBacktestPeriod('1Y')">1년</button>
+                </div>
+
+                <!-- Mobile Period Dropdown -->
+                <select class="form-select period-select-mobile" id="periodSelectDropdown" onchange="setBacktestPeriod(this.value)">
                   <option value="ALL" selected>전체(MAX)</option>
                   <option value="10Y">최근 10년</option>
                   <option value="5Y">최근 5년</option>
                   <option value="3Y">최근 3년</option>
                   <option value="1Y">최근 1년</option>
                 </select>
-                <div style="display: inline-flex; align-items: center; gap: 2px; font-size: 10.5px; color: var(--text-dim); background: #f8fafc; padding: 2px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex: 1; min-width: 0; justify-content: space-between;">
-                  <input type="date" id="customStartDate" class="date-picker-input" style="width: 46%; min-width: 0; font-size: 10px; padding: 2px 0; border: none; background: transparent;" onchange="onCustomDateChange()">
-                  <span style="flex-shrink: 0; font-size: 10px;">~</span>
-                  <input type="date" id="customEndDate" class="date-picker-input" style="width: 46%; min-width: 0; font-size: 10px; padding: 2px 0; border: none; background: transparent;" onchange="onCustomDateChange()">
+
+                <!-- Date Range Picker -->
+                <div class="date-range-box" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-dim); background: #f8fafc; padding: 3px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                  <input type="date" id="customStartDate" class="date-picker-input" style="width: 105px; font-size: 11px; border: none; background: transparent;" onchange="onCustomDateChange()">
+                  <span style="flex-shrink: 0;">~</span>
+                  <input type="date" id="customEndDate" class="date-picker-input" style="width: 105px; font-size: 11px; border: none; background: transparent;" onchange="onCustomDateChange()">
                 </div>
               </div>
             </div>
@@ -2121,7 +2151,6 @@
 
     function populateCurrentSlotUI() {
       const s = getCurrentSlot();
-      document.getElementById('currentSlotTitleDisplay').textContent = `전략 ${s.id}: ${s.name}`;
       document.getElementById('cfgBenchmark').value = s.benchmark || "^NDX";
       document.getElementById('cfgGainThreshold').value = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20;
       document.getElementById('cfgFeeRate').value = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate : s.feeRate * 100) : 0.15;
@@ -2503,6 +2532,9 @@
 
     function setBacktestPeriod(period) {
       currentBacktestPeriod = period;
+      document.querySelectorAll('.period-tab').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-period') === period);
+      });
       const dropdown = document.getElementById('periodSelectDropdown');
       if (dropdown && dropdown.value !== period) dropdown.value = period;
 
@@ -2551,6 +2583,9 @@
       }
 
       currentBacktestPeriod = 'CUSTOM';
+      document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+      const dropdown = document.getElementById('periodSelectDropdown');
+      if (dropdown) dropdown.value = 'ALL';
       customStartStr = startVal;
       customEndStr = endVal;
 
