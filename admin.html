@@ -2250,7 +2250,8 @@
             const rec = sortedRecs[j];
             const recLevel = j + 1;
             const recTarget = rec.recovery !== undefined ? rec.recovery : 0;
-            const minDropRequired = rec.fromDrop !== undefined ? rec.fromDrop : (recTarget - 3.0);
+            // The market must have fallen below this recovery threshold, and now bounced back above it
+            const minDropRequired = rec.fromDrop !== undefined ? rec.fromDrop : (recTarget - 1.0);
 
             if (!executedRecLevels.has(recLevel) && deepestDrop <= minDropRequired && currentBM_DD >= (recTarget - 0.2) && (daysSinceRebal >= cooldownDays || executedRecLevels.size === 0)) {
               targetWeights = normalizeWeights(rec.weights);
@@ -2261,9 +2262,11 @@
             }
           }
 
-          if (!targetWeights && currentBM_DD >= -2.0 && currentState !== "기본 (정상 운용)") {
+          // When benchmark completely recovers to All-Time High (0%), return to Normal Base State
+          if (!targetWeights && currentBM_DD >= -0.5 && currentState !== "기본 (정상 운용)") {
+            // Only rebalance if weights differ from base
             targetWeights = normalizeWeights(s.baseWeights);
-            triggerReason = `[기본 복귀] ${currentBM_DD.toFixed(1)}%`;
+            triggerReason = `[기본 복귀] 0.0% (고점 회복)`;
             nextState = "기본 (정상 운용)";
             currentDropLevel = 0;
             deepestDrop = 0.0;
