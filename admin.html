@@ -2219,12 +2219,12 @@
               triggerReason = `[낙폭 심화] ${currentBM_DD.toFixed(1)}% (${stages[deeperIdx].name || (deeperIdx + 1) + '차 하락'} 진입)`;
             } else {
               // 2. Check if market rebounds above previous stage threshold (상향 돌파)
-              const upperBarrier = currentStageIdx === 0 ? -0.5 : stages[currentStageIdx - 1].threshold;
+              const upperBarrier = currentStageIdx === 0 ? 0.0 : stages[currentStageIdx - 1].threshold;
               if (currentBM_DD >= upperBarrier) {
                 nextStageIdx = currentStageIdx - 1;
                 if (nextStageIdx < 0) {
                   targetWeights = normalizeWeights(s.baseWeights);
-                  triggerReason = `[고점 복귀] ${currentBM_DD.toFixed(1)}% (기본 비중 원복)`;
+                  triggerReason = `[고점 복귀] 0.0% (기본 비중 원복)`;
                 } else {
                   targetWeights = normalizeWeights(stages[nextStageIdx].weights);
                   triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% (${stages[nextStageIdx].name || (nextStageIdx + 1) + '차 하락'} 복귀)`;
