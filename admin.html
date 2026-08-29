@@ -2205,13 +2205,14 @@
       const rebalanceEvents = [];
       let currentState = "기본 (정상 운용)";
       let currentDropLevel = 0;
-      let currentRecLevel = 0;
+      let deepestDrop = 0.0;
+      let executedRecLevels = new Set();
       let lastRebalanceDay = 0;
       let lastRebalanceNAV = initialCapital;
       const cooldownDays = 5;
 
-      const sortedDrops = [...(s.dropStages || [])].sort((a, b) => b.threshold - a.threshold); // e.g. -15%, -25%, -35%
-      const sortedRecs = [...(s.recoveryStages || [])].sort((a, b) => a.recovery - b.recovery); // e.g. -10%, -5%
+      const sortedDrops = [...(s.dropStages || [])].sort((a, b) => b.threshold - a.threshold); // e.g. -20%, -30%, -40%
+      const sortedRecs = [...(s.recoveryStages || [])].sort((a, b) => a.recovery - b.recovery); // e.g. -25%, -15%, -5%
 
       for (let day = 0; day < numDays; day++) {
         let currentNAV = 0;
@@ -2221,6 +2222,7 @@
         stratNAV[day] = currentNAV;
 
         const currentBM_DD = bmDrawdowns[day];
+        if (currentBM_DD < deepestDrop) deepestDrop = currentBM_DD;
 
         let targetWeights = null;
         let triggerReason = null;
@@ -2241,28 +2243,30 @@
           triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}%`;
           nextState = drop.name || `${nextDropLevel}차 하락`;
           currentDropLevel = nextDropLevel;
-          currentRecLevel = 0;
+          executedRecLevels.clear();
         } else if (currentDropLevel > 0) {
           // 2. Check Progressive Recovery Stages (De-escalation)
-          let nextRecLevel = currentRecLevel;
-          for (let j = currentRecLevel; j < sortedRecs.length; j++) {
-            if (currentBM_DD >= sortedRecs[j].recovery) {
-              nextRecLevel = j + 1;
+          for (let j = 0; j < sortedRecs.length; j++) {
+            const rec = sortedRecs[j];
+            const recLevel = j + 1;
+            const minDropRequired = rec.fromDrop !== undefined ? rec.fromDrop : (rec.recovery - 3.0);
+
+            if (!executedRecLevels.has(recLevel) && deepestDrop <= minDropRequired && currentBM_DD >= rec.recovery && (daysSinceRebal >= cooldownDays || executedRecLevels.size === 0)) {
+              targetWeights = normalizeWeights(rec.weights);
+              triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}%`;
+              nextState = rec.name || `${recLevel}단계 반등`;
+              executedRecLevels.add(recLevel);
+              break;
             }
           }
 
-          if (nextRecLevel > currentRecLevel && (daysSinceRebal >= cooldownDays || currentRecLevel === 0)) {
-            const rec = sortedRecs[nextRecLevel - 1];
-            targetWeights = normalizeWeights(rec.weights);
-            triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}%`;
-            nextState = rec.name || `${nextRecLevel}단계 반등`;
-            currentRecLevel = nextRecLevel;
-          } else if (currentBM_DD >= -2.0 && currentState !== "기본 (정상 운용)") {
+          if (!targetWeights && currentBM_DD >= -2.0 && currentState !== "기본 (정상 운용)") {
             targetWeights = normalizeWeights(s.baseWeights);
             triggerReason = `[기본 복귀] ${currentBM_DD.toFixed(1)}%`;
             nextState = "기본 (정상 운용)";
             currentDropLevel = 0;
-            currentRecLevel = 0;
+            deepestDrop = 0.0;
+            executedRecLevels.clear();
           }
         }
 
