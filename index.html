@@ -569,11 +569,17 @@
     /* Mobile First & Responsive Design System    */
     /* ========================================== */
     @media (max-width: 768px) {
+      body {
+        overflow-x: hidden;
+        width: 100vw;
+      }
       .header-inner {
-        padding: 0 12px;
+        padding: 0 14px;
+        height: 54px;
       }
       .brand-title {
-        font-size: 16px;
+        font-size: 17px;
+        font-weight: 800;
       }
       .brand-icon {
         width: 32px;
@@ -581,17 +587,25 @@
         font-size: 14px;
       }
       .header-actions {
-        gap: 4px;
+        gap: 6px;
       }
-      .nav-btn {
-        padding: 5px 8px;
-        font-size: 11.5px;
-        gap: 4px;
+      .header-actions .nav-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border-radius: var(--radius-sm);
       }
       .container {
-        padding: 0 12px 60px;
-        margin: 10px auto;
+        padding: 8px 12px 60px;
+        margin: 6px auto;
         gap: 12px;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
       }
       .hero-banner {
         padding: 16px 18px;
@@ -722,7 +736,7 @@
           <i class="fa-solid fa-circle-check"></i> <span id="heroStateText">기본 (정상 운용)</span>
         </div>
         <div class="hero-title" id="heroAdviceTitle">
-          기준지표 나스닥 100 (낙폭 -3.3%) — 기본 비중 정상 운용
+          나스닥 100 : 기본비중 정상운용
         </div>
         <div class="hero-desc" id="heroAdviceDesc">
           현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.
@@ -777,13 +791,13 @@
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div style="font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-calendar-day text-primary"></i>
-              <span>운용 시작일 (최근 리밸런싱일)</span>
+              <span>운용 시작일</span>
             </div>
             <input type="date" class="calc-input" id="userStartDate" style="width: 140px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
           </div>
 
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12.5px;">
-            <span style="color: var(--text-dim); font-weight: 600;">시작일 대비 누적 수익률</span>
+            <span style="color: var(--text-dim); font-weight: 600;">누적 수익률</span>
             <div style="display: flex; align-items: center; gap: 8px;">
               <span id="trackerReturnVal" style="font-weight: 800; font-size: 15px; color: var(--emerald);">+0.0%</span>
               <span id="trackerTargetBadge" style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: #eff6ff; color: var(--primary); font-weight: 700;">목표 +20% 추적중</span>
@@ -1062,11 +1076,7 @@
       mddEl.textContent = `${mdd.toFixed(2)}%`;
       mddEl.style.color = isDrop ? 'var(--rose)' : 'var(--emerald)';
 
-      let actionDesc = '기본 비중 정상 운용';
-      if (isDrop) actionDesc = '하락 대응 분할 편입';
-      else if (isRecovery) actionDesc = '반등 분할 익절';
-
-      document.getElementById('heroAdviceTitle').textContent = `기준지표 ${formatTickerDisplay(liveSignalData.benchmark)} (낙폭 ${mdd.toFixed(1)}%) — ${actionDesc}`;
+      document.getElementById('heroAdviceTitle').textContent = `${formatTickerDisplay(liveSignalData.benchmark)} : ${stateDisplay}`;
       document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice || "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.";
 
       renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.currentWeights, liveSignalData.deltaWeights, liveSignalData.assetReturns);
@@ -1182,10 +1192,10 @@
           <div class="order-card" style="border-left-color: var(--emerald); justify-content: center; text-align: center; padding: 20px 16px;">
             <div>
               <div style="font-size: 14.5px; font-weight: 700; color: var(--emerald); display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <i class="fa-solid fa-circle-check"></i> 오늘 추가 매매 / 리밸런싱 필요 없음
+                <i class="fa-solid fa-circle-check"></i> 오늘 추가 매매 / 리밸런싱 없음
               </div>
               <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">
-                현재 포트폴리오가 목표 비중과 완벽히 일치하여 정상 유지 중입니다.
+                현재 기준 지표가 안정권이며 사전 정의된 기본 비중을 정상 유지 중입니다.
               </div>
             </div>
           </div>
@@ -1346,21 +1356,9 @@
         }
       }
 
-      // Calculate Delta Weights ONLY on Strategic Regime Changes (Drop stage or Take-Profit)
+      // Calculate Delta Weights ONLY on Strategic Regime Changes (when Drop Stage is active)
       let deltaWeights = {};
-      const isTakeProfit = (totalReturn >= (activeStrat.gainThresholdPct || 20.0));
-
-      if (isTakeProfit) {
-        const allTickers = new Set([...Object.keys(targetWeights), ...Object.keys(currentWeights)]);
-        allTickers.forEach(t => {
-          const tgt = targetWeights[t] || 0.0;
-          const cur = currentWeights[t] || 0.0;
-          const d = Math.round((tgt - cur) * 10) / 10.0;
-          if (Math.abs(d) >= 1.0) {
-            deltaWeights[t] = d;
-          }
-        });
-      } else if (currentDropStage) {
+      if (currentDropStage) {
         const baseW = activeStrat.baseWeights || { "SCHD": 0.60, "QQQ": 0.40 };
         const stageW = currentDropStage.weights || {};
         const allTickers = new Set([...Object.keys(baseW), ...Object.keys(stageW)]);
@@ -1388,14 +1386,14 @@
 
       const gainThreshold = activeStrat.gainThresholdPct || 20.0;
       if (isTakeProfit) {
-        badgeEl.textContent = `+${gainThreshold}% 이익실현 달성`;
+        badgeEl.textContent = `+${gainThreshold}% 이익실현`;
         badgeEl.style.background = '#dcfce7';
         badgeEl.style.color = 'var(--emerald)';
         badgeEl.style.border = '1px solid #bbf7d0';
 
         if (liveSignalData) {
-          liveSignalData.currentState = "기본 (이익실현 권장)";
-          liveSignalData.advice = `시작일(${sDate}) 대비 총자산이 +${totalReturn.toFixed(1)}% 상승하여 목표(+${gainThreshold}%)에 도달했습니다. 기본 비중으로 재정렬하여 이익을 확정하세요.`;
+          liveSignalData.currentState = "기본 (정상 운용)";
+          liveSignalData.advice = `현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.`;
         }
       } else {
         const remain = gainThreshold - totalReturn;
@@ -1410,7 +1408,7 @@
             liveSignalData.advice = `기준지표 낙폭(${curMdd.toFixed(1)}%)이 ${currentDropStage.threshold}% 기준에 도달하여 ${currentDropStage.name} 비중으로 분할 편입을 실행합니다.`;
           } else {
             liveSignalData.currentState = "기본 (정상 운용)";
-            liveSignalData.advice = `현재 기준 지표가 안정적인 범위 내에 있으며, 시작일(${sDate}) 대비 누적 수익률은 +${totalReturn.toFixed(1)}% 입니다.`;
+            liveSignalData.advice = `현재 기준 지표가 안정적인 범위 내에 있으며, 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.`;
           }
         }
       }
