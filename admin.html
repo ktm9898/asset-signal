@@ -349,6 +349,33 @@
       justify-content: space-between;
     }
 
+    .etf-select-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: var(--transition);
+      min-width: 0;
+      gap: 8px;
+    }
+    .etf-select-card strong {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: left;
+    }
+    .etf-select-card:hover {
+      background: #eff6ff;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
     .form-input, .form-select {
       background: #ffffff;
       border: 1px solid var(--border-color);
@@ -580,11 +607,15 @@
       border: 1px solid var(--border-color);
     }
 
+    .slot-prefix-label {
+      display: inline !important;
+    }
+
     .period-tabs-desktop {
       display: inline-flex !important;
     }
 
-    .period-select-mobile {
+    .period-select-mobile, select#periodSelectDropdown {
       display: none !important;
     }
 
@@ -1101,10 +1132,9 @@
       <!-- Strategy Preset Slots & Integrated Control Toolbar -->
       <div class="slots-wrapper">
         <div class="slots-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
-          <div class="slots-title" style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; overflow: hidden;">
-            <i class="fa-solid fa-layer-group text-primary" style="flex-shrink: 0;"></i>
-            <span style="font-weight: 800; font-size: 13.5px; white-space: nowrap; flex-shrink: 0;">전략 슬롯 :</span>
-            <span id="overviewSlotNameText" style="font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">#1. 나스닥100 동적 계단식</span>
+          <div class="slots-title" style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden;">
+            <i class="fa-solid fa-layer-group text-primary" style="flex-shrink: 0; font-size: 15px;"></i>
+            <span id="overviewSlotNameText" style="font-weight: 800; font-size: 14px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">#1. 나스닥100 동적 계단식</span>
             <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none; flex-shrink: 0;">ACTIVE</span>
           </div>
           <div class="slot-actions-bar" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
