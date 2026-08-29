@@ -105,8 +105,6 @@ def run_portfolio_backtest(
     tolerance_band_pct = strategy_config.get("toleranceBandPct", 5.0)
     cooldown_days = strategy_config.get("cooldownDays", 5)
     fee_rate = strategy_config.get("feeRate", 0.0015) # 0.15% fee + slippage
-    tax_rate = strategy_config.get("taxRate", 0.22) # 22% capital gains tax (US) or 15.4% or 0%
-    tax_deduction = strategy_config.get("taxDeduction", 2500000.0) # 연 250만원 기본공제
 
     # Extract price matrices for all active tickers
     all_needed_tickers = set(base_weights.keys())
@@ -135,14 +133,12 @@ def run_portfolio_backtest(
     # Simulation State
     curr_weights = normalize_weights(base_weights)
     holdings = {t: 0.0 for t in all_needed_tickers}
-    cost_basis = {t: 0.0 for t in all_needed_tickers}
     
     # Initial purchase
     for t, w in curr_weights.items():
         if prices[t][0] > 0 and w > 0:
             alloc_val = initial_capital * w * (1.0 - fee_rate)
             holdings[t] = alloc_val / prices[t][0]
-            cost_basis[t] = prices[t][0]
 
     strategy_nav = np.zeros(num_days, dtype=np.float64)
     daily_weights_history = []
@@ -152,25 +148,10 @@ def run_portfolio_backtest(
     deepest_drop_level = 0.0
     last_rebalance_day = 0
     last_rebalance_nav = initial_capital
-    annual_realized_profit = 0.0
-    current_year = eval_dates[0][:4]
     
     for day in range(num_days):
         current_date = eval_dates[day]
-        year_str = current_date[:4]
         current_bm_dd = bm_drawdowns[day]
-        
-        # Year-end tax settlement
-        if year_str != current_year:
-            if tax_rate > 0 and annual_realized_profit > tax_deduction:
-                tax_due = (annual_realized_profit - tax_deduction) * tax_rate
-                total_val = sum(holdings[t] * prices[t][day] for t in all_needed_tickers)
-                if total_val > tax_due:
-                    tax_ratio = (total_val - tax_due) / total_val
-                    for t in all_needed_tickers:
-                        holdings[t] *= tax_ratio
-            annual_realized_profit = 0.0
-            current_year = year_str
 
         # 1. Calculate current portfolio NAV
         current_nav = sum(holdings[t] * prices[t][day] for t in all_needed_tickers)
@@ -250,10 +231,6 @@ def run_portfolio_backtest(
             for t in all_needed_tickers:
                 old_val = holdings[t] * prices[t][day]
                 new_val = current_nav * target_weights.get(t, 0.0)
-                if new_val < old_val:
-                    sold_qty = (old_val - new_val) / prices[t][day] if prices[t][day] > 0 else 0
-                    realized_gain = sold_qty * (prices[t][day] - cost_basis[t])
-                    annual_realized_profit += realized_gain
                 trade_volume += abs(new_val - old_val)
                 
             fee_cost = (trade_volume / 2.0) * fee_rate
@@ -262,7 +239,6 @@ def run_portfolio_backtest(
             for t in all_needed_tickers:
                 target_val = net_nav * target_weights.get(t, 0.0)
                 holdings[t] = target_val / prices[t][day] if prices[t][day] > 0 else 0.0
-                cost_basis[t] = prices[t][day]
                 
             curr_weights = target_weights
             current_state_name = new_state_name
@@ -419,12 +395,12 @@ if __name__ == "__main__":
             sys.stdout.reconfigure(encoding='utf-8')
         except Exception:
             pass
-    print("[INFO] Running Backtest Simulation on Default Strategy (KRW Currency & After-Tax Model)...")
+    print("[INFO] Running Backtest Simulation on Default Strategy (KRW Currency & Gross Return Model)...")
     res = run_portfolio_backtest(start_date="2010-02-11", initial_capital=100000000.0)
     print(f"\n=======================================================")
     print(f" 기간: {res['startDate']} ~ {res['endDate']} ({res['years']}년)")
     print(f" 초기 자본: {format_krw_str(res['initialCapital'])} -> 최종 자산: {format_krw_str(res['finalNAV'])}")
-    print(f" 세후 총수익률: +{res['summary']['totalReturnPct']}% | CAGR: {res['summary']['cagrPct']}%")
+    print(f" 총 수익률: +{res['summary']['totalReturnPct']}% | CAGR: {res['summary']['cagrPct']}%")
     print(f" 최대 낙폭 (MDD): {res['summary']['mddPct']}% | Sharpe: {res['summary']['sharpe']} | Sortino: {res['summary']['sortino']}")
     print(f" 총 리밸런싱 횟수: {res['rebalanceCount']}회")
     print(f"=======================================================\n")
