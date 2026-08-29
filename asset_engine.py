@@ -256,21 +256,26 @@ def run_portfolio_backtest(
                 "feeCost": round(float(fee_cost), 0)
             })
 
-    # Benchmark Series Calculation
+    # Benchmark Series Calculation (3 Major Market Indices: NASDAQ 100, S&P 500, KOSPI)
     benchmarks = {}
-    if "QQQ" in prices and prices["QQQ"][0] > 0:
-        benchmarks["QQQ_BH"] = (prices["QQQ"] / prices["QQQ"][0]) * initial_capital
-    if "TQQQ" in prices and prices["TQQQ"][0] > 0:
-        benchmarks["TQQQ_BH"] = (prices["TQQQ"] / prices["TQQQ"][0]) * initial_capital
-    if "SPY" in prices and prices["SPY"][0] > 0:
-        benchmarks["SPY_BH"] = (prices["SPY"] / prices["SPY"][0]) * initial_capital
-        
-    static_nav = np.zeros(num_days, dtype=np.float64)
-    norm_base = normalize_weights(base_weights)
-    for t, w in norm_base.items():
-        if t in prices and prices[t][0] > 0:
-            static_nav += (prices[t] / prices[t][0]) * (initial_capital * w)
-    benchmarks["STATIC_BASE_BH"] = static_nav
+    if "^NDX" in universe and "adjClose" in universe["^NDX"]:
+        ndx_p = np.array(universe["^NDX"]["adjClose"][start_idx:end_idx+1], dtype=np.float64)
+        if ndx_p[0] > 0:
+            benchmarks["나스닥 100 지수 (^NDX)"] = (ndx_p / ndx_p[0]) * initial_capital
+    elif "QQQ" in prices and prices["QQQ"][0] > 0:
+        benchmarks["나스닥 100 지수 (^NDX)"] = (prices["QQQ"] / prices["QQQ"][0]) * initial_capital
+
+    if "^GSPC" in universe and "adjClose" in universe["^GSPC"]:
+        sp_p = np.array(universe["^GSPC"]["adjClose"][start_idx:end_idx+1], dtype=np.float64)
+        if sp_p[0] > 0:
+            benchmarks["S&P 500 지수 (^GSPC)"] = (sp_p / sp_p[0]) * initial_capital
+    elif "SPY" in prices and prices["SPY"][0] > 0:
+        benchmarks["S&P 500 지수 (^GSPC)"] = (prices["SPY"] / prices["SPY"][0]) * initial_capital
+
+    if "^KS11" in universe and "adjClose" in universe["^KS11"]:
+        ks_p = np.array(universe["^KS11"]["adjClose"][start_idx:end_idx+1], dtype=np.float64)
+        if ks_p[0] > 0:
+            benchmarks["코스피 지수 (^KS11)"] = (ks_p / ks_p[0]) * initial_capital
 
     years = (datetime.datetime.strptime(eval_dates[-1], "%Y-%m-%d") - datetime.datetime.strptime(eval_dates[0], "%Y-%m-%d")).days / 365.25
     
