@@ -1722,7 +1722,7 @@
     }
 
     // ==========================================
-    // Drop & Recovery Stages UI (Clean Badges)
+    // Drop & Recovery Stages UI (Editable Threshold & Weights)
     // ==========================================
     function renderDropStages(stages) {
       const container = document.getElementById('dropStagesContainer');
@@ -1749,18 +1749,40 @@
           `;
         });
 
-        const stageTitle = `${idx + 1}차 하락 (${stg.threshold}%)`;
         card.innerHTML = `
           <div class="stage-card-header">
-            <span class="stage-badge-drop">${stageTitle}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="stage-badge-drop">${idx + 1}차 하락</span>
+              <div style="display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700;">
+                <span style="color: var(--text-dim); font-size: 11px;">낙폭:</span>
+                <input type="number" class="weight-input" style="width: 58px; padding: 2px 4px; font-size: 11px; text-align: center;" 
+                  value="${stg.threshold}" step="1" max="0" 
+                  onchange="updateDropStageThreshold(${idx}, this.value)"> %
+              </div>
+            </div>
             <button class="btn-icon-del" onclick="deleteDropStage(${idx})"><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
             ${weightInputs}
           </div>
         `;
         container.appendChild(card);
       });
+    }
+
+    function updateDropStageThreshold(idx, val) {
+      const s = getCurrentSlot();
+      if (s.dropStages && s.dropStages[idx]) {
+        let num = parseFloat(val);
+        if (isNaN(num)) num = -20;
+        if (num > 0) num = -num;
+        s.dropStages[idx].threshold = num;
+        s.dropStages[idx].name = `${idx + 1}차 하락`;
+        s.dropStages.sort((a, b) => b.threshold - a.threshold);
+        saveLocalSlots();
+        renderDropStages(s.dropStages);
+        runInteractiveBacktest();
+      }
     }
 
     function addDropStage() {
@@ -1823,18 +1845,40 @@
           `;
         });
 
-        const recTitle = `${idx + 1}단계 반등 (${stg.recovery}%)`;
         card.innerHTML = `
           <div class="stage-card-header">
-            <span class="stage-badge-rec">${recTitle}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="stage-badge-rec">${idx + 1}단계 반등</span>
+              <div style="display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700;">
+                <span style="color: var(--text-dim); font-size: 11px;">반등:</span>
+                <input type="number" class="weight-input" style="width: 58px; padding: 2px 4px; font-size: 11px; text-align: center;" 
+                  value="${stg.recovery}" step="1" max="0" 
+                  onchange="updateRecoveryStageThreshold(${idx}, this.value)"> %
+              </div>
+            </div>
             <button class="btn-icon-del" onclick="deleteRecoveryStage(${idx})"><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
             ${weightInputs}
           </div>
         `;
         container.appendChild(card);
       });
+    }
+
+    function updateRecoveryStageThreshold(idx, val) {
+      const s = getCurrentSlot();
+      if (s.recoveryStages && s.recoveryStages[idx]) {
+        let num = parseFloat(val);
+        if (isNaN(num)) num = -15;
+        if (num > 0) num = -num;
+        s.recoveryStages[idx].recovery = num;
+        s.recoveryStages[idx].name = `${idx + 1}단계 반등`;
+        s.recoveryStages.sort((a, b) => a.recovery - b.recovery);
+        saveLocalSlots();
+        renderRecoveryStages(s.recoveryStages);
+        runInteractiveBacktest();
+      }
     }
 
     function addRecoveryStage() {
