@@ -1322,20 +1322,44 @@
         }
       }
 
+      // Calculate Delta Weights ONLY on Strategic Regime Changes (Drop stage or Take-Profit)
       let deltaWeights = {};
-      const allTickers = new Set([...Object.keys(targetWeights), ...Object.keys(currentWeights)]);
-      allTickers.forEach(t => {
-        const tgt = targetWeights[t] || 0.0;
-        const cur = currentWeights[t] || 0.0;
-        deltaWeights[t] = Math.round((tgt - cur) * 10) / 10.0;
-      });
+      const isTakeProfit = (totalReturn >= gainThreshold);
+
+      if (isTakeProfit) {
+        // Take-Profit: Rebalance back to Base Weights
+        const allTickers = new Set([...Object.keys(targetWeights), ...Object.keys(currentWeights)]);
+        allTickers.forEach(t => {
+          const tgt = targetWeights[t] || 0.0;
+          const cur = currentWeights[t] || 0.0;
+          const d = Math.round((tgt - cur) * 10) / 10.0;
+          if (Math.abs(d) >= 1.0) {
+            deltaWeights[t] = d;
+          }
+        });
+      } else if (currentDropStage) {
+        // Drop Stage Entry: Rebalance to Drop Stage Weights
+        const baseW = activeStrat.baseWeights || { "SCHD": 0.60, "QQQ": 0.40 };
+        const stageW = currentDropStage.weights || {};
+        const allTickers = new Set([...Object.keys(baseW), ...Object.keys(stageW)]);
+        allTickers.forEach(t => {
+          const tgt = Math.round((stageW[t] || 0.0) * 100);
+          const cur = Math.round((baseW[t] || 0.0) * 100);
+          const d = tgt - cur;
+          if (Math.abs(d) > 0) {
+            deltaWeights[t] = d;
+          }
+        });
+      } else {
+        // Normal State: No strategic orders (Hold steady)
+        deltaWeights = {};
+      }
 
       const isPlus = totalReturn >= 0;
       returnEl.textContent = `${isPlus ? '+' : ''}${totalReturn.toFixed(1)}%`;
       returnEl.style.color = isPlus ? 'var(--emerald)' : 'var(--rose)';
 
-      const gainThreshold = activeStrat.gainThresholdPct || 20.0;
-      if (totalReturn >= gainThreshold) {
+      if (isTakeProfit) {
         badgeEl.textContent = `+${gainThreshold}% 이익실현 달성`;
         badgeEl.style.background = '#dcfce7';
         badgeEl.style.color = 'var(--emerald)';
@@ -1355,7 +1379,7 @@
         if (liveSignalData) {
           if (currentDropStage) {
             liveSignalData.currentState = currentDropStage.name || `하락 ${currentDropStage.threshold}%`;
-            liveSignalData.advice = `기준지표 낙폭(${curMdd.toFixed(1)}%)이 ${currentDropStage.threshold}% 기준에 도달하여 ${currentDropStage.name} 비중으로 분할 편입을 유지합니다.`;
+            liveSignalData.advice = `기준지표 낙폭(${curMdd.toFixed(1)}%)이 ${currentDropStage.threshold}% 기준에 도달하여 ${currentDropStage.name} 비중으로 분할 편입을 실행합니다.`;
           } else {
             liveSignalData.currentState = "기본 (정상 운용)";
             liveSignalData.advice = `현재 기준 지표가 안정적인 범위 내에 있으며, 시작일(${sDate}) 대비 누적 수익률은 +${totalReturn.toFixed(1)}% 입니다.`;
