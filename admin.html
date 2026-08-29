@@ -1670,6 +1670,13 @@
       showToast("새로고침이 완료되었습니다.");
     }
 
+    function updateSavedSnapshots() {
+      savedSlotSnapshots = {};
+      strategySlots.forEach(s => {
+        savedSlotSnapshots[s.id] = JSON.stringify(s);
+      });
+    }
+
     function loadLocalSlots() {
       const stored = localStorage.getItem(LOCAL_SLOTS_KEY);
       if (stored) {
@@ -1681,6 +1688,7 @@
       } else {
         strategySlots = JSON.parse(JSON.stringify(DEFAULT_PRESETS));
       }
+      updateSavedSnapshots();
     }
 
     function saveLocalSlots() {
@@ -1725,6 +1733,7 @@
               activeSlotId = data.activeSlotId;
             }
             saveLocalSlots();
+            updateSavedSnapshots();
             renderSlotsNav();
           }
         }
@@ -1752,6 +1761,14 @@
     }
 
     function selectSlot(id) {
+      if (id === currentSlotId) return;
+      // Revert unsaved draft on previous slot so it stays untouched
+      if (savedSlotSnapshots[currentSlotId]) {
+        const curIdx = strategySlots.findIndex(s => s.id === currentSlotId);
+        if (curIdx !== -1) {
+          strategySlots[curIdx] = JSON.parse(savedSlotSnapshots[currentSlotId]);
+        }
+      }
       currentSlotId = id;
       renderSlotsNav();
       populateCurrentSlotUI();
@@ -1766,6 +1783,7 @@
       strategySlots.forEach(s => {
         s.isActive = (s.id === currentSlotId);
       });
+      updateSavedSnapshots();
       saveLocalSlots();
       renderSlotsNav();
 
@@ -1803,20 +1821,33 @@
       const isActive = document.getElementById('saveStratIsActiveCheck').checked;
       const cur = getCurrentSlot();
 
+      // Current edited payload
+      const editedPayload = {
+        id: targetId,
+        name: newName,
+        memo: cur.memo || "",
+        benchmark: cur.benchmark || "^NDX",
+        baseWeights: JSON.parse(JSON.stringify(cur.baseWeights || {})),
+        dropStages: JSON.parse(JSON.stringify(cur.dropStages || [])),
+        recoveryStages: JSON.parse(JSON.stringify(cur.recoveryStages || [])),
+        gainThresholdPct: cur.gainThresholdPct !== undefined ? cur.gainThresholdPct : 20.0,
+        feeRate: cur.feeRate !== undefined ? cur.feeRate : 0.15,
+        isActive: isActive
+      };
+
+      // If saving to a different slot, restore source slot from snapshot so source is never mutated
+      if (targetId !== currentSlotId) {
+        if (savedSlotSnapshots[currentSlotId]) {
+          const curIdx = strategySlots.findIndex(s => s.id === currentSlotId);
+          if (curIdx !== -1) {
+            strategySlots[curIdx] = JSON.parse(savedSlotSnapshots[currentSlotId]);
+          }
+        }
+      }
+
       const targetIdx = strategySlots.findIndex(s => s.id === targetId);
       if (targetIdx !== -1) {
-        strategySlots[targetIdx] = {
-          id: targetId,
-          name: newName,
-          memo: cur.memo || "",
-          benchmark: cur.benchmark || "^NDX",
-          baseWeights: JSON.parse(JSON.stringify(cur.baseWeights || {})),
-          dropStages: JSON.parse(JSON.stringify(cur.dropStages || [])),
-          recoveryStages: JSON.parse(JSON.stringify(cur.recoveryStages || [])),
-          gainThresholdPct: cur.gainThresholdPct !== undefined ? cur.gainThresholdPct : 20.0,
-          feeRate: cur.feeRate !== undefined ? cur.feeRate : 0.15,
-          isActive: isActive
-        };
+        strategySlots[targetIdx] = editedPayload;
       }
 
       if (isActive) {
@@ -1827,6 +1858,7 @@
         });
       }
 
+      savedSlotSnapshots[targetId] = JSON.stringify(strategySlots[targetIdx]);
       saveLocalSlots();
       closeSaveStrategyModal();
       currentSlotId = targetId;
@@ -1885,6 +1917,16 @@
     }
 
     function loadSlotFromModal(slotId) {
+      if (slotId === currentSlotId) {
+        closeLoadStrategyModal();
+        return;
+      }
+      if (savedSlotSnapshots[currentSlotId]) {
+        const curIdx = strategySlots.findIndex(s => s.id === currentSlotId);
+        if (curIdx !== -1) {
+          strategySlots[curIdx] = JSON.parse(savedSlotSnapshots[currentSlotId]);
+        }
+      }
       currentSlotId = slotId;
       saveLocalSlots();
       closeLoadStrategyModal();
@@ -1914,6 +1956,7 @@
         if (idx !== -1) {
           strategySlots[idx] = blankSlot;
         }
+        savedSlotSnapshots[slotId] = JSON.stringify(blankSlot);
         saveLocalSlots();
         renderSlotsNav();
         if (currentSlotId === slotId) {
@@ -1947,6 +1990,7 @@
         if (idx !== -1) {
           strategySlots[idx] = blankSlot;
         }
+        savedSlotSnapshots[currentSlotId] = JSON.stringify(blankSlot);
         saveLocalSlots();
         renderSlotsNav();
         populateCurrentSlotUI();
@@ -1970,49 +2014,8 @@
     }
 
     // ==========================================
-    // Base Weights Matrix UI (Auto-balancing to 100%)
+    // Base Weights UI (Pure Manual Control & Sum Indicator)
     // ==========================================
-    function autoNormalizeBaseWeights(weights, editedTicker, newPct) {
-      const tickers = Object.keys(weights);
-      if (tickers.length === 0) return {};
-      if (tickers.length === 1) {
-        return { [tickers[0]]: 1.0 };
-      }
-
-      newPct = Math.max(0, Math.min(100, Math.round(newPct)));
-      const otherTickers = tickers.filter(t => t !== editedTicker);
-      const remainPct = 100 - newPct;
-
-      const currentOtherSum = otherTickers.reduce((sum, t) => sum + Math.max(0, Math.round((weights[t] || 0) * 100)), 0);
-
-      const result = {};
-      result[editedTicker] = newPct / 100.0;
-
-      if (currentOtherSum > 0) {
-        let allocated = 0;
-        otherTickers.forEach((t, i) => {
-          if (i === otherTickers.length - 1) {
-            const finalOtherPct = Math.max(0, remainPct - allocated);
-            result[t] = finalOtherPct / 100.0;
-          } else {
-            const currentPct = Math.max(0, Math.round((weights[t] || 0) * 100));
-            const calculatedPct = Math.round((currentPct / currentOtherSum) * remainPct);
-            result[t] = calculatedPct / 100.0;
-            allocated += calculatedPct;
-          }
-        });
-      } else {
-        const equalShare = Math.floor(remainPct / otherTickers.length);
-        const remainder = remainPct % otherTickers.length;
-        otherTickers.forEach((t, i) => {
-          const share = equalShare + (i < remainder ? 1 : 0);
-          result[t] = share / 100.0;
-        });
-      }
-
-      return result;
-    }
-
     function renderBaseWeightsTable(weights) {
       const tbody = document.getElementById('baseWeightsTable');
       tbody.innerHTML = '';
@@ -2054,10 +2057,12 @@
 
     function onBaseWeightChange(ticker, val) {
       const s = getCurrentSlot();
+      if (!s.baseWeights) s.baseWeights = {};
       const newPct = parseFloat(val) || 0;
-      s.baseWeights = autoNormalizeBaseWeights(s.baseWeights || {}, ticker, newPct);
+      s.baseWeights[ticker] = newPct / 100.0;
       saveLocalSlots();
       renderBaseWeightsTable(s.baseWeights);
+      runInteractiveBacktest();
     }
 
     function deleteBaseWeightRow(ticker) {
@@ -3062,7 +3067,7 @@
 
         item.innerHTML = `
           <div style="display: flex; align-items: center; gap: 10px;">
-            <input type="checkbox" class="slot-compare-check" value="${s.id}" ${s.id <= 3 ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+            <input type="checkbox" class="slot-compare-check" value="${s.id}" style="width: 16px; height: 16px; cursor: pointer;">
             <div>
               <div style="font-weight: 700; color: var(--text-main); font-size: 13px;">#${s.id} ${s.name} ${s.id === activeSlotId ? '<span class="slot-badge-active">ACTIVE</span>' : ''}</div>
               <div style="font-size: 11px; color: var(--text-dim);">기준: ${formatTickerDisplay(s.benchmark || '^NDX')} | 기본비중: ${baseStr}</div>
