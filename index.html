@@ -1696,12 +1696,10 @@
       showToast(`전략 #${slotId}이(가) 실전 대시보드 전략으로 적용되었습니다.`);
     }
 
-    // Attach click listeners on load
+    // Wire strategy bar onclick on load
     window.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('btnOpenStrategyModal');
-      if (btn) btn.onclick = openStrategySelectModal;
-      const badge = document.getElementById('heroStrategyBadge');
-      if (badge) badge.onclick = openStrategySelectModal;
+      const bar = document.querySelector('.strategy-bar');
+      if (bar) bar.onclick = openStrategySelectModal;
     });
   </script>
 </body>
