@@ -571,10 +571,35 @@
       gap: 6px;
     }
 
-    .chart-tab.active {
-      background: #1e293b;
-      color: #ffffff;
-      border-color: #1e293b;
+    .period-tabs {
+      display: inline-flex;
+      gap: 3px;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .period-tab {
+      padding: 3px 9px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      transition: var(--transition);
+    }
+
+    .period-tab:hover {
+      color: var(--text-main);
+    }
+
+    .period-tab.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       font-weight: 700;
     }
 
@@ -978,8 +1003,18 @@
           <!-- Interactive Chart Panel -->
           <div class="chart-panel">
             <div class="chart-header">
-              <div style="font-weight: 700; font-size: 16px;">
-                <i class="fa-solid fa-chart-line text-primary"></i> 백테스트 성과 분석 차트
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <div style="font-weight: 700; font-size: 15px;">
+                  <i class="fa-solid fa-chart-line text-primary"></i> 백테스트 성과 분석
+                </div>
+                <!-- Period Selector -->
+                <div class="period-tabs">
+                  <button class="period-tab active" id="periodBtn_ALL" onclick="setBacktestPeriod('ALL')">전체(MAX)</button>
+                  <button class="period-tab" id="periodBtn_10Y" onclick="setBacktestPeriod('10Y')">10년</button>
+                  <button class="period-tab" id="periodBtn_5Y" onclick="setBacktestPeriod('5Y')">5년</button>
+                  <button class="period-tab" id="periodBtn_3Y" onclick="setBacktestPeriod('3Y')">3년</button>
+                  <button class="period-tab" id="periodBtn_1Y" onclick="setBacktestPeriod('1Y')">1년</button>
+                </div>
               </div>
               <div class="chart-tabs">
                 <button class="chart-tab active" onclick="switchChartTab('nav')">
@@ -1981,14 +2016,44 @@
     }
 
     // ==========================================
-    // Client-Side Fast Backtester Engine
+    // Client-Side Fast Backtester Engine (Modular Simulation & Period Slicing)
     // ==========================================
-    function runInteractiveBacktest(showToastMsg = false) {
-      if (!etfDataset || !etfDataset.dates || !etfDataset.universe) return;
+    let currentBacktestPeriod = 'ALL'; // 'ALL', '10Y', '5Y', '3Y', '1Y'
 
-      const s = getCurrentSlot();
-      const dates = etfDataset.dates;
+    function setBacktestPeriod(period) {
+      currentBacktestPeriod = period;
+      document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(`periodBtn_${period}`);
+      if (btn) btn.classList.add('active');
+      if (isCompareMode) {
+        runMultiStrategyComparison();
+      } else {
+        runInteractiveBacktest();
+      }
+    }
+
+    function simulateDynamicAssetStrategy(s, period = currentBacktestPeriod) {
+      if (!etfDataset || !etfDataset.dates || !etfDataset.universe) return null;
+
+      const allDates = etfDataset.dates;
+      const lastDateStr = allDates[allDates.length - 1];
+      const lastDate = new Date(lastDateStr);
+
+      let startIndex = 0;
+      if (period !== 'ALL') {
+        const yearsMap = { '10Y': 10, '5Y': 5, '3Y': 3, '1Y': 1 };
+        const y = yearsMap[period] || 0;
+        const targetDate = new Date(lastDate);
+        targetDate.setFullYear(targetDate.getFullYear() - y);
+        const targetStr = targetDate.toISOString().slice(0, 10);
+        const idx = allDates.findIndex(d => d >= targetStr);
+        if (idx >= 0) startIndex = idx;
+      }
+
+      const dates = allDates.slice(startIndex);
       const numDays = dates.length;
+      if (numDays === 0) return null;
+
       const initialCapital = 100000000; // 1억원
       const benchmarkTicker = s.benchmark || "^NDX";
 
@@ -2001,7 +2066,7 @@
       const prices = {};
       allTickers.forEach(t => {
         if (etfDataset.universe[t] && etfDataset.universe[t].adjClose) {
-          prices[t] = etfDataset.universe[t].adjClose;
+          prices[t] = etfDataset.universe[t].adjClose.slice(startIndex);
         } else {
           prices[t] = new Array(numDays).fill(1.0);
         }
@@ -2142,13 +2207,13 @@
         bmKS11[i] = pKS11[0] > 0 ? (pKS11[i] / pKS11[0]) * initialCapital : initialCapital;
       }
 
-      const years = (new Date(dates[numDays - 1]) - new Date(dates[0])) / (365.25 * 24 * 3600 * 1000);
+      const years = (new Date(dates[numDays - 1]) - new Date(dates[0])) / (365.25 * 24 * 3600 * 1000) || 1.0;
       const stratMetrics = computeMetrics(stratNAV, years);
       const ndxMetrics = computeMetrics(bmNDX, years);
       const gspcMetrics = computeMetrics(bmGSPC, years);
       const ks11Metrics = computeMetrics(bmKS11, years);
 
-      lastBacktestResult = {
+      return {
         stratMetrics,
         ndxMetrics,
         gspcMetrics,
@@ -2160,12 +2225,21 @@
         bmDrawdowns,
         dates,
         years,
-        rebalanceEvents
+        rebalanceEvents,
+        initialCapital
       };
+    }
 
-      updateMetricsUI(stratMetrics, years, rebalanceEvents.length, initialCapital);
-      updateBenchmarkTableUI(stratMetrics, ndxMetrics, gspcMetrics, ks11Metrics);
-      updateRebalanceEventsUI(rebalanceEvents);
+    function runInteractiveBacktest(showToastMsg = false) {
+      const s = getCurrentSlot();
+      const res = simulateDynamicAssetStrategy(s, currentBacktestPeriod);
+      if (!res) return;
+
+      lastBacktestResult = res;
+
+      updateMetricsUI(res.stratMetrics, res.years, res.rebalanceEvents.length, res.initialCapital);
+      updateBenchmarkTableUI(res.stratMetrics, res.ndxMetrics, res.gspcMetrics, res.ks11Metrics);
+      updateRebalanceEventsUI(res.rebalanceEvents);
       renderChart();
       if (showToastMsg) showToast("백테스트 계산 및 차트 갱신이 완료되었습니다!");
     }
@@ -2231,7 +2305,7 @@
       document.getElementById('mTotalReturn').textContent = `+${m.totalReturnPct}%`;
       document.getElementById('mInitialToFinal').textContent = `${formatKRW(initCap)} → ${formatKRW(m.finalNAV)}`;
       document.getElementById('mCAGR').textContent = `${m.cagrPct}%`;
-      document.getElementById('mYears').textContent = `${years.toFixed(1)}년 장기 시뮬레이션`;
+      document.getElementById('mYears').textContent = `${years.toFixed(1)}년 시뮬레이션`;
       document.getElementById('mMDD').textContent = `${m.mddPct}%`;
       document.getElementById('mSharpe').textContent = m.sharpe;
       document.getElementById('mSortino').textContent = `Sortino: ${m.sortino}`;
@@ -2278,16 +2352,16 @@
     }
 
     function updateRebalanceEventsUI(events) {
-      document.getElementById('rebalanceCountText').textContent = `총 ${events.length}건`;
+      document.getElementById('rebalanceCountText').textContent = `총 ${events.length}건 (기간 전체)`;
       const tbody = document.getElementById('rebalanceTableBody');
       tbody.innerHTML = '';
 
       if (events.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim);">리밸런싱 이력이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 16px;">해당 기간 내 리밸런싱 이력이 없습니다.</td></tr>';
         return;
       }
 
-      [...events].reverse().slice(0, 20).forEach(ev => {
+      [...events].reverse().forEach(ev => {
         const tr = document.createElement('tr');
         let badgeBg = '#f1f5f9';
         let badgeColor = '#475569';
