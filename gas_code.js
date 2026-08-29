@@ -48,12 +48,13 @@ function doGet(e) {
   const inputPin = e.parameter.pin ? String(e.parameter.pin).trim() : "";
   const authPin = getAuthPin();
   const action = e.parameter.action || "all";
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
 
+  // 1. Set Active Strategy Slot
   if (action === "set_active_strategy_slot") {
     const slotId = parseInt(e.parameter.slotId || "1", 10);
     PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(slotId));
     
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
     setupSheets();
     const sheet = ss.getSheetByName("Strategy_Slots");
     if (sheet && sheet.getLastRow() > 1) {
@@ -67,6 +68,11 @@ function doGet(e) {
       sheet.getRange(2, lastCol, activeFlags.length, 1).setValues(activeFlags);
     }
 
+    return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", activeSlotId: slotId }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 2. On-Demand Fetch Ticker History from Yahoo Finance
   if (action === "fetch_ticker_history") {
     const ticker = String(e.parameter.ticker || "").trim().toUpperCase();
     if (!ticker) {
@@ -127,8 +133,8 @@ function doGet(e) {
     }
   }
 
+  // 3. Get Strategy Slots
   if (action === "get_strategy_slots") {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
     setupSheets();
     let slotsSheet = ss.getSheetByName("Strategy_Slots");
     let slots = [];
@@ -159,12 +165,13 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  // 4. PIN Authorization Check for Protected Endpoints
   if (authPin && inputPin !== authPin && action !== "holdings") {
     return ContentService.createTextOutput(JSON.stringify({ success: false, status: "error", message: "Unauthorized: Invalid PIN" }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // 5. Default Query (all, signals, holdings, logs)
   setupSheets();
   let result = { success: true, status: "success" };
 
