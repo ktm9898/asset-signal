@@ -718,92 +718,90 @@
     <div class="dashboard-grid">
 
       <!-- Left Card: Target Asset Allocation -->
-      <div class="dashboard-card">
-        <div class="card-header">
-          <div class="card-title">
-            <i class="fa-solid fa-chart-pie text-primary"></i> 목표 자산 비중
+      <div class="dashboard-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-chart-pie text-primary"></i> 목표 자산 비중
+            </div>
+            <span class="text-dim" style="font-size: 12px;" id="signalUpdatedTime">오늘 기준</span>
           </div>
-          <span class="text-dim" style="font-size: 12px;" id="signalUpdatedTime">오늘 기준</span>
+
+          <div class="allocation-wrapper">
+            <div class="chart-donut-container">
+              <canvas id="allocationDonutChart"></canvas>
+            </div>
+            <div class="weights-list" id="weightsListContainer">
+              <!-- Dynamic Allocation Cards -->
+            </div>
+          </div>
         </div>
 
-        <div class="allocation-wrapper">
-          <div class="chart-donut-container">
-            <canvas id="allocationDonutChart"></canvas>
-          </div>
-          <div class="weights-list" id="weightsListContainer">
-            <!-- Dynamic Allocation Cards -->
-          </div>
-        </div>
-
-        <!-- Total Capital & Investment Start Date Tracker -->
-        <div class="calc-input-box">
-          <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
-            <!-- 1. Total Capital Input -->
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-              <div>
-                <div style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
-                  <i class="fa-solid fa-coins text-primary"></i> 총 투자자산
-                </div>
-                <div style="font-size: 11px; color: var(--text-dim);">금액 입력 시 ETF별 목표 매수/보유 금액이 자동 계산됩니다.</div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <input type="number" class="calc-input" id="userTotalCapital" value="50000000" step="1000000" onchange="onCapitalChange()" style="width: 150px;">
-                <span style="font-weight: 700;">원</span>
-              </div>
+        <!-- Investment Start Date & Live Return Tracker -->
+        <div class="calc-input-box" style="flex-direction: column; gap: 10px; padding: 14px 16px; margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div style="font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-calendar-day text-primary"></i>
+              <span>운용 시작일 (최근 리밸런싱일)</span>
             </div>
+            <input type="date" class="calc-input" id="userStartDate" style="width: 140px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
+          </div>
 
-            <!-- 2. Investment Start Date (Anchor Date for +20% Profit Tracking) -->
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
-              <div>
-                <div style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
-                  <i class="fa-solid fa-calendar-day text-indigo"></i> 운용 시작일 (최근 리밸런싱일)
-                </div>
-                <div style="font-size: 11px; color: var(--text-dim);">이 날짜의 매수 시세 대비 +20% 이익실현 신호를 추적합니다.</div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <input type="date" class="calc-input" id="userStartDate" style="width: 145px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
-              </div>
-            </div>
-
-            <!-- 3. Realtime Return Tracker Snapshot -->
-            <div id="liveReturnTrackerBox" style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px;">
-              <span style="color: var(--text-dim);">시작일 대비 누적 수익률:</span>
-              <span id="trackerReturnVal" style="font-weight: 800; font-size: 14px; color: var(--emerald);">+0.0%</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12.5px;">
+            <span style="color: var(--text-dim); font-weight: 600;">시작일 대비 누적 수익률</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="trackerReturnVal" style="font-weight: 800; font-size: 15px; color: var(--emerald);">+0.0%</span>
               <span id="trackerTargetBadge" style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: #eff6ff; color: var(--primary); font-weight: 700;">목표 +20% 추적중</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Card: Rebalance Action Checklist -->
-      <div class="dashboard-card">
-        <div class="card-header">
-          <div class="card-title">
-            <i class="fa-solid fa-list-check text-primary"></i> 리밸런싱 지시서
+      <!-- Right Card: Rebalance Action Checklist & Guidelines -->
+      <div class="dashboard-card" style="display: flex; flex-direction: column; justify-content: space-between; gap: 14px;">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-list-check text-primary"></i> 리밸런싱 지시서
+            </div>
+          </div>
+
+          <div class="orders-list" id="ordersListContainer">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Active Strategy Info Summary -->
+          <div class="strategy-meta-box">
+            <div class="strategy-meta-row">
+              <span class="meta-label">실전 적용 전략</span>
+              <span class="meta-val" id="metaStratName">나스닥100 동적 계단식</span>
+            </div>
+            <div class="strategy-meta-row">
+              <span class="meta-label">기준 지표 / 기본 비중</span>
+              <span class="meta-val" id="metaStratBase">SCHD 60% : QQQ 40%</span>
+            </div>
+            <div class="strategy-meta-row">
+              <span class="meta-label">하락 / 복귀 조정 단계</span>
+              <span class="meta-val" id="metaStratDrops">1차 (-15%) · 2차 (-25%) · 3차 (-40%) · 4차 (-60%) · 5차 (-80%)</span>
+            </div>
+            <div class="strategy-meta-row">
+              <span class="meta-label">고점 복귀 및 이익실현</span>
+              <span class="meta-val" id="metaStratRecovery">0.0% 전고점 돌파 시 기본 비중 원복 · +20.0% 상승 시 이익실현</span>
+            </div>
           </div>
         </div>
 
-        <div class="orders-list" id="ordersListContainer">
-          <!-- Rendered dynamically -->
-        </div>
-
-        <!-- Active Strategy Info Summary -->
-        <div class="strategy-meta-box">
-          <div class="strategy-meta-row">
-            <span class="meta-label">실전 적용 전략</span>
-            <span class="meta-val" id="metaStratName">나스닥100 동적 계단식</span>
+        <!-- Operational Guideline Box -->
+        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+          <div style="font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-shield-halved text-primary"></i> 실전 운용 가이드
           </div>
-          <div class="strategy-meta-row">
-            <span class="meta-label">기준 지표 / 기본 비중</span>
-            <span class="meta-val" id="metaStratBase">SCHD 60% : QQQ 40%</span>
+          <div style="color: var(--text-muted); line-height: 1.5;">
+            미국장 마감 후 지수 MDD 또는 +20% 이익실현 신호가 발생했을 때, 익일 1회 목표 비중으로 리밸런싱을 실행합니다.
           </div>
-          <div class="strategy-meta-row">
-            <span class="meta-label">하락 / 복귀 조정 단계</span>
-            <span class="meta-val" id="metaStratDrops">1차 (-15%) · 2차 (-25%) · 3차 (-40%) · 4차 (-60%) · 5차 (-80%)</span>
-          </div>
-          <div class="strategy-meta-row">
-            <span class="meta-label">고점 복귀 및 이익실현</span>
-            <span class="meta-val" id="metaStratRecovery">0.0% 전고점 돌파 시 기본 비중 원복 · +20.0% 상승 시 이익실현</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-color); padding-top: 8px; font-size: 11.5px; color: var(--text-dim);">
+            <span>다음 전환 기준선까지:</span>
+            <span id="nextThresholdDistance" style="font-weight: 700; color: var(--primary);">1차 하락 단계 대기중</span>
           </div>
         </div>
       </div>
@@ -898,12 +896,6 @@
 
     function loadInitialData() {
       let initBase = { "SCHD": 60.0, "QQQ": 40.0 };
-      const savedCap = localStorage.getItem("asset_user_capital");
-      if (savedCap && parseFloat(savedCap) > 0) {
-        totalCapital = parseFloat(savedCap);
-        const capInput = document.getElementById('userTotalCapital');
-        if (capInput) capInput.value = totalCapital;
-      }
 
       try {
         const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
@@ -1073,11 +1065,13 @@
           <div class="asset-info">
             <div class="asset-color-dot" style="background: ${colors[idx]};"></div>
             <div>
-              <div class="asset-ticker">${formatTickerDisplay(ticker)} ${deltaBadgeHtml}</div>
-              <div class="asset-name">목표금액: ${formatKRW(targetAmount)} (${targetAmount.toLocaleString()}원)</div>
+              <div class="asset-ticker">${formatTickerDisplay(ticker)}</div>
             </div>
           </div>
-          <div class="asset-pct">${pct.toFixed(1)}%</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${deltaBadgeHtml}
+            <div class="asset-pct">${pct.toFixed(1)}%</div>
+          </div>
         `;
         container.appendChild(card);
       });
@@ -1114,7 +1108,6 @@
       let hasAction = false;
       Object.entries(targetWeights || {}).forEach(([ticker, tgtPct]) => {
         const delta = deltaWeights ? (deltaWeights[ticker] || 0) : 0;
-        const targetAmount = Math.round(totalCapital * (tgtPct / 100.0));
 
         if (Math.abs(delta) > 0.01) {
           hasAction = true;
@@ -1130,7 +1123,7 @@
                 <span class="delta-badge ${isBuy ? 'delta-plus' : 'delta-minus'}">${isBuy ? '+' : ''}${delta}%p</span>
               </div>
               <div class="order-action-sub">
-                목표 비중 <strong>${tgtPct.toFixed(1)}%</strong> 맞춤 (${formatKRW(targetAmount)})
+                목표 비중 <strong>${tgtPct.toFixed(1)}%</strong> 설정
               </div>
             </div>
             <div style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800; color: ${isBuy ? 'var(--emerald)' : 'var(--rose)'};">
@@ -1143,12 +1136,12 @@
 
       if (!hasAction) {
         container.innerHTML = `
-          <div class="order-card" style="border-left-color: var(--emerald); justify-content: center; text-align: center; padding: 24px;">
+          <div class="order-card" style="border-left-color: var(--emerald); justify-content: center; text-align: center; padding: 20px 16px;">
             <div>
-              <div style="font-size: 15px; font-weight: 700; color: var(--emerald); display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <i class="fa-solid fa-circle-check"></i> 오늘 추가 매매/리밸런싱 필요 없음
+              <div style="font-size: 14.5px; font-weight: 700; color: var(--emerald); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-solid fa-circle-check"></i> 오늘 추가 매매 / 리밸런싱 필요 없음
               </div>
-              <div style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">
+              <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">
                 현재 포트폴리오가 목표 비중과 완벽히 일치하여 정상 유지 중입니다.
               </div>
             </div>
@@ -1178,15 +1171,6 @@
 
     let etfDatasetCache = null;
     let userStartDateStr = "";
-
-    function onCapitalChange() {
-      const val = parseFloat(document.getElementById('userTotalCapital').value);
-      if (val > 0) {
-        totalCapital = val;
-        localStorage.setItem("asset_user_capital", String(val));
-        renderDashboardUI();
-      }
-    }
 
     function onStartDateChange() {
       const dateVal = document.getElementById('userStartDate').value;
@@ -1230,16 +1214,18 @@
       let sIdx = ds.dates.findIndex(d => d >= sDate);
       if (sIdx === -1) sIdx = 0;
 
-      // Get active strategy base weights
+      // Get active strategy base weights & drop stages
       let baseWeights = { "SCHD": 0.60, "QQQ": 0.40 };
+      let dropStages = [];
       try {
         const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
         const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
         if (storedSlots) {
           const slots = JSON.parse(storedSlots);
           const activeStrat = slots.find(s => s.id === activeId) || slots[0];
-          if (activeStrat && activeStrat.baseWeights) {
-            baseWeights = activeStrat.baseWeights;
+          if (activeStrat) {
+            if (activeStrat.baseWeights) baseWeights = activeStrat.baseWeights;
+            if (activeStrat.dropStages) dropStages = activeStrat.dropStages;
           }
         }
       } catch (e) {}
@@ -1268,7 +1254,7 @@
 
       const gainThreshold = 20.0;
       if (totalReturn >= gainThreshold) {
-        badgeEl.textContent = `🎯 +${gainThreshold}% 이익실현 달성!`;
+        badgeEl.textContent = `+${gainThreshold}% 이익실현 달성`;
         badgeEl.style.background = '#dcfce7';
         badgeEl.style.color = 'var(--emerald)';
         badgeEl.style.border = '1px solid #bbf7d0';
@@ -1285,6 +1271,23 @@
         badgeEl.style.background = '#eff6ff';
         badgeEl.style.color = 'var(--primary)';
         badgeEl.style.border = '1px solid #dbeafe';
+      }
+
+      // Update distance to next threshold line
+      const nextThEl = document.getElementById('nextThresholdDistance');
+      if (nextThEl && liveSignalData) {
+        const curMdd = liveSignalData.benchmarkMDD || -3.25;
+        if (dropStages && dropStages.length > 0) {
+          const firstTh = dropStages[0].threshold || -10.0;
+          if (curMdd > firstTh) {
+            const gap = curMdd - firstTh;
+            nextThEl.textContent = `1차 하락(${firstTh}%)까지 -${gap.toFixed(2)}%p 여유`;
+          } else {
+            nextThEl.textContent = `하락 대응 국면 진행 중`;
+          }
+        } else {
+          nextThEl.textContent = `정상 국면 운용 중`;
+        }
       }
     }
 
