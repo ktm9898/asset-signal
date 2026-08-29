@@ -603,6 +603,21 @@
       font-weight: 700;
     }
 
+    .date-picker-input {
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-family: 'Outfit', sans-serif;
+      color: #334155;
+      background: #ffffff;
+      outline: none;
+      cursor: pointer;
+    }
+    .date-picker-input:focus {
+      border-color: var(--primary);
+    }
+
     .chart-canvas-container {
       position: relative;
       height: 400px;
@@ -1003,17 +1018,24 @@
           <!-- Interactive Chart Panel -->
           <div class="chart-panel">
             <div class="chart-header">
-              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <div style="font-weight: 700; font-size: 15px;">
                   <i class="fa-solid fa-chart-line text-primary"></i> 백테스트 성과 분석
                 </div>
-                <!-- Period Selector -->
-                <div class="period-tabs">
-                  <button class="period-tab active" id="periodBtn_ALL" onclick="setBacktestPeriod('ALL')">전체(MAX)</button>
-                  <button class="period-tab" id="periodBtn_10Y" onclick="setBacktestPeriod('10Y')">10년</button>
-                  <button class="period-tab" id="periodBtn_5Y" onclick="setBacktestPeriod('5Y')">5년</button>
-                  <button class="period-tab" id="periodBtn_3Y" onclick="setBacktestPeriod('3Y')">3년</button>
-                  <button class="period-tab" id="periodBtn_1Y" onclick="setBacktestPeriod('1Y')">1년</button>
+                <!-- Period Selector & Custom Date Picker -->
+                <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <div class="period-tabs">
+                    <button class="period-tab active" id="periodBtn_ALL" onclick="setBacktestPeriod('ALL')">전체(MAX)</button>
+                    <button class="period-tab" id="periodBtn_10Y" onclick="setBacktestPeriod('10Y')">10년</button>
+                    <button class="period-tab" id="periodBtn_5Y" onclick="setBacktestPeriod('5Y')">5년</button>
+                    <button class="period-tab" id="periodBtn_3Y" onclick="setBacktestPeriod('3Y')">3년</button>
+                    <button class="period-tab" id="periodBtn_1Y" onclick="setBacktestPeriod('1Y')">1년</button>
+                  </div>
+                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-dim); background: #f8fafc; padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <input type="date" id="customStartDate" class="date-picker-input" onchange="onCustomDateChange()">
+                    <span>~</span>
+                    <input type="date" id="customEndDate" class="date-picker-input" onchange="onCustomDateChange()">
+                  </div>
                 </div>
               </div>
               <div class="chart-tabs">
@@ -1439,8 +1461,25 @@
       renderSlotsNav();
       await fetchEtfDataset();
       await fetchGoogleSheetSlots();
-      populateCurrentSlotUI();
       populateDataTickerDropdown();
+      if (etfDataset && etfDataset.dates && etfDataset.dates.length > 0) {
+        const startInput = document.getElementById('customStartDate');
+        const endInput = document.getElementById('customEndDate');
+        const firstD = etfDataset.dates[0];
+        const lastD = etfDataset.dates[etfDataset.dates.length - 1];
+        if (startInput) {
+          startInput.min = firstD;
+          startInput.max = lastD;
+          startInput.value = firstD;
+        }
+        if (endInput) {
+          endInput.min = firstD;
+          endInput.max = lastD;
+          endInput.value = lastD;
+        }
+        customStartStr = firstD;
+        customEndStr = lastD;
+      }
       runInteractiveBacktest();
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -2018,13 +2057,62 @@
     // ==========================================
     // Client-Side Fast Backtester Engine (Modular Simulation & Period Slicing)
     // ==========================================
-    let currentBacktestPeriod = 'ALL'; // 'ALL', '10Y', '5Y', '3Y', '1Y'
+    let currentBacktestPeriod = 'ALL'; // 'ALL', '10Y', '5Y', '3Y', '1Y', 'CUSTOM'
+    let customStartStr = '';
+    let customEndStr = '';
 
     function setBacktestPeriod(period) {
       currentBacktestPeriod = period;
       document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
       const btn = document.getElementById(`periodBtn_${period}`);
       if (btn) btn.classList.add('active');
+
+      if (etfDataset && etfDataset.dates && etfDataset.dates.length > 0) {
+        const allDates = etfDataset.dates;
+        const lastDateStr = allDates[allDates.length - 1];
+        const lastDate = new Date(lastDateStr);
+
+        let startIndex = 0;
+        if (period !== 'ALL') {
+          const yearsMap = { '10Y': 10, '5Y': 5, '3Y': 3, '1Y': 1 };
+          const y = yearsMap[period] || 0;
+          const targetDate = new Date(lastDate);
+          targetDate.setFullYear(targetDate.getFullYear() - y);
+          const targetStr = targetDate.toISOString().slice(0, 10);
+          const idx = allDates.findIndex(d => d >= targetStr);
+          if (idx >= 0) startIndex = idx;
+        }
+
+        const startInput = document.getElementById('customStartDate');
+        const endInput = document.getElementById('customEndDate');
+        if (startInput) startInput.value = allDates[startIndex];
+        if (endInput) endInput.value = lastDateStr;
+        customStartStr = allDates[startIndex];
+        customEndStr = lastDateStr;
+      }
+
+      if (isCompareMode) {
+        runMultiStrategyComparison();
+      } else {
+        runInteractiveBacktest();
+      }
+    }
+
+    function onCustomDateChange() {
+      const startVal = document.getElementById('customStartDate').value;
+      const endVal = document.getElementById('customEndDate').value;
+      if (!startVal || !endVal) return;
+
+      if (startVal > endVal) {
+        showToast("시작일은 종료일보다 이전이어야 합니다.");
+        return;
+      }
+
+      currentBacktestPeriod = 'CUSTOM';
+      customStartStr = startVal;
+      customEndStr = endVal;
+      document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+
       if (isCompareMode) {
         runMultiStrategyComparison();
       } else {
@@ -2040,7 +2128,21 @@
       const lastDate = new Date(lastDateStr);
 
       let startIndex = 0;
-      if (period !== 'ALL') {
+      let endIndex = allDates.length - 1;
+
+      if (period === 'CUSTOM' && customStartStr && customEndStr) {
+        const sIdx = allDates.findIndex(d => d >= customStartStr);
+        if (sIdx >= 0) startIndex = sIdx;
+        
+        let eIdx = -1;
+        for (let i = allDates.length - 1; i >= 0; i--) {
+          if (allDates[i] <= customEndStr) {
+            eIdx = i;
+            break;
+          }
+        }
+        if (eIdx >= startIndex) endIndex = eIdx;
+      } else if (period !== 'ALL') {
         const yearsMap = { '10Y': 10, '5Y': 5, '3Y': 3, '1Y': 1 };
         const y = yearsMap[period] || 0;
         const targetDate = new Date(lastDate);
@@ -2050,7 +2152,7 @@
         if (idx >= 0) startIndex = idx;
       }
 
-      const dates = allDates.slice(startIndex);
+      const dates = allDates.slice(startIndex, endIndex + 1);
       const numDays = dates.length;
       if (numDays === 0) return null;
 
@@ -2066,7 +2168,7 @@
       const prices = {};
       allTickers.forEach(t => {
         if (etfDataset.universe[t] && etfDataset.universe[t].adjClose) {
-          prices[t] = etfDataset.universe[t].adjClose.slice(startIndex);
+          prices[t] = etfDataset.universe[t].adjClose.slice(startIndex, endIndex + 1);
         } else {
           prices[t] = new Array(numDays).fill(1.0);
         }
