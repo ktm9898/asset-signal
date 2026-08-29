@@ -1690,6 +1690,21 @@
       runInteractiveBacktest();
     }
 
+    async function activateCurrentSlot() {
+      activeSlotId = currentSlotId;
+      localStorage.setItem("asset_active_slot_id", String(currentSlotId));
+      
+      // Update isActive flags on strategySlots
+      strategySlots.forEach(s => {
+        s.isActive = (s.id === currentSlotId);
+      });
+      saveLocalSlots();
+      renderSlotsNav();
+
+      showToast(`전략 #${currentSlotId} (${getCurrentSlot().name})이(가) 실전 적용 전략으로 활성화되었습니다!`);
+      await saveSlotsToGAS();
+    }
+
     function getCurrentSlot() {
       return strategySlots.find(s => s.id === currentSlotId) || strategySlots[0];
     }

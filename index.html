@@ -1030,33 +1030,34 @@
       else if (isRecovery) actionDesc = '반등 분할 익절';
 
       document.getElementById('heroAdviceTitle').textContent = `기준지표 ${liveSignalData.benchmark} (낙폭 ${mdd.toFixed(1)}%) — ${actionDesc}`;
-      document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice && !liveSignalData.advice.includes("평시") ? liveSignalData.advice : "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.";
+      document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice || "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.";
 
-      renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.deltaWeights);
+      renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.currentWeights, liveSignalData.deltaWeights, liveSignalData.assetReturns);
       renderOrdersList(liveSignalData.targetWeights, liveSignalData.deltaWeights);
     }
 
-    function renderWeightsListAndDonut(targetWeights, deltaWeights) {
+    function renderWeightsListAndDonut(targetWeights, currentWeights, deltaWeights, assetReturns) {
       const container = document.getElementById('weightsListContainer');
       container.innerHTML = '';
 
       const rawLabels = Object.keys(targetWeights || {});
-      const displayLabels = rawLabels.map(t => formatTickerDisplay(t));
-      const values = Object.values(targetWeights || {});
+      const curW = currentWeights || targetWeights || {};
+      const values = rawLabels.map(t => curW[t] !== undefined ? curW[t] : targetWeights[t]);
       const colors = rawLabels.map((_, i) => COLOR_PALETTE[i % COLOR_PALETTE.length]);
 
       rawLabels.forEach((ticker, idx) => {
-        const pct = targetWeights[ticker];
+        const targetPct = targetWeights[ticker] || 0;
+        const currPct = curW[ticker] !== undefined ? curW[ticker] : targetPct;
         const delta = deltaWeights ? (deltaWeights[ticker] || 0) : 0;
-        const targetAmount = Math.round(totalCapital * (pct / 100.0));
+        const ret = assetReturns ? (assetReturns[ticker] || 0) : 0;
 
         let deltaBadgeHtml = '';
-        if (delta > 0) {
-          deltaBadgeHtml = `<span class="delta-badge delta-plus">+${delta}%p 편입</span>`;
-        } else if (delta < 0) {
-          deltaBadgeHtml = `<span class="delta-badge delta-minus">${delta}%p 축소</span>`;
+        if (delta > 0.5) {
+          deltaBadgeHtml = `<span class="delta-badge delta-plus">+${delta.toFixed(1)}%p 확대</span>`;
+        } else if (delta < -0.5) {
+          deltaBadgeHtml = `<span class="delta-badge delta-minus">${delta.toFixed(1)}%p 축소</span>`;
         } else {
-          deltaBadgeHtml = `<span class="delta-badge delta-same">유지</span>`;
+          deltaBadgeHtml = `<span class="delta-badge delta-same">유지 (적정)</span>`;
         }
 
         const card = document.createElement('div');
@@ -1066,11 +1067,20 @@
             <div class="asset-color-dot" style="background: ${colors[idx]};"></div>
             <div>
               <div class="asset-ticker">${formatTickerDisplay(ticker)}</div>
+              <div class="asset-name" style="font-size: 11px; color: var(--text-dim); margin-top: 1px;">
+                시작일 대비: <strong style="color: ${ret >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%</strong>
+              </div>
             </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            ${deltaBadgeHtml}
-            <div class="asset-pct">${pct.toFixed(1)}%</div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 11px; color: var(--text-dim);">현재 <strong>${currPct.toFixed(1)}%</strong></span>
+              <span style="font-size: 10.5px; color: var(--text-dim);">→</span>
+              <span class="asset-pct" style="font-size: 14.5px;">${targetPct.toFixed(1)}%</span>
+            </div>
+            <div>
+              ${deltaBadgeHtml}
+            </div>
           </div>
         `;
         container.appendChild(card);
@@ -1082,7 +1092,7 @@
       donutChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: displayLabels,
+          labels: rawLabels.map(t => formatTickerDisplay(t)),
           datasets: [{
             data: values,
             backgroundColor: colors,
@@ -1095,7 +1105,18 @@
           maintainAspectRatio: false,
           cutout: '72%',
           plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  const idx = ctx.dataIndex;
+                  const t = rawLabels[idx];
+                  const cur = values[idx].toFixed(1);
+                  const tgt = (targetWeights[t] || 0).toFixed(1);
+                  return ` ${formatTickerDisplay(t)}: 현재 ${cur}% (목표 ${tgt}%)`;
+                }
+              }
+            }
           }
         }
       });
@@ -1109,7 +1130,7 @@
       Object.entries(targetWeights || {}).forEach(([ticker, tgtPct]) => {
         const delta = deltaWeights ? (deltaWeights[ticker] || 0) : 0;
 
-        if (Math.abs(delta) > 0.01) {
+        if (Math.abs(delta) >= 1.0) {
           hasAction = true;
           const isBuy = delta > 0;
           const orderCard = document.createElement('div');
@@ -1120,7 +1141,7 @@
               <div class="order-action-title">
                 <i class="fa-solid fa-${isBuy ? 'circle-plus text-emerald' : 'circle-minus text-rose'}"></i>
                 <span>${formatTickerDisplay(ticker)} ${isBuy ? '매수 (비중 확대)' : '매도 (비중 축소)'}</span>
-                <span class="delta-badge ${isBuy ? 'delta-plus' : 'delta-minus'}">${isBuy ? '+' : ''}${delta}%p</span>
+                <span class="delta-badge ${isBuy ? 'delta-plus' : 'delta-minus'}">${isBuy ? '+' : ''}${delta.toFixed(1)}%p</span>
               </div>
               <div class="order-action-sub">
                 목표 비중 <strong>${tgtPct.toFixed(1)}%</strong> 설정
@@ -1203,35 +1224,32 @@
 
       let sDate = userStartDateStr || localStorage.getItem("asset_user_start_date");
       if (!sDate) {
-        // Default to first day of current year
         const curYear = new Date().getFullYear();
         sDate = `${curYear}-01-02`;
         userStartDateStr = sDate;
       }
       document.getElementById('userStartDate').value = sDate;
 
-      // Find closest date index >= sDate
       let sIdx = ds.dates.findIndex(d => d >= sDate);
       if (sIdx === -1) sIdx = 0;
 
-      // Get active strategy base weights & drop stages
-      let baseWeights = { "SCHD": 0.60, "QQQ": 0.40 };
-      let dropStages = [];
+      let activeStrat = { baseWeights: { "SCHD": 0.60, "QQQ": 0.40 }, dropStages: [] };
       try {
         const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
         const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
         if (storedSlots) {
           const slots = JSON.parse(storedSlots);
-          const activeStrat = slots.find(s => s.id === activeId) || slots[0];
-          if (activeStrat) {
-            if (activeStrat.baseWeights) baseWeights = activeStrat.baseWeights;
-            if (activeStrat.dropStages) dropStages = activeStrat.dropStages;
-          }
+          const found = slots.find(s => s.id === activeId) || slots[0];
+          if (found) activeStrat = found;
         }
       } catch (e) {}
 
-      let totalReturn = 0.0;
-      let totalW = 0.0;
+      const baseWeights = activeStrat.baseWeights || { "SCHD": 0.60, "QQQ": 0.40 };
+      const dropStages = activeStrat.dropStages || [];
+
+      let assetReturns = {};
+      let driftedValues = {};
+      let totalValue = 0.0;
 
       Object.entries(baseWeights).forEach(([ticker, w]) => {
         const asset = ds.universe[ticker];
@@ -1239,31 +1257,67 @@
           const startPrice = asset.close[sIdx] || asset.close[0];
           const latestPrice = asset.close[asset.close.length - 1] || asset.latestPrice || startPrice;
           const ret = ((latestPrice - startPrice) / startPrice) * 100.0;
-          totalReturn += w * ret;
-          totalW += w;
+          assetReturns[ticker] = ret;
+          const val = w * (1 + ret / 100.0);
+          driftedValues[ticker] = val;
+          totalValue += val;
+        } else {
+          assetReturns[ticker] = 0.0;
+          driftedValues[ticker] = w;
+          totalValue += w;
         }
       });
 
-      if (totalW > 0) {
-        totalReturn = totalReturn / totalW;
+      let currentWeights = {};
+      let totalReturn = 0.0;
+      if (totalValue > 0) {
+        Object.entries(driftedValues).forEach(([ticker, val]) => {
+          currentWeights[ticker] = Math.round((val / totalValue) * 1000) / 10.0;
+        });
+        totalReturn = (totalValue - 1.0) * 100.0;
       }
+
+      const curMdd = (liveSignalData && liveSignalData.benchmarkMDD) ? liveSignalData.benchmarkMDD : -3.25;
+      let targetWeights = {};
+      Object.entries(baseWeights).forEach(([t, w]) => {
+        targetWeights[t] = Math.round(w * 100);
+      });
+
+      let currentDropStage = null;
+      const sortedDrops = [...dropStages].sort((a, b) => (b.threshold || 0) - (a.threshold || 0));
+      for (const st of sortedDrops) {
+        if (curMdd <= st.threshold) {
+          currentDropStage = st;
+          targetWeights = {};
+          Object.entries(st.weights || {}).forEach(([t, w]) => {
+            targetWeights[t] = Math.round(w * 100);
+          });
+          break;
+        }
+      }
+
+      let deltaWeights = {};
+      const allTickers = new Set([...Object.keys(targetWeights), ...Object.keys(currentWeights)]);
+      allTickers.forEach(t => {
+        const tgt = targetWeights[t] || 0.0;
+        const cur = currentWeights[t] || 0.0;
+        deltaWeights[t] = Math.round((tgt - cur) * 10) / 10.0;
+      });
 
       const isPlus = totalReturn >= 0;
       returnEl.textContent = `${isPlus ? '+' : ''}${totalReturn.toFixed(1)}%`;
       returnEl.style.color = isPlus ? 'var(--emerald)' : 'var(--rose)';
 
-      const gainThreshold = 20.0;
+      const gainThreshold = activeStrat.gainThresholdPct || 20.0;
       if (totalReturn >= gainThreshold) {
         badgeEl.textContent = `+${gainThreshold}% 이익실현 달성`;
         badgeEl.style.background = '#dcfce7';
         badgeEl.style.color = 'var(--emerald)';
         badgeEl.style.border = '1px solid #bbf7d0';
 
-        // Update dashboard state to Take-Profit if in normal state
-        if (liveSignalData && (!liveSignalData.currentState || liveSignalData.currentState.includes("정상") || liveSignalData.currentState.includes("기본"))) {
+        if (liveSignalData) {
           liveSignalData.currentState = "기본 (이익실현 권장)";
           liveSignalData.advice = `시작일(${sDate}) 대비 총자산이 +${totalReturn.toFixed(1)}% 상승하여 목표(+${gainThreshold}%)에 도달했습니다. 기본 비중으로 재정렬하여 이익을 확정하세요.`;
-          renderDashboardUI();
         }
       } else {
         const remain = gainThreshold - totalReturn;
@@ -1271,6 +1325,24 @@
         badgeEl.style.background = '#eff6ff';
         badgeEl.style.color = 'var(--primary)';
         badgeEl.style.border = '1px solid #dbeafe';
+
+        if (liveSignalData) {
+          if (currentDropStage) {
+            liveSignalData.currentState = currentDropStage.name || `하락 ${currentDropStage.threshold}%`;
+            liveSignalData.advice = `기준지표 낙폭(${curMdd.toFixed(1)}%)이 ${currentDropStage.threshold}% 기준에 도달하여 ${currentDropStage.name} 비중으로 분할 편입을 유지합니다.`;
+          } else {
+            liveSignalData.currentState = "기본 (정상 운용)";
+            liveSignalData.advice = `현재 기준 지표가 안정적인 범위 내에 있으며, 시작일(${sDate}) 대비 누적 수익률은 +${totalReturn.toFixed(1)}% 입니다.`;
+          }
+        }
+      }
+
+      if (liveSignalData) {
+        liveSignalData.targetWeights = targetWeights;
+        liveSignalData.currentWeights = currentWeights;
+        liveSignalData.deltaWeights = deltaWeights;
+        liveSignalData.assetReturns = assetReturns;
+        renderDashboardUI();
       }
 
       // Update distance to next threshold line
