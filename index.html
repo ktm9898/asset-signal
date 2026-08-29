@@ -650,19 +650,19 @@
         <div class="strategy-meta-box">
           <div class="strategy-meta-row">
             <span class="meta-label">실전 적용 전략</span>
-            <span class="meta-val" id="metaStratName">나스닥100 동적 계단식 (QQQ/QLD/TQQQ/SCHD)</span>
+            <span class="meta-val" id="metaStratName">나스닥100 동적 계단식</span>
           </div>
           <div class="strategy-meta-row">
             <span class="meta-label">기준 지표 / 기본 비중</span>
-            <span class="meta-val" id="metaStratBase">QQQ 60% : SCHD 40%</span>
+            <span class="meta-val" id="metaStratBase">SCHD 60% : QQQ 40%</span>
           </div>
           <div class="strategy-meta-row">
-            <span class="meta-label">하락 대응</span>
-            <span class="meta-val" id="metaStratDrops">1차 (-20%) · 2차 (-30%) · 3차 (-40%)</span>
+            <span class="meta-label">하락 / 복귀 조정 단계</span>
+            <span class="meta-val" id="metaStratDrops">1차 (-15%) · 2차 (-25%) · 3차 (-40%) · 4차 (-60%) · 5차 (-80%)</span>
           </div>
           <div class="strategy-meta-row">
-            <span class="meta-label">반등 익절</span>
-            <span class="meta-val" id="metaStratRecovery">1차 (-25%) · 2차 (-15%) · 3차 (-5%)</span>
+            <span class="meta-label">고점 복귀 및 이익실현</span>
+            <span class="meta-val" id="metaStratRecovery">0.0% 전고점 돌파 시 기본 비중 원복 · +20.0% 상승 시 이익실현</span>
           </div>
         </div>
       </div>
@@ -756,16 +756,33 @@
     });
 
     function loadInitialData() {
+      let initBase = { "SCHD": 60.0, "QQQ": 40.0 };
+      try {
+        const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
+        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
+        if (storedSlots) {
+          const slots = JSON.parse(storedSlots);
+          const activeStrat = slots.find(s => s.id === activeId) || slots[0];
+          if (activeStrat && activeStrat.baseWeights) {
+            initBase = {};
+            Object.entries(activeStrat.baseWeights).forEach(([t, w]) => {
+              initBase[t] = Math.round(w * 100);
+            });
+          }
+        }
+      } catch (e) {}
+
       liveSignalData = {
         benchmark: "QQQ",
         benchmarkPrice: 721.11,
         benchmarkATH: 745.34,
         benchmarkMDD: -3.25,
         currentState: "기본 (정상 운용)",
-        targetWeights: { "QQQ": 60.0, "SCHD": 40.0 },
-        deltaWeights: { "QQQ": 0.0, "SCHD": 0.0 },
+        targetWeights: initBase,
+        deltaWeights: {},
         advice: "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다."
       };
+      syncActiveStrategySpecs();
       renderDashboardUI();
     }
 
@@ -825,21 +842,18 @@
               .join(' : ') || '-';
             document.getElementById('metaStratBase').textContent = baseStr;
 
-            // Format Drop Stages
+            // Format Unified Drop & Recovery Stages
             if (activeStrat.dropStages && activeStrat.dropStages.length > 0) {
               const dropsStr = activeStrat.dropStages
                 .map((d, i) => `${i + 1}차 (${d.threshold}%)`)
                 .join(' · ');
               document.getElementById('metaStratDrops').textContent = dropsStr;
+            } else {
+              document.getElementById('metaStratDrops').textContent = '설정 없음';
             }
 
-            // Format Recovery Stages
-            if (activeStrat.recoveryStages && activeStrat.recoveryStages.length > 0) {
-              const recsStr = activeStrat.recoveryStages
-                .map((r, i) => `${i + 1}차 (${r.recovery}%)`)
-                .join(' · ');
-              document.getElementById('metaStratRecovery').textContent = recsStr;
-            }
+            const gainPct = activeStrat.gainThresholdPct || 20.0;
+            document.getElementById('metaStratRecovery').textContent = `0.0% 전고점 복귀 시 기본 원복 · +${gainPct}% 이익실현`;
           }
         }
       } catch (e) {
