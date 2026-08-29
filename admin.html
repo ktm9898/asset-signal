@@ -859,114 +859,109 @@
       }
 
       .header-inner {
-        padding: 0 14px;
-        height: 54px;
+        padding: 0 12px;
+        height: 52px;
       }
       .brand-title {
-        font-size: 17px;
+        font-size: 15px;
         font-weight: 800;
+        display: inline-block !important;
       }
       .brand-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
+        width: 30px;
+        height: 30px;
+        font-size: 13px;
       }
 
       .header-actions {
-        gap: 6px;
+        gap: 4px;
       }
       .header-actions .nav-btn {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        font-size: 13px;
         border-radius: var(--radius-sm);
       }
       
       .container {
-        padding: 8px 12px 60px;
-        margin: 6px auto;
-        gap: 12px;
+        padding: 6px 10px 60px;
+        margin: 4px auto;
+        gap: 10px;
         width: 100%;
         max-width: 100vw;
         overflow-x: hidden;
       }
 
       .slots-wrapper {
-        padding: 12px 14px;
+        padding: 10px 12px;
         border-radius: var(--radius-md);
       }
 
       .slots-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
       }
 
       .slot-actions-bar {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
-        width: 100%;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        width: auto !important;
       }
 
       .slot-actions-bar .nav-btn {
-        width: 100%;
-        justify-content: center;
-        padding: 8px 4px;
-        font-size: 12px;
-        border-radius: var(--radius-sm);
-      }
-
-      .slots-nav {
-        gap: 6px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 4px;
-      }
-
-      .slot-tab {
-        padding: 6px 12px;
-        font-size: 12px;
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 13px !important;
+        border-radius: var(--radius-sm) !important;
+        flex-shrink: 0 !important;
       }
 
       .studio-grid {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        width: 100%;
-      }
-
-      .config-panel {
-        padding: 14px 16px;
-        border-radius: var(--radius-md);
-        gap: 14px;
-      }
-
-      .panel-section-title {
-        font-size: 14px;
-      }
-
-      .form-label {
-        font-size: 13px;
-      }
-
-      .form-input, .form-select {
-        font-size: 14px;
-        padding: 9px 12px;
-      }
-
-      .metrics-grid {
-        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
         width: 100%;
       }
 
-      .metric-card {
+      .config-panel {
         padding: 12px 14px;
+        border-radius: var(--radius-md);
+        gap: 12px;
+      }
+
+      .panel-section-title {
+        font-size: 13.5px;
+      }
+
+      .form-label {
+        font-size: 12.5px;
+      }
+
+      .form-input, .form-select {
+        font-size: 13.5px;
+        padding: 8px 10px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        width: 100%;
+      }
+
+      .metric-card {
+        padding: 10px 12px;
         border-radius: var(--radius-md);
       }
 
@@ -975,26 +970,26 @@
       }
 
       .metric-title {
-        font-size: 12px;
+        font-size: 11.5px;
       }
 
       .metric-value {
-        font-size: 22px;
+        font-size: 20px;
       }
 
       .metric-sub {
-        font-size: 11px;
+        font-size: 10.5px;
       }
 
       .chart-panel {
-        padding: 14px 16px;
+        padding: 12px 14px;
         border-radius: var(--radius-md);
       }
 
       .chart-header {
         flex-direction: column;
         align-items: stretch;
-        gap: 10px;
+        gap: 8px;
       }
 
       .chart-canvas-container {
@@ -1002,13 +997,13 @@
       }
 
       .benchmarks-table-panel {
-        padding: 14px 16px;
+        padding: 12px 14px;
         border-radius: var(--radius-md);
       }
 
       .bm-table th, .bm-table td {
-        padding: 8px 10px;
-        font-size: 12px;
+        padding: 7px 8px;
+        font-size: 11.5px;
       }
 
       .data-summary-bar {
@@ -1017,21 +1012,11 @@
       }
 
       .data-summary-card {
-        padding: 10px 12px;
+        padding: 8px 10px;
       }
 
       .data-summary-val {
-        font-size: 16px;
-      }
-    }
-
-    @media (max-width: 420px) {
-      .slot-actions-bar {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .slot-actions-bar .nav-btn {
-        padding: 8px 6px;
-        font-size: 12px;
+        font-size: 15px;
       }
     }
   </style>
@@ -1242,21 +1227,19 @@
                 </div>
               </div>
 
-              <!-- Row 2: Period Dropdown + Date Range Pickers -->
-              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
-                <div style="display: flex; align-items: center; gap: 6px; width: 100%; justify-content: space-between; flex-wrap: wrap;">
-                  <select class="form-select" id="periodSelectDropdown" style="font-size: 12px; padding: 4px 8px; width: 110px; font-weight: 600;" onchange="setBacktestPeriod(this.value)">
-                    <option value="ALL" selected>전체 (MAX)</option>
-                    <option value="10Y">최근 10년</option>
-                    <option value="5Y">최근 5년</option>
-                    <option value="3Y">최근 3년</option>
-                    <option value="1Y">최근 1년</option>
-                  </select>
-                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-dim); background: #f8fafc; padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                    <input type="date" id="customStartDate" class="date-picker-input" style="width: 105px; font-size: 11px;" onchange="onCustomDateChange()">
-                    <span>~</span>
-                    <input type="date" id="customEndDate" class="date-picker-input" style="width: 105px; font-size: 11px;" onchange="onCustomDateChange()">
-                  </div>
+              <!-- Row 2: Period Dropdown + Date Range Pickers (Single Line) -->
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; padding-top: 8px; border-top: 1px dashed var(--border-color); flex-wrap: nowrap;">
+                <select class="form-select" id="periodSelectDropdown" style="font-size: 11px; padding: 4px 4px; width: 88px; flex-shrink: 0; font-weight: 600; height: 30px;" onchange="setBacktestPeriod(this.value)">
+                  <option value="ALL" selected>전체(MAX)</option>
+                  <option value="10Y">최근 10년</option>
+                  <option value="5Y">최근 5년</option>
+                  <option value="3Y">최근 3년</option>
+                  <option value="1Y">최근 1년</option>
+                </select>
+                <div style="display: inline-flex; align-items: center; gap: 2px; font-size: 10.5px; color: var(--text-dim); background: #f8fafc; padding: 2px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex: 1; min-width: 0; justify-content: space-between;">
+                  <input type="date" id="customStartDate" class="date-picker-input" style="width: 46%; min-width: 0; font-size: 10px; padding: 2px 0; border: none; background: transparent;" onchange="onCustomDateChange()">
+                  <span style="flex-shrink: 0; font-size: 10px;">~</span>
+                  <input type="date" id="customEndDate" class="date-picker-input" style="width: 46%; min-width: 0; font-size: 10px; padding: 2px 0; border: none; background: transparent;" onchange="onCustomDateChange()">
                 </div>
               </div>
             </div>
@@ -2025,26 +2008,26 @@
         }
 
         const item = document.createElement('div');
-        item.style.cssText = `background: ${isCur ? '#eff6ff' : '#f8fafc'}; border: 1px solid ${isCur ? '#93c5fd' : 'var(--border-color)'}; border-radius: var(--radius-sm); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; transition: var(--transition);`;
+        item.style.cssText = `background: ${isCur ? '#eff6ff' : '#ffffff'}; border: 1px solid ${isCur ? '#93c5fd' : 'var(--border-color)'}; border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;`;
         item.innerHTML = `
-          <div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 800; font-size: 13.5px; color: var(--text-main);">슬롯 #${s.id}</span>
-              <span style="font-weight: 700; font-size: 13.5px; color: var(--primary);">${s.name || '빈 슬롯'}</span>
-              ${isActive ? '<span class="brand-badge" style="background: #dcfce7; color: #059669; border: 1px solid #bbf7d0; font-size: 10px; padding: 1px 5px;">실전적용중</span>' : ''}
-              ${isCur ? '<span class="brand-badge" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; padding: 1px 5px;">현재선택</span>' : ''}
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden;">
+              <span class="brand-badge" style="background: ${isCur ? '#2563eb' : '#64748b'}; color: #fff; font-size: 11px; padding: 2px 6px; font-weight: 800; flex-shrink: 0;">#${s.id}</span>
+              <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${s.name || `전략 ${s.id}`}</span>
+              ${isActive ? '<span class="brand-badge" style="background: #dcfce7; color: #059669; border: 1px solid #bbf7d0; font-size: 10px; padding: 1px 5px; flex-shrink: 0;">실전적용</span>' : ''}
+              ${isCur ? '<span class="brand-badge" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; padding: 1px 5px; flex-shrink: 0;">선택중</span>' : ''}
             </div>
-            <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 3px;">
-              기본 비중: ${baseStr}
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+              <button class="nav-btn btn-sm ${isCur ? '' : 'btn-primary'}" onclick="loadSlotFromModal(${s.id})" style="padding: 4px 10px; font-size: 11.5px; height: 28px; white-space: nowrap;">
+                <i class="fa-solid fa-folder-open"></i> 불러오기
+              </button>
+              <button class="btn-icon-del" onclick="deleteSlotFromModal(${s.id})" title="슬롯 초기화/삭제" style="padding: 4px 6px; height: 28px; width: 28px; display: inline-flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-trash-can" style="font-size: 12px;"></i>
+              </button>
             </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button class="nav-btn btn-sm ${isCur ? '' : 'btn-primary'}" onclick="loadSlotFromModal(${s.id})" style="padding: 4px 10px; font-size: 11.5px;">
-              <i class="fa-solid fa-folder-open"></i> 불러오기
-            </button>
-            <button class="btn-icon-del" onclick="deleteSlotFromModal(${s.id})" title="슬롯 초기화/삭제" style="padding: 5px 8px;">
-              <i class="fa-solid fa-trash-can" style="font-size: 13px;"></i>
-            </button>
+          <div style="font-size: 11.5px; color: var(--text-dim); padding-left: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            기본 비중: ${baseStr}
           </div>
         `;
         listEl.appendChild(item);
@@ -2973,6 +2956,19 @@
     // ==========================================
     // Chart.js Rendering (Stock-Signal Standard Style & Tooltips)
     // ==========================================
+    if (typeof Chart !== 'undefined' && Chart.Tooltip && Chart.Tooltip.positioners) {
+      Chart.Tooltip.positioners.topPinned = function(items, eventPosition) {
+        if (!items || !items.length) return false;
+        const chartArea = this.chart.chartArea;
+        const midX = (chartArea.left + chartArea.right) / 2;
+        const isRight = eventPosition.x > midX;
+        return {
+          x: isRight ? chartArea.left + 10 : Math.max(chartArea.left + 10, chartArea.right - 150),
+          y: chartArea.top + 6
+        };
+      };
+    }
+
     const COMPARE_COLOR_PALETTE = ['#2563eb', '#7c3aed', '#059669', '#ea580c', '#db2777', '#0284c7', '#ca8a04', '#4f46e5', '#0d9488', '#e11d48'];
     let isCompareMode = false;
     let multiCompareResults = null;
@@ -3066,7 +3062,8 @@
                 }
               },
               tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                position: 'topPinned',
+                backgroundColor: 'rgba(15, 23, 42, 0.92)',
                 titleFont: { size: 12, weight: '700' },
                 bodyFont: { size: 12 },
                 padding: 10,
@@ -3157,7 +3154,8 @@
                 }
               },
               tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                position: 'topPinned',
+                backgroundColor: 'rgba(15, 23, 42, 0.92)',
                 titleFont: { size: 12, weight: '700' },
                 bodyFont: { size: 12 },
                 padding: 10,
