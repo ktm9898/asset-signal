@@ -1,0 +1,74 @@
+{
+  "2012_2026": {
+    "strat1": {
+      "final_nav": 1014111734,
+      "total_ret_pct": 914.1,
+      "cagr_pct": 17.13,
+      "mdd_pct": -30.55,
+      "sharpe": 0.97,
+      "rebal_count": 24
+    },
+    "strat2": {
+      "final_nav": 1560973520,
+      "total_ret_pct": 1461.0,
+      "cagr_pct": 20.63,
+      "mdd_pct": -36.69,
+      "sharpe": 0.99,
+      "rebal_count": 39
+    }
+  },
+  "2008_GFC": {
+    "strat1": {
+      "final_nav": 218045567,
+      "total_ret_pct": 118.0,
+      "cagr_pct": 10.25,
+      "mdd_pct": -56.76,
+      "sharpe": 0.51,
+      "rebal_count": 14
+    },
+    "strat2": {
+      "final_nav": 248189589,
+      "total_ret_pct": 148.2,
+      "cagr_pct": 12.05,
+      "mdd_pct": -65.69,
+      "sharpe": 0.52,
+      "rebal_count": 18
+    }
+  },
+  "2000_DOTCOM": {
+    "strat1": {
+      "final_nav": 60088424,
+      "total_ret_pct": -39.9,
+      "cagr_pct": -6.17,
+      "mdd_pct": -90.22,
+      "sharpe": 0.14,
+      "rebal_count": 10
+    },
+    "strat2": {
+      "final_nav": 34662960,
+      "total_ret_pct": -65.3,
+      "cagr_pct": -12.42,
+      "mdd_pct": -95.53,
+      "sharpe": 0.11,
+      "rebal_count": 10
+    }
+  },
+  "2000_2026_FULL": {
+    "strat1": {
+      "final_nav": 679405990,
+      "total_ret_pct": 579.4,
+      "cagr_pct": 7.45,
+      "mdd_pct": -90.22,
+      "sharpe": 0.38,
+      "rebal_count": 35
+    },
+    "strat2": {
+      "final_nav": 568099686,
+      "total_ret_pct": 468.1,
+      "cagr_pct": 6.74,
+      "mdd_pct": -95.53,
+      "sharpe": 0.37,
+      "rebal_count": 45
+    }
+  }
+}
