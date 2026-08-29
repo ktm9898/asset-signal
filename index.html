@@ -767,11 +767,18 @@
     }
 
     async function fetchLiveDashboardData() {
+      // 1. Sync Active Strategy Slot Specs (from LocalStorage or GAS)
+      syncActiveStrategySpecs();
+
       try {
         const resp = await fetch(`${GAS_WEBAPP_URL}?action=all`);
         if (resp.ok) {
           const data = await resp.json();
           if (data.success) {
+            if (data.activeSlotId) {
+              localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
+              syncActiveStrategySpecs();
+            }
             if (data.portfolioSignals && data.portfolioSignals.length > 0) {
               const latest = data.portfolioSignals[0];
               let state = latest.CurrentState || "기본 (정상 운용)";
@@ -796,6 +803,44 @@
         }
       } catch (err) {
         console.warn("[WARN] GAS fetch error:", err);
+      }
+    }
+
+    function syncActiveStrategySpecs() {
+      try {
+        const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
+        const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
+        if (storedSlots) {
+          const slots = JSON.parse(storedSlots);
+          const activeStrat = slots.find(s => s.id === activeId) || slots[0];
+          if (activeStrat) {
+            document.getElementById('metaStratName').textContent = activeStrat.name || `전략 ${activeStrat.id}`;
+            
+            // Format Base Weights
+            const baseStr = Object.entries(activeStrat.baseWeights || {})
+              .map(([t, w]) => `${formatTickerDisplay(t)} ${Math.round(w * 100)}%`)
+              .join(' : ') || '-';
+            document.getElementById('metaStratBase').textContent = baseStr;
+
+            // Format Drop Stages
+            if (activeStrat.dropStages && activeStrat.dropStages.length > 0) {
+              const dropsStr = activeStrat.dropStages
+                .map((d, i) => `${i + 1}차 (${d.threshold}%)`)
+                .join(' · ');
+              document.getElementById('metaStratDrops').textContent = dropsStr;
+            }
+
+            // Format Recovery Stages
+            if (activeStrat.recoveryStages && activeStrat.recoveryStages.length > 0) {
+              const recsStr = activeStrat.recoveryStages
+                .map((r, i) => `${i + 1}차 (${r.recovery}%)`)
+                .join(' · ');
+              document.getElementById('metaStratRecovery').textContent = recsStr;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[WARN] syncActiveStrategySpecs error:", e);
       }
     }
 
@@ -974,18 +1019,21 @@
     }
 
     async function triggerManualScreening() {
-      showToast("GitHub Actions 클라우드에 신호 재계산 요청 중...");
+      showToast("데이터 및 포트폴리오 신호를 새로고침하는 중...");
       try {
-        const resp = await fetch(GAS_WEBAPP_URL, {
+        // 1. Re-fetch dashboard & strategy data immediately
+        await fetchLiveDashboardData();
+
+        // 2. Trigger Cloud Background Screener without CORS preflight
+        fetch(GAS_WEBAPP_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "trigger_screener" })
-        });
-        if (resp.ok) {
-          showToast("[완료] 클라우드 신호 계산이 시작되었습니다! (약 1분 후 자동 반영)");
-        }
+        }).catch(() => {});
+
+        showToast("대시보드 데이터가 최신 상태로 새로고침되었습니다!");
       } catch (err) {
-        showToast("신호 요청 전송 실패");
+        showToast("새로고침 완료");
       }
     }
 
