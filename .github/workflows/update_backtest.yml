@@ -1,10 +1,10 @@
-name: Update 5-Year Backtest Dataset
+name: Update ETF Backtest Dataset
 
 on:
   workflow_dispatch:
   schedule:
-    # Every Friday at 16:30 KST (07:30 UTC)
-    - cron: '30 7 * * 5'
+    # Every Saturday at 08:00 KST (23:00 UTC Friday)
+    - cron: '0 23 * * 5'
 
 permissions:
   contents: write
@@ -26,20 +26,20 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas numpy pykrx ta requests beautifulsoup4
+          pip install pandas numpy yfinance requests
 
-      - name: Run Incremental Backtest Data Updater
+      - name: Run ETF Dataset Builder
         run: |
-          python update_backtest_data.py
+          python build_etf_datasets.py
 
       - name: Commit and Push Changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add data/history_*.json data/stocks_350.json
+          git add data/etf_history.json
           if git diff --staged --quiet; then
             echo "No new data changes to commit."
           else
-            git commit -m "chore(data): auto-update backtest dataset chunk [skip ci]"
+            git commit -m "chore(data): auto-update ETF historical dataset [skip ci]"
             git push origin main
           fi
