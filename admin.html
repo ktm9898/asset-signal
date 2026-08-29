@@ -853,83 +853,171 @@
     /* Mobile First & Responsive Design System    */
     /* ========================================== */
     @media (max-width: 768px) {
+      body {
+        overflow-x: hidden;
+        width: 100vw;
+      }
+
       .header-inner {
-        padding: 0 12px;
+        padding: 0 14px;
+        height: 54px;
       }
       .brand-title {
-        font-size: 16px;
+        font-size: 17px;
+        font-weight: 800;
       }
       .brand-icon {
         width: 32px;
         height: 32px;
         font-size: 14px;
       }
-      .header-actions {
-        gap: 4px;
-      }
-      .nav-btn {
-        padding: 5px 8px;
-        font-size: 11.5px;
-        gap: 4px;
-      }
+      
       .container {
-        padding: 0 12px 60px;
-        margin: 10px auto;
+        padding: 8px 12px 60px;
+        margin: 6px auto;
         gap: 12px;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
       }
+
       .slots-wrapper {
-        padding: 12px;
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
       }
+
       .slots-header {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 10px;
       }
+
       .slot-actions-bar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
         width: 100%;
-        justify-content: flex-start;
       }
+
+      .slot-actions-bar .nav-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 8px 4px;
+        font-size: 12px;
+        border-radius: var(--radius-sm);
+      }
+
+      .slots-nav {
+        gap: 6px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+      }
+
+      .slot-tab {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+
+      .studio-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .config-panel {
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
+        gap: 14px;
+      }
+
+      .panel-section-title {
+        font-size: 14px;
+      }
+
+      .form-label {
+        font-size: 13px;
+      }
+
+      .form-input, .form-select {
+        font-size: 14px;
+        padding: 9px 12px;
+      }
+
       .metrics-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
+        gap: 10px;
+        width: 100%;
       }
+
+      .metric-card {
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+      }
+
+      .metric-card:last-child {
+        grid-column: span 2;
+      }
+
+      .metric-title {
+        font-size: 12px;
+      }
+
       .metric-value {
-        font-size: 17px;
+        font-size: 22px;
       }
-      .config-panel {
-        padding: 14px;
+
+      .metric-sub {
+        font-size: 11px;
       }
+
       .chart-panel {
-        padding: 14px;
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
       }
+
       .chart-header {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+        align-items: stretch;
+        gap: 10px;
       }
-      .chart-tabs {
-        width: 100%;
-        overflow-x: auto;
+
+      .chart-canvas-container {
+        height: 280px;
       }
+
+      .benchmarks-table-panel {
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
+      }
+
+      .bm-table th, .bm-table td {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
       .data-summary-bar {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px;
       }
+
       .data-summary-card {
         padding: 10px 12px;
       }
+
       .data-summary-val {
-        font-size: 15px;
+        font-size: 16px;
       }
     }
 
-    @media (max-width: 480px) {
-      .brand-title {
-        display: none;
+    @media (max-width: 420px) {
+      .slot-actions-bar {
+        grid-template-columns: repeat(2, 1fr);
       }
       .slot-actions-bar .nav-btn {
-        padding: 5px 8px;
-        font-size: 11px;
+        padding: 8px 6px;
+        font-size: 12px;
       }
     }
   </style>
@@ -1188,21 +1276,23 @@
             <div style="font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px;">
               <i class="fa-solid fa-scale-balanced text-primary"></i> 시장 지수 대비 성과 비교
             </div>
-            <table class="bm-table">
-              <thead>
-                <tr>
-                  <th>전략 및 벤치마크</th>
-                  <th>총 수익률</th>
-                  <th>CAGR</th>
-                  <th>MDD</th>
-                  <th>Sharpe</th>
-                  <th>Sortino</th>
-                </tr>
-              </thead>
-              <tbody id="bmTableBody">
-                <!-- Rendered dynamically -->
-              </tbody>
-            </table>
+            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+              <table class="bm-table">
+                <thead>
+                  <tr>
+                    <th>전략 및 벤치마크</th>
+                    <th>총 수익률</th>
+                    <th>CAGR</th>
+                    <th>MDD</th>
+                    <th>Sharpe</th>
+                    <th>Sortino</th>
+                  </tr>
+                </thead>
+                <tbody id="bmTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <!-- Rebalance Events Table -->
