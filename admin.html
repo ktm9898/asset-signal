@@ -1038,14 +1038,14 @@
 
       <!-- Main Navigation: 대시보드, 백테스트, 데이터조회 -->
       <div class="header-actions">
-        <a href="index.html" class="nav-btn">
-          <i class="fa-solid fa-gauge-high"></i> 대시보드
+        <a href="index.html" class="nav-btn" title="실전 대시보드">
+          <i class="fa-solid fa-gauge-high"></i>
         </a>
-        <button class="nav-btn btn-primary" id="tabBtnStudio" onclick="switchMainView('studio')">
-          <i class="fa-solid fa-sliders"></i> 백테스트
+        <button class="nav-btn btn-primary" id="tabBtnStudio" onclick="switchMainView('studio')" title="백테스트 스튜디오">
+          <i class="fa-solid fa-sliders"></i>
         </button>
-        <button class="nav-btn" id="tabBtnData" onclick="switchMainView('data')">
-          <i class="fa-solid fa-table-list"></i> 데이터조회
+        <button class="nav-btn" id="tabBtnData" onclick="switchMainView('data')" title="데이터조회">
+          <i class="fa-solid fa-table-list"></i>
         </button>
       </div>
     </div>
@@ -1059,27 +1059,35 @@
 
       <!-- Strategy Preset Slots & Integrated Control Toolbar -->
       <div class="slots-wrapper">
-        <div class="slots-header">
-          <div class="slots-title">
-            <i class="fa-solid fa-layer-group text-primary"></i> 전략 슬롯
+        <div class="slots-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="slots-title" style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-layer-group text-primary"></i> <span>전략 슬롯</span>
           </div>
-          <div class="slot-actions-bar">
-            <button class="nav-btn btn-sm btn-primary" onclick="openSaveStrategyModal()">
-              <i class="fa-solid fa-floppy-disk"></i> 저장
+          <div class="slot-actions-bar" style="display: flex; align-items: center; gap: 6px;">
+            <button class="nav-btn btn-sm btn-primary" onclick="openSaveStrategyModal()" title="저장">
+              <i class="fa-solid fa-floppy-disk"></i>
             </button>
-            <button class="nav-btn btn-sm" onclick="openLoadStrategyModal()">
-              <i class="fa-solid fa-folder-open"></i> 불러오기
+            <button class="nav-btn btn-sm" onclick="openLoadStrategyModal()" title="불러오기">
+              <i class="fa-solid fa-folder-open"></i>
             </button>
-            <button class="nav-btn btn-sm" style="background: #475569; color: #fff; border: 1px solid #475569;" onclick="openCompareModal()">
-              <i class="fa-solid fa-code-compare"></i> 전략비교
+            <button class="nav-btn btn-sm" style="background: #475569; color: #fff; border: 1px solid #475569;" onclick="openCompareModal()" title="전략비교">
+              <i class="fa-solid fa-code-compare"></i>
             </button>
-            <button class="nav-btn btn-sm btn-success" onclick="activateCurrentSlot()" title="현재 전략을 실전 운용 전략으로 활성화합니다">
-              <i class="fa-solid fa-bolt"></i> 전략적용
+            <button class="nav-btn btn-sm btn-success" onclick="activateCurrentSlot()" title="전략적용 (실전 활성화)">
+              <i class="fa-solid fa-bolt"></i>
             </button>
           </div>
         </div>
-        <div class="slots-nav" id="slotsNavContainer">
-          <!-- Rendered dynamically -->
+        <!-- Current Strategy Row -->
+        <div id="currentSlotOverviewRow" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <span id="overviewSlotNumberBadge" class="brand-badge" style="background: #eff6ff; color: var(--primary); border: 1px solid #bfdbfe; font-size: 11px; padding: 2px 6px; font-weight: 800;">#1</span>
+            <span id="overviewSlotNameText" style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">나스닥100 동적 계단식</span>
+            <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none;">ACTIVE</span>
+          </div>
+          <button class="nav-btn btn-sm" onclick="openLoadStrategyModal()" style="font-size: 11px; padding: 3px 8px; flex-shrink: 0;">
+            슬롯 변경 <i class="fa-solid fa-chevron-right" style="font-size: 9px;"></i>
+          </button>
         </div>
       </div>
 
@@ -1147,16 +1155,16 @@
 
           <!-- Fee & Gain Threshold Parameters -->
           <div class="form-group">
-            <div class="panel-section-title" style="margin-top: 10px;">
+            <div class="panel-section-title" style="margin-top: 6px;">
               <i class="fa-solid fa-scale-balanced text-primary"></i> 거래비용 & 이익실현 모델
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
               <div class="form-group">
-                <label class="form-label">수수료 + 슬리피지 (%)</label>
+                <label class="form-label" style="font-size: 12px;"><span>수수료+슬리피지 (%)</span></label>
                 <input type="number" class="form-input" id="cfgFeeRate" value="0.15" step="0.05" onchange="onConfigChange()">
               </div>
               <div class="form-group">
-                <label class="form-label">총자산 상승 이익실현 (%)</label>
+                <label class="form-label" style="font-size: 12px;"><span>목표수익률 (%)</span></label>
                 <input type="number" class="form-input" id="cfgGainThreshold" value="20" step="5" onchange="onConfigChange()">
               </div>
             </div>
@@ -1201,39 +1209,39 @@
 
           <!-- Interactive Chart Panel -->
           <div class="chart-panel">
-            <div class="chart-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
-              <!-- Row 1: Title (Left) + Chart View Tabs (Right) -->
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div style="font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+            <div class="chart-header" style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- Row 1: Title (Left) + View Mode Icon Tabs & Fullscreen Button (Right) -->
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px;">
                   <i class="fa-solid fa-chart-line text-primary"></i> 백테스트 성과 분석
                 </div>
-                <div class="chart-tabs">
-                  <button class="chart-tab active" onclick="switchChartTab('nav')">
-                    <i class="fa-solid fa-chart-line"></i> 자산 성장 곡선
+                <div class="chart-tabs" style="display: flex; align-items: center; gap: 4px;">
+                  <button class="chart-tab active" id="chartTabBtnNav" onclick="switchChartTab('nav')" title="자산 성장 곡선">
+                    <i class="fa-solid fa-chart-line"></i>
                   </button>
-                  <button class="chart-tab" onclick="switchChartTab('drawdown')">
-                    <i class="fa-solid fa-chart-area"></i> 고점 대비 낙폭
+                  <button class="chart-tab" id="chartTabBtnDd" onclick="switchChartTab('drawdown')" title="고점 대비 낙폭">
+                    <i class="fa-solid fa-chart-area"></i>
+                  </button>
+                  <button class="chart-tab" onclick="openFullscreenChartModal()" title="전체화면 확대">
+                    <i class="fa-solid fa-expand"></i>
                   </button>
                 </div>
               </div>
 
-              <!-- Row 2: Period Selector & Custom Date Picker (Below Title) -->
-              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color);">
-                <div style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="font-size: 12px; font-weight: 700; color: var(--text-main); display: inline-flex; align-items: center; gap: 4px;">
-                    <i class="fa-regular fa-calendar text-primary"></i> 기간 설정:
-                  </span>
-                  <div class="period-tabs">
-                    <button class="period-tab active" id="periodBtn_ALL" onclick="setBacktestPeriod('ALL')">전체(MAX)</button>
-                    <button class="period-tab" id="periodBtn_10Y" onclick="setBacktestPeriod('10Y')">10년</button>
-                    <button class="period-tab" id="periodBtn_5Y" onclick="setBacktestPeriod('5Y')">5년</button>
-                    <button class="period-tab" id="periodBtn_3Y" onclick="setBacktestPeriod('3Y')">3년</button>
-                    <button class="period-tab" id="periodBtn_1Y" onclick="setBacktestPeriod('1Y')">1년</button>
-                  </div>
+              <!-- Row 2: Period Dropdown + Date Range Pickers -->
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
+                <div style="display: flex; align-items: center; gap: 6px; width: 100%; justify-content: space-between; flex-wrap: wrap;">
+                  <select class="form-select" id="periodSelectDropdown" style="font-size: 12px; padding: 4px 8px; width: 110px; font-weight: 600;" onchange="setBacktestPeriod(this.value)">
+                    <option value="ALL" selected>전체 (MAX)</option>
+                    <option value="10Y">최근 10년</option>
+                    <option value="5Y">최근 5년</option>
+                    <option value="3Y">최근 3년</option>
+                    <option value="1Y">최근 1년</option>
+                  </select>
                   <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-dim); background: #f8fafc; padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                    <input type="date" id="customStartDate" class="date-picker-input" onchange="onCustomDateChange()">
+                    <input type="date" id="customStartDate" class="date-picker-input" style="width: 105px; font-size: 11px;" onchange="onCustomDateChange()">
                     <span>~</span>
-                    <input type="date" id="customEndDate" class="date-picker-input" onchange="onCustomDateChange()">
+                    <input type="date" id="customEndDate" class="date-picker-input" style="width: 105px; font-size: 11px;" onchange="onCustomDateChange()">
                   </div>
                 </div>
               </div>
@@ -1273,19 +1281,19 @@
 
           <!-- Benchmark Comparison Table (3 Major Indices Only) -->
           <div class="benchmarks-table-panel" id="singleBmTablePanel">
-            <div style="font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+            <div style="font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
               <i class="fa-solid fa-scale-balanced text-primary"></i> 시장 지수 대비 성과 비교
             </div>
             <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-              <table class="bm-table">
+              <table class="bm-table table-center" style="width: 100%; min-width: 480px;">
                 <thead>
                   <tr>
-                    <th>전략 및 벤치마크</th>
-                    <th>총 수익률</th>
-                    <th>CAGR</th>
-                    <th>MDD</th>
-                    <th>Sharpe</th>
-                    <th>Sortino</th>
+                    <th style="min-width: 120px; text-align: left !important; padding-left: 14px; white-space: nowrap;">전략 및 벤치마크</th>
+                    <th style="white-space: nowrap;">총 수익률</th>
+                    <th style="white-space: nowrap;">CAGR</th>
+                    <th style="white-space: nowrap;">MDD</th>
+                    <th style="white-space: nowrap;">Sharpe</th>
+                    <th style="white-space: nowrap;">Sortino</th>
                   </tr>
                 </thead>
                 <tbody id="bmTableBody">
@@ -1556,6 +1564,27 @@
 
       <div style="display: flex; justify-content: flex-end;">
         <button class="nav-btn" onclick="closeLoadStrategyModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Chart Modal (전체화면 차트 모달) -->
+  <div class="modal-overlay" id="fullscreenChartModal" style="z-index: 3000;">
+    <div class="modal-content" style="width: 96vw; max-width: 1200px; height: 90vh; max-height: 90vh; display: flex; flex-direction: column; padding: 14px 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-chart-line text-primary"></i> <span id="fullscreenChartTitle">성과 분석 차트 (전체화면)</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="chart-tabs" style="display: flex; gap: 4px;">
+            <button class="chart-tab active" id="fsChartTabBtnNav" onclick="switchFsChartTab('nav')" title="자산 성장 곡선"><i class="fa-solid fa-chart-line"></i></button>
+            <button class="chart-tab" id="fsChartTabBtnDd" onclick="switchFsChartTab('drawdown')" title="고점 대비 낙폭"><i class="fa-solid fa-chart-area"></i></button>
+          </div>
+          <button class="btn-icon-del" onclick="closeFullscreenChartModal()"><i class="fa-solid fa-xmark" style="font-size: 20px;"></i></button>
+        </div>
+      </div>
+      <div style="flex: 1; position: relative; width: 100%; min-height: 0;">
+        <canvas id="fullscreenBacktestChart"></canvas>
       </div>
     </div>
   </div>
@@ -1835,18 +1864,27 @@
     // Slot Navigation & Integrated Actions
     // ==========================================
     function renderSlotsNav() {
-      const container = document.getElementById('slotsNavContainer');
-      container.innerHTML = '';
+      const cur = getCurrentSlot();
+      const numBadge = document.getElementById('overviewSlotNumberBadge');
+      if (numBadge) numBadge.textContent = `#${cur.id}`;
+      const nameText = document.getElementById('overviewSlotNameText');
+      if (nameText) nameText.textContent = cur.name || `전략 ${cur.id}`;
+      const actBadge = document.getElementById('overviewSlotActiveBadge');
+      if (actBadge) actBadge.style.display = (cur.id === activeSlotId) ? 'inline-block' : 'none';
 
-      strategySlots.forEach(s => {
-        const tab = document.createElement('div');
-        tab.className = `slot-tab ${s.id === currentSlotId ? 'active' : ''}`;
-        tab.onclick = () => selectSlot(s.id);
-        
-        let activeBadge = s.id === activeSlotId ? `<span class="slot-badge-active">ACTIVE</span>` : '';
-        tab.innerHTML = `<span>#${s.id} ${s.name.length > 18 ? s.name.substring(0, 18) + '...' : s.name}</span> ${activeBadge}`;
-        container.appendChild(tab);
-      });
+      const container = document.getElementById('slotsNavContainer');
+      if (container) {
+        container.innerHTML = '';
+        strategySlots.forEach(s => {
+          const tab = document.createElement('div');
+          tab.className = `slot-tab ${s.id === currentSlotId ? 'active' : ''}`;
+          tab.onclick = () => selectSlot(s.id);
+          
+          let activeBadge = s.id === activeSlotId ? `<span class="slot-badge-active">ACTIVE</span>` : '';
+          tab.innerHTML = `<span>#${s.id} ${s.name.length > 18 ? s.name.substring(0, 18) + '...' : s.name}</span> ${activeBadge}`;
+          container.appendChild(tab);
+        });
+      }
     }
 
     function selectSlot(id) {
@@ -2097,6 +2135,13 @@
       document.getElementById('cfgBenchmark').value = s.benchmark || "^NDX";
       document.getElementById('cfgGainThreshold').value = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20;
       document.getElementById('cfgFeeRate').value = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate : s.feeRate * 100) : 0.15;
+
+      const numBadge = document.getElementById('overviewSlotNumberBadge');
+      if (numBadge) numBadge.textContent = `#${s.id}`;
+      const nameText = document.getElementById('overviewSlotNameText');
+      if (nameText) nameText.textContent = s.name || `전략 ${s.id}`;
+      const actBadge = document.getElementById('overviewSlotActiveBadge');
+      if (actBadge) actBadge.style.display = (s.id === activeSlotId) ? 'inline-block' : 'none';
 
       renderBaseWeightsTable(s.baseWeights || {});
       renderDropStages(s.dropStages || []);
@@ -2470,9 +2515,8 @@
 
     function setBacktestPeriod(period) {
       currentBacktestPeriod = period;
-      document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
-      const btn = document.getElementById(`periodBtn_${period}`);
-      if (btn) btn.classList.add('active');
+      const dropdown = document.getElementById('periodSelectDropdown');
+      if (dropdown && dropdown.value !== period) dropdown.value = period;
 
       if (etfDataset && etfDataset.dates && etfDataset.dates.length > 0) {
         const allDates = etfDataset.dates;
@@ -2503,6 +2547,9 @@
       } else {
         runInteractiveBacktest();
       }
+      if (document.getElementById('fullscreenChartModal').style.display === 'flex') {
+        renderFullscreenChart();
+      }
     }
 
     function onCustomDateChange() {
@@ -2518,12 +2565,14 @@
       currentBacktestPeriod = 'CUSTOM';
       customStartStr = startVal;
       customEndStr = endVal;
-      document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
 
       if (isCompareMode) {
         runMultiStrategyComparison();
       } else {
         runInteractiveBacktest();
+      }
+      if (document.getElementById('fullscreenChartModal').style.display === 'flex') {
+        renderFullscreenChart();
       }
     }
 
@@ -2831,36 +2880,36 @@
       const tbody = document.getElementById('bmTableBody');
       tbody.innerHTML = `
         <tr class="row-highlight">
-          <td><i class="fa-solid fa-star text-primary"></i> <strong>전략지수</strong></td>
-          <td>+${strat.totalReturnPct}%</td>
-          <td>${strat.cagrPct}%</td>
-          <td>${strat.mddPct}%</td>
-          <td>${strat.sharpe}</td>
-          <td>${strat.sortino}</td>
+          <td style="white-space: nowrap; text-align: left; padding-left: 14px;"><i class="fa-solid fa-star text-primary"></i> <strong>전략지수</strong></td>
+          <td style="white-space: nowrap; text-align: center;">+${strat.totalReturnPct}%</td>
+          <td style="white-space: nowrap; text-align: center;">${strat.cagrPct}%</td>
+          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-weight: 700;">${strat.mddPct}%</td>
+          <td style="white-space: nowrap; text-align: center;">${strat.sharpe}</td>
+          <td style="white-space: nowrap; text-align: center;">${strat.sortino}</td>
         </tr>
         <tr>
-          <td>나스닥 100</td>
-          <td>+${ndx.totalReturnPct}%</td>
-          <td>${ndx.cagrPct}%</td>
-          <td>${ndx.mddPct}%</td>
-          <td>${ndx.sharpe}</td>
-          <td>${ndx.sortino}</td>
+          <td style="white-space: nowrap; text-align: left; padding-left: 14px; font-weight: 600;">나스닥 100</td>
+          <td style="white-space: nowrap; text-align: center;">+${ndx.totalReturnPct}%</td>
+          <td style="white-space: nowrap; text-align: center;">${ndx.cagrPct}%</td>
+          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-weight: 700;">${ndx.mddPct}%</td>
+          <td style="white-space: nowrap; text-align: center;">${ndx.sharpe}</td>
+          <td style="white-space: nowrap; text-align: center;">${ndx.sortino}</td>
         </tr>
         <tr>
-          <td>S&P 500</td>
-          <td>+${gspc.totalReturnPct}%</td>
-          <td>${gspc.cagrPct}%</td>
-          <td>${gspc.mddPct}%</td>
-          <td>${gspc.sharpe}</td>
-          <td>${gspc.sortino}</td>
+          <td style="white-space: nowrap; text-align: left; padding-left: 14px; font-weight: 600;">S&P 500</td>
+          <td style="white-space: nowrap; text-align: center;">+${gspc.totalReturnPct}%</td>
+          <td style="white-space: nowrap; text-align: center;">${gspc.cagrPct}%</td>
+          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-weight: 700;">${gspc.mddPct}%</td>
+          <td style="white-space: nowrap; text-align: center;">${gspc.sharpe}</td>
+          <td style="white-space: nowrap; text-align: center;">${gspc.sortino}</td>
         </tr>
         <tr>
-          <td>코스피</td>
-          <td>+${ks11.totalReturnPct}%</td>
-          <td>${ks11.cagrPct}%</td>
-          <td style="color: var(--rose); font-weight: 700;">${ks11.mddPct}%</td>
-          <td>${ks11.sharpe}</td>
-          <td>${ks11.sortino}</td>
+          <td style="white-space: nowrap; text-align: left; padding-left: 14px; font-weight: 600;">코스피</td>
+          <td style="white-space: nowrap; text-align: center;">+${ks11.totalReturnPct}%</td>
+          <td style="white-space: nowrap; text-align: center;">${ks11.cagrPct}%</td>
+          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-weight: 700;">${ks11.mddPct}%</td>
+          <td style="white-space: nowrap; text-align: center;">${ks11.sharpe}</td>
+          <td style="white-space: nowrap; text-align: center;">${ks11.sortino}</td>
         </tr>
       `;
     }
@@ -3131,6 +3180,168 @@
                 max: 0,
                 min: -60
               }
+            }
+          }
+        });
+      }
+    }
+
+    // ==========================================
+    // Fullscreen Chart Modal Engine
+    // ==========================================
+    let fullscreenChartInstance = null;
+
+    function openFullscreenChartModal() {
+      document.getElementById('fullscreenChartModal').style.display = 'flex';
+      const cur = getCurrentSlot();
+      document.getElementById('fullscreenChartTitle').textContent = isCompareMode 
+        ? `전략비교 성과 차트 (${multiCompareResults ? multiCompareResults.length : 0}개 전략)`
+        : `#${cur.id} ${cur.name} — 성과 분석 차트`;
+      
+      document.getElementById('fsChartTabBtnNav').className = `chart-tab ${currentChartTab === 'nav' ? 'active' : ''}`;
+      document.getElementById('fsChartTabBtnDd').className = `chart-tab ${currentChartTab === 'drawdown' ? 'active' : ''}`;
+      
+      setTimeout(renderFullscreenChart, 60);
+    }
+
+    function closeFullscreenChartModal() {
+      document.getElementById('fullscreenChartModal').style.display = 'none';
+      if (fullscreenChartInstance) {
+        fullscreenChartInstance.destroy();
+        fullscreenChartInstance = null;
+      }
+    }
+
+    function switchFsChartTab(tab) {
+      currentChartTab = tab;
+      document.getElementById('fsChartTabBtnNav').className = `chart-tab ${tab === 'nav' ? 'active' : ''}`;
+      document.getElementById('fsChartTabBtnDd').className = `chart-tab ${tab === 'drawdown' ? 'active' : ''}`;
+      
+      const mainNavBtn = document.getElementById('chartTabBtnNav');
+      const mainDdBtn = document.getElementById('chartTabBtnDd');
+      if (mainNavBtn) mainNavBtn.className = `chart-tab ${tab === 'nav' ? 'active' : ''}`;
+      if (mainDdBtn) mainDdBtn.className = `chart-tab ${tab === 'drawdown' ? 'active' : ''}`;
+      
+      renderFullscreenChart();
+      renderChart();
+    }
+
+    function renderFullscreenChart() {
+      const canvasEl = document.getElementById('fullscreenBacktestChart');
+      if (!canvasEl) return;
+      if (fullscreenChartInstance) {
+        fullscreenChartInstance.destroy();
+        fullscreenChartInstance = null;
+      }
+
+      if (isCompareMode && multiCompareResults && multiCompareResults.length > 0) {
+        const dates = multiCompareResults[0].dates;
+        const step = Math.max(1, Math.floor(dates.length / 400));
+        const sampleDates = dates.filter((_, i) => i % step === 0);
+
+        const datasets = multiCompareResults.map((res, idx) => {
+          const color = COMPARE_COLOR_PALETTE[idx % COMPARE_COLOR_PALETTE.length];
+          const sampleNAV = Array.from(res.stratNAV).filter((_, i) => i % step === 0);
+          return {
+            label: `#${res.slot.id} ${res.slot.name}`,
+            data: sampleNAV,
+            borderColor: color,
+            backgroundColor: 'transparent',
+            borderWidth: 2.5,
+            fill: false,
+            tension: 0.1,
+            pointRadius: 0
+          };
+        });
+
+        fullscreenChartInstance = new Chart(canvasEl.getContext('2d'), {
+          type: 'line',
+          data: { labels: sampleDates, datasets: datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'top', labels: { usePointStyle: true, font: { size: 12, weight: '600' } } },
+              tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                callbacks: {
+                  label: (c) => ` ${c.dataset.label}: ${((c.parsed.y - 100000000) / 100000000 * 100).toFixed(1)}% (${formatKRW(c.parsed.y)})`
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { maxTicksLimit: 12, callback: function(v) { return (this.getLabelForValue(v) || '').slice(0, 7).replace('-', '.'); } } },
+              y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v >= 100000000 ? (v / 100000000).toFixed(1) + '억원' : Math.round(v / 10000).toLocaleString() + '만원' } }
+            }
+          }
+        });
+        return;
+      }
+
+      if (!lastBacktestResult) return;
+      const dates = lastBacktestResult.dates;
+      const step = Math.max(1, Math.floor(dates.length / 400));
+      const sampleDates = dates.filter((_, i) => i % step === 0);
+
+      if (currentChartTab === 'nav') {
+        const stratSample = Array.from(lastBacktestResult.stratNAV).filter((_, i) => i % step === 0);
+        const ndxSample = Array.from(lastBacktestResult.bmNDX).filter((_, i) => i % step === 0);
+        const gspcSample = Array.from(lastBacktestResult.bmGSPC).filter((_, i) => i % step === 0);
+        const ks11Sample = Array.from(lastBacktestResult.bmKS11).filter((_, i) => i % step === 0);
+
+        fullscreenChartInstance = new Chart(canvasEl.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: sampleDates,
+            datasets: [
+              { label: '전략지수', data: stratSample, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.08)', borderWidth: 3, fill: true, tension: 0.1, pointRadius: 0 },
+              { label: '나스닥 100', data: ndxSample, borderColor: '#7c3aed', borderWidth: 1.8, fill: false, tension: 0.1, pointRadius: 0 },
+              { label: 'S&P 500', data: gspcSample, borderColor: '#059669', borderWidth: 1.8, fill: false, tension: 0.1, pointRadius: 0 },
+              { label: '코스피', data: ks11Sample, borderColor: '#d97706', borderWidth: 1.8, fill: false, tension: 0.1, pointRadius: 0 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'top', labels: { usePointStyle: true, font: { size: 12, weight: '600' } } },
+              tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                callbacks: {
+                  label: (c) => ` ${c.dataset.label}: ${((c.parsed.y - 100000000) / 100000000 * 100).toFixed(1)}% (${formatKRW(c.parsed.y)})`
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { maxTicksLimit: 12, callback: function(v) { return (this.getLabelForValue(v) || '').slice(0, 7).replace('-', '.'); } } },
+              y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v >= 100000000 ? (v / 100000000).toFixed(1) + '억원' : Math.round(v / 10000).toLocaleString() + '만원' } }
+            }
+          }
+        });
+      } else {
+        const ddSample = Array.from(lastBacktestResult.stratMetrics.dds).filter((_, i) => i % step === 0);
+        fullscreenChartInstance = new Chart(canvasEl.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: sampleDates,
+            datasets: [{ label: '전략 낙폭 (DD)', data: ddSample, borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.12)', borderWidth: 2.2, fill: true, tension: 0.1, pointRadius: 0 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'top', labels: { usePointStyle: true, font: { size: 12, weight: '600' } } },
+              tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                callbacks: { label: c => ` 전략 낙폭: ${c.parsed.y.toFixed(1)}%` }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { maxTicksLimit: 12, callback: function(v) { return (this.getLabelForValue(v) || '').slice(0, 7).replace('-', '.'); } } },
+              y: { max: 0, grid: { color: '#f1f5f9' }, ticks: { callback: v => `${v}%` } }
             }
           }
         });
