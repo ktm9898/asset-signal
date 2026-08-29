@@ -1524,6 +1524,7 @@
       }
 
       const gainThreshold = activeStrat.gainThresholdPct || 20.0;
+      const isTakeProfit = totalReturn >= gainThreshold;
       if (isTakeProfit) {
         badgeEl.textContent = `+${gainThreshold}% 이익실현`;
         badgeEl.style.background = '#dcfce7';
