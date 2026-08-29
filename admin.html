@@ -1804,8 +1804,7 @@
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>
-            <div style="font-weight: 700;">${formatTickerDisplay(ticker)}</div>
-            <div style="font-size: 11px; color: var(--text-dim);">${etfDataset?.universe[ticker]?.name || ticker}</div>
+            <div style="font-weight: 700; font-size: 13.5px;">${formatTickerDisplay(ticker)}</div>
           </td>
           <td>
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
@@ -1954,9 +1953,8 @@
         card.innerHTML = `
           <div class="stage-card-header">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="stage-badge-drop">${idx + 1}차 하락 (${stg.threshold}%)</span>
+              <span class="stage-badge-drop">${idx + 1}차 하락</span>
               <div style="display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700;">
-                <span style="color: var(--text-dim); font-size: 11px;">임계값:</span>
                 <input type="number" class="weight-input" style="width: 55px; padding: 2px 4px; font-size: 11px; text-align: center;" 
                   value="${stg.threshold}" step="1" max="0" 
                   onchange="updateDropStageThreshold(${idx}, this.value)"> %
