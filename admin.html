@@ -580,6 +580,14 @@
       border: 1px solid var(--border-color);
     }
 
+    .period-tabs-desktop {
+      display: inline-flex !important;
+    }
+
+    .period-select-mobile {
+      display: none !important;
+    }
+
     .period-tab {
       padding: 3px 9px;
       border-radius: 4px;
@@ -1139,15 +1147,15 @@
           </div>
 
           <!-- Baseline Allocation -->
-          <div class="form-group">
-            <div class="form-label">
+          <div class="form-group" style="gap: 6px;">
+            <div class="form-label" style="margin-bottom: 0;">
               <span>기본 자산 비중</span>
               <span id="baseWeightSumBadge" class="weight-sum-badge weight-sum-ok">합계 100%</span>
             </div>
-            <table class="weight-table" id="baseWeightsTable">
+            <table class="weight-table" id="baseWeightsTable" style="margin-bottom: 2px;">
               <!-- Dynamic Base Weight rows -->
             </table>
-            <button class="nav-btn" style="margin-top: 6px; font-size: 11px;" onclick="addBaseWeightRow()">
+            <button class="nav-btn" style="align-self: flex-start; font-size: 11.5px; padding: 5px 12px; border-radius: var(--radius-sm);" onclick="addBaseWeightRow()">
               <i class="fa-solid fa-plus"></i> 자산 추가
             </button>
           </div>
