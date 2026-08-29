@@ -11,7 +11,7 @@ function getAuthPin() {
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // 1. Portfolio Signals Sheet
+  // 1. Portfolio Signals Sheet (실시간 시그널 & 리밸런싱 지시서 히스토리)
   let sigSheet = ss.getSheetByName("Portfolio_Signals") || ss.insertSheet("Portfolio_Signals");
   sigSheet.getRange("A1:J1").setValues([[
     "Date", "Benchmark", "BenchmarkPrice", "BenchmarkATH", "BenchmarkMDD", 
@@ -19,17 +19,7 @@ function setupSheets() {
   ]]);
   sigSheet.getRange("A1:J1").setFontWeight("bold").setBackground("#e0f2fe");
 
-  // 2. Portfolio Holdings Sheet
-  let holdingsSheet = ss.getSheetByName("Portfolio_Holdings") || ss.insertSheet("Portfolio_Holdings");
-  if (holdingsSheet.getLastRow() === 0) {
-    holdingsSheet.getRange("A1:K1").setValues([[
-      "DateAdded", "Ticker", "Name", "Quantity", "AvgBuyPrice", 
-      "CurrentPrice", "CurrentWeightPct", "TargetWeightPct", "DeltaPct", "Currency", "Notes"
-    ]]);
-    holdingsSheet.getRange("A1:K1").setFontWeight("bold").setBackground("#fef3c7");
-  }
-
-  // 3. Strategy Slots Sheet (1~10 Slots)
+  // 2. Strategy Slots Sheet (1~10번 전략 슬롯 설정 저장)
   let slotsSheet = ss.getSheetByName("Strategy_Slots") || ss.insertSheet("Strategy_Slots");
   slotsSheet.getRange("A1:M1").setValues([[
     "SlotID", "Name", "Memo", "Benchmark", "BaseWeights", 
@@ -38,7 +28,7 @@ function setupSheets() {
   ]]);
   slotsSheet.getRange("A1:M1").setFontWeight("bold").setBackground("#dbeafe");
 
-  // 4. Execution Logs Sheet
+  // 3. Execution Logs Sheet (일일 봇 실행 로그)
   let logSheet = ss.getSheetByName("Execution_Logs") || ss.insertSheet("Execution_Logs");
   logSheet.getRange("A1:E1").setValues([["Timestamp", "Status", "BenchmarkMDD", "CurrentState", "Message"]]);
   logSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#dcfce7");

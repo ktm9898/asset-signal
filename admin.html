@@ -1486,7 +1486,17 @@
             data.slots.forEach(s => {
               const idx = strategySlots.findIndex(item => item.id === s.id);
               if (idx !== -1) {
-                strategySlots[idx] = { ...strategySlots[idx], ...s };
+                strategySlots[idx] = {
+                  id: s.id,
+                  name: s.name || `전략 ${s.id}`,
+                  memo: s.memo || '',
+                  benchmark: s.benchmark || '^NDX',
+                  baseWeights: s.baseWeights || {},
+                  dropStages: Array.isArray(s.dropStages) ? s.dropStages : [],
+                  recoveryStages: Array.isArray(s.recoveryStages) ? s.recoveryStages : [],
+                  gainThresholdPct: s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0,
+                  feeRate: s.feeRate !== undefined ? s.feeRate : 0.15
+                };
               }
             });
             if (data.activeSlotId) {
@@ -1530,30 +1540,31 @@
       return strategySlots.find(s => s.id === currentSlotId) || strategySlots[0];
     }
 
-    function resetCurrentSlot() {
-      if (confirm(`[전략 #${currentSlotId}] 정말로 이 전략 슬롯을 삭제/초기화하시겠습니까?`)) {
-        const defaultSlot = DEFAULT_PRESETS.find(s => s.id === currentSlotId) || {
+    async function resetCurrentSlot() {
+      if (confirm(`[전략 #${currentSlotId}] 정말로 이 전략 슬롯을 완전히 삭제/초기화하시겠습니까?\n(설정된 자산 비중과 하락/복귀 단계가 깨끗하게 비워집니다)`)) {
+        const blankSlot = {
           id: currentSlotId,
           name: `전략 ${currentSlotId}`,
           memo: "",
           benchmark: "^NDX",
-          baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
-          dropStages: [{"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락"}],
-          recoveryStages: [{"fromDrop": -20.0, "recovery": -5.0, "weights": {"QQQ": 0.60, "QLD": 0.00, "SCHD": 0.40}, "name": "1단계 반등"}],
+          baseWeights: {},
+          dropStages: [],
+          recoveryStages: [],
           gainThresholdPct: 20.0,
-          toleranceBandPct: 5.0,
-          cooldownDays: 5,
           feeRate: 0.15
         };
         const idx = strategySlots.findIndex(s => s.id === currentSlotId);
         if (idx !== -1) {
-          strategySlots[idx] = JSON.parse(JSON.stringify(defaultSlot));
+          strategySlots[idx] = blankSlot;
         }
         saveLocalSlots();
         renderSlotsNav();
         populateCurrentSlotUI();
         runInteractiveBacktest();
-        showToast(`전략 #${currentSlotId}이(가) 삭제/초기화되었습니다.`);
+        
+        // Auto sync deletion to Google Sheets so old data never restores on refresh
+        await saveSlotsToGAS();
+        showToast(`전략 #${currentSlotId}이(가) 완전히 삭제/초기화되었습니다.`);
       }
     }
 
