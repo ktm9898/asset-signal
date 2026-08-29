@@ -826,11 +826,24 @@
             <button class="nav-btn btn-sm btn-success" onclick="activateCurrentSlot()">
               <i class="fa-solid fa-bolt"></i> 전략적용
             </button>
+            <button class="nav-btn btn-sm" style="background: #475569; color: #fff; border: 1px solid #475569;" onclick="openCompareModal()">
+              <i class="fa-solid fa-code-compare"></i> 전략비교
+            </button>
           </div>
         </div>
         <div class="slots-nav" id="slotsNavContainer">
           <!-- Rendered dynamically -->
         </div>
+      </div>
+
+      <!-- Comparison Mode Active Banner (Hidden by default) -->
+      <div id="compareModeBanner" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 12px 18px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px; color: #1e40af; font-size: 13px; font-weight: 700;">
+          <i class="fa-solid fa-circle-nodes"></i> <span id="compareModeText">전략 슬롯 멀티 비교 모드</span>
+        </div>
+        <button class="nav-btn btn-sm" onclick="exitCompareMode()" style="background: #ffffff; border-color: #93c5fd; color: #1e40af;">
+          <i class="fa-solid fa-arrow-rotate-left"></i> 단일 전략 편집 모드로 복귀
+        </button>
       </div>
 
       <!-- Studio Grid -->
@@ -983,8 +996,36 @@
             </div>
           </div>
 
+          <!-- Multi-Strategy Comparison Table Panel (Shown in Compare Mode) -->
+          <div class="benchmarks-table-panel" id="compareSummaryPanel" style="display: none;">
+            <div style="font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;">
+              <span><i class="fa-solid fa-table text-primary"></i> 전략 슬롯별 핵심 성과 비교</span>
+              <span class="text-dim" style="font-size: 12px;" id="compareTableCountText">총 0개 전략 비교</span>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="bm-table">
+                <thead>
+                  <tr>
+                    <th>슬롯 / 전략명</th>
+                    <th>기준 지표</th>
+                    <th>기본 자산 비중</th>
+                    <th>최종 수익률</th>
+                    <th>CAGR</th>
+                    <th>MDD</th>
+                    <th>Sharpe</th>
+                    <th>리밸런싱</th>
+                    <th>최종 자산</th>
+                  </tr>
+                </thead>
+                <tbody id="compareTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Benchmark Comparison Table (3 Major Indices Only) -->
-          <div class="benchmarks-table-panel">
+          <div class="benchmarks-table-panel" id="singleBmTablePanel">
             <div style="font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px;">
               <i class="fa-solid fa-scale-balanced text-primary"></i> 시장 지수 대비 성과 비교
             </div>
@@ -1006,7 +1047,7 @@
           </div>
 
           <!-- Rebalance Events Table -->
-          <div class="benchmarks-table-panel">
+          <div class="benchmarks-table-panel" id="singleRebalanceTablePanel">
             <div style="font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;">
               <span><i class="fa-solid fa-list-check text-primary"></i> 최근 리밸런싱 이력</span>
               <span class="text-dim" style="font-size: 12px;" id="rebalanceCountText">총 0건</span>
@@ -1017,7 +1058,7 @@
                   <tr>
                     <th>일자</th>
                     <th>발동 사유</th>
-                    <th>국면 상태</th>
+                    <th>상태</th>
                     <th>기준 MDD</th>
                     <th>조정 후 비중</th>
                     <th>평가액</th>
@@ -1124,6 +1165,40 @@
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
         <button class="nav-btn" onclick="closeRenameModal()">취소</button>
         <button class="nav-btn btn-primary" onclick="saveRenameModal()">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Multi-Strategy Comparison Modal -->
+  <div class="modal-overlay" id="compareModal">
+    <div class="modal-content" style="max-width: 580px; max-height: 85vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <div style="font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-code-compare text-primary"></i> 전략 슬롯 멀티 비교
+        </div>
+        <button class="btn-icon-del" onclick="closeCompareModal()"><i class="fa-solid fa-xmark" style="font-size: 18px;"></i></button>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+        비교할 전략 슬롯들을 체크하고 <strong>[비교실행]</strong> 버튼을 누르면 성과 및 자산 성장 곡선을 한눈에 비교할 수 있습니다.
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-dim);">비교할 전략 선택</span>
+        <div style="display: flex; gap: 6px;">
+          <button class="nav-btn btn-sm" onclick="toggleAllCompareSlots(true)">전체 선택</button>
+          <button class="nav-btn btn-sm" onclick="toggleAllCompareSlots(false)">선택 해제</button>
+        </div>
+      </div>
+
+      <div id="compareSlotsList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px;">
+        <!-- Populated dynamically -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button class="nav-btn" onclick="closeCompareModal()">닫기</button>
+        <button class="nav-btn btn-primary" id="btnRunCompare" onclick="runMultiStrategyComparison()">
+          <i class="fa-solid fa-play"></i> 비교실행
+        </button>
       </div>
     </div>
   </div>
@@ -2061,8 +2136,12 @@
     }
 
     // ==========================================
-    // Chart.js Rendering (Clean Legend: "전략지수", "나스닥 100", "S&P 500", "코스피")
+    // Chart.js Rendering (Stock-Signal Standard Style & Tooltips)
     // ==========================================
+    const COMPARE_COLOR_PALETTE = ['#2563eb', '#7c3aed', '#059669', '#ea580c', '#db2777', '#0284c7', '#ca8a04', '#4f46e5', '#0d9488', '#e11d48'];
+    let isCompareMode = false;
+    let multiCompareResults = null;
+
     function switchChartTab(tab) {
       currentChartTab = tab;
       document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
@@ -2071,6 +2150,11 @@
     }
 
     function renderChart() {
+      if (isCompareMode && multiCompareResults) {
+        renderCompareChart();
+        return;
+      }
+
       if (!lastBacktestResult) return;
       const ctx = document.getElementById('backtestChart').getContext('2d');
 
@@ -2134,18 +2218,61 @@
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            scales: {
-              x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#64748b' } },
-              y: { 
-                grid: { color: 'rgba(0,0,0,0.06)' }, 
-                ticks: { 
-                  color: '#64748b',
-                  callback: val => val >= 100000000 ? (val / 100000000).toFixed(1) + '억원' : Math.round(val / 10000).toLocaleString() + '만원'
-                } 
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  boxWidth: 7,
+                  padding: 12,
+                  font: { weight: '600', size: 11 },
+                  color: '#334155'
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                titleFont: { size: 12, weight: '700' },
+                bodyFont: { size: 12 },
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  title: (items) => items.length > 0 ? `일자: ${items[0].label}` : '',
+                  label: (ctx) => {
+                    const val = ctx.parsed.y;
+                    const rawLabel = ctx.dataset.label || '';
+                    const init = 100000000;
+                    const ret = ((val - init) / init) * 100;
+                    const sign = ret >= 0 ? '+' : '';
+                    return ` ${rawLabel}: ${sign}${ret.toFixed(1)}% (${formatKRW(val)})`;
+                  }
+                }
               }
             },
-            plugins: {
-              legend: { labels: { color: '#334155', font: { size: 12, weight: 'bold' } } }
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  maxTicksLimit: window.innerWidth <= 768 ? 5 : 10,
+                  maxRotation: 0,
+                  minRotation: 0,
+                  autoSkip: true,
+                  color: '#64748b',
+                  font: { size: 10, weight: '500' },
+                  callback: function(val) {
+                    const d = this.getLabelForValue(val);
+                    return d ? d.slice(0, 7).replace('-', '.') : '';
+                  }
+                }
+              },
+              y: {
+                grid: { color: '#f1f5f9' },
+                ticks: {
+                  color: '#64748b',
+                  font: { size: 10 },
+                  callback: val => val >= 100000000 ? (val / 100000000).toFixed(1) + '억원' : Math.round(val / 10000).toLocaleString() + '만원'
+                }
+              }
             }
           }
         });
@@ -2182,7 +2309,286 @@
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  boxWidth: 7,
+                  padding: 12,
+                  font: { weight: '600', size: 11 },
+                  color: '#334155'
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                titleFont: { size: 12, weight: '700' },
+                bodyFont: { size: 12 },
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  title: (items) => items.length > 0 ? `일자: ${items[0].label}` : '',
+                  label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`
+                }
+              }
+            },
             scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  maxTicksLimit: window.innerWidth <= 768 ? 5 : 10,
+                  maxRotation: 0,
+                  minRotation: 0,
+                  autoSkip: true,
+                  color: '#64748b',
+                  font: { size: 10, weight: '500' },
+                  callback: function(val) {
+                    const d = this.getLabelForValue(val);
+                    return d ? d.slice(0, 7).replace('-', '.') : '';
+                  }
+                }
+              },
+              y: {
+                grid: { color: '#f1f5f9' },
+                ticks: {
+                  color: '#64748b',
+                  font: { size: 10 },
+                  callback: val => val + '%'
+                },
+                max: 0,
+                min: -60
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // ==========================================
+    // Multi-Strategy Comparison Engine
+    // ==========================================
+    function openCompareModal() {
+      const container = document.getElementById('compareSlotsList');
+      container.innerHTML = '';
+
+      strategySlots.forEach(s => {
+        const baseStr = Object.entries(s.baseWeights || {}).map(([t, w]) => `${t} ${Math.round(w * 100)}%`).join(', ') || '-';
+        const item = document.createElement('label');
+        item.className = 'slot-tab';
+        item.style.cursor = 'pointer';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.justifyContent = 'space-between';
+        item.style.padding = '10px 14px';
+
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="checkbox" class="slot-compare-check" value="${s.id}" ${s.id <= 3 ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+            <div>
+              <div style="font-weight: 700; color: var(--text-main); font-size: 13px;">#${s.id} ${s.name} ${s.id === activeSlotId ? '<span class="slot-badge-active">ACTIVE</span>' : ''}</div>
+              <div style="font-size: 11px; color: var(--text-dim);">기준: ${formatTickerDisplay(s.benchmark || '^NDX')} | 기본비중: ${baseStr}</div>
+            </div>
+          </div>
+          <div style="font-size: 11px; font-weight: 600; color: var(--primary);">
+            낙폭단계 ${s.dropStages ? s.dropStages.length : 0}개
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      document.getElementById('compareModal').style.display = 'flex';
+    }
+
+    function closeCompareModal() {
+      document.getElementById('compareModal').style.display = 'none';
+    }
+
+    function toggleAllCompareSlots(selectAll) {
+      document.querySelectorAll('.slot-compare-check').forEach(cb => {
+        cb.checked = selectAll;
+      });
+    }
+
+    async function runMultiStrategyComparison() {
+      const checkedBoxes = Array.from(document.querySelectorAll('.slot-compare-check:checked'));
+      if (checkedBoxes.length < 1) {
+        showToast("비교할 전략 슬롯을 1개 이상 선택해주세요.");
+        return;
+      }
+
+      const selectedSlotIds = checkedBoxes.map(cb => parseInt(cb.value, 10));
+      const selectedSlots = strategySlots.filter(s => selectedSlotIds.includes(s.id));
+
+      showToast(`${selectedSlots.length}개 전략 백테스트 비교 계산 중...`);
+      closeCompareModal();
+
+      multiCompareResults = [];
+      for (const slot of selectedSlots) {
+        const res = simulateDynamicAssetStrategy(slot);
+        if (res) {
+          multiCompareResults.push({
+            slot: slot,
+            ...res
+          });
+        }
+      }
+
+      isCompareMode = true;
+      document.getElementById('compareModeBanner').style.display = 'flex';
+      document.getElementById('compareModeText').textContent = `전략 슬롯 멀티 비교 모드 (${multiCompareResults.length}개 전략 비교 중)`;
+
+      // Hide single benchmark/rebalance tables, Show Multi-Strategy Comparison table
+      document.getElementById('singleBmTablePanel').style.display = 'none';
+      document.getElementById('singleRebalanceTablePanel').style.display = 'none';
+      document.getElementById('compareSummaryPanel').style.display = 'block';
+
+      renderCompareTable();
+      renderCompareChart();
+      showToast("전략 멀티 비교 차트 및 성과표가 생성되었습니다!");
+    }
+
+    function exitCompareMode() {
+      isCompareMode = false;
+      multiCompareResults = null;
+      document.getElementById('compareModeBanner').style.display = 'none';
+      document.getElementById('singleBmTablePanel').style.display = 'block';
+      document.getElementById('singleRebalanceTablePanel').style.display = 'block';
+      document.getElementById('compareSummaryPanel').style.display = 'none';
+
+      runInteractiveBacktest();
+    }
+
+    function renderCompareTable() {
+      const tbody = document.getElementById('compareTableBody');
+      tbody.innerHTML = '';
+      document.getElementById('compareTableCountText').textContent = `총 ${multiCompareResults.length}개 전략 비교`;
+
+      multiCompareResults.forEach((res, idx) => {
+        const s = res.slot;
+        const color = COMPARE_COLOR_PALETTE[idx % COMPARE_COLOR_PALETTE.length];
+        const m = res.stratMetrics;
+        const baseStr = Object.entries(s.baseWeights || {}).map(([t, w]) => `${t} ${Math.round(w * 100)}%`).join(', ') || '-';
+        const finalVal = res.stratNAV[res.stratNAV.length - 1];
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
+              <strong>#${s.id} ${s.name}</strong>
+              ${s.id === activeSlotId ? '<span class="slot-badge-active" style="font-size: 10px;">ACTIVE</span>' : ''}
+            </div>
+          </td>
+          <td>${formatTickerDisplay(s.benchmark || '^NDX')}</td>
+          <td style="font-size: 12px; color: var(--text-muted);">${baseStr}</td>
+          <td style="color: ${m.totalReturnPct >= 0 ? 'var(--emerald)' : 'var(--rose)'}; font-weight: 700;">
+            ${m.totalReturnPct >= 0 ? '+' : ''}${m.totalReturnPct.toLocaleString()}%
+          </td>
+          <td style="color: var(--primary); font-weight: 700;">${m.cagrPct}%</td>
+          <td style="color: var(--rose); font-weight: 700;">${m.mddPct}%</td>
+          <td>${m.sharpe}</td>
+          <td>${res.rebalanceEvents.length}회</td>
+          <td style="font-weight: 700;">${formatKRW(finalVal)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCompareChart() {
+      if (!multiCompareResults || multiCompareResults.length === 0) return;
+      const ctx = document.getElementById('backtestChart').getContext('2d');
+
+      const dates = multiCompareResults[0].dates;
+      const step = Math.max(1, Math.floor(dates.length / 250));
+      const sampleDates = dates.filter((_, i) => i % step === 0);
+
+      if (chartInstance) chartInstance.destroy();
+
+      const datasets = multiCompareResults.map((res, idx) => {
+        const color = COMPARE_COLOR_PALETTE[idx % COMPARE_COLOR_PALETTE.length];
+        const sampleNAV = Array.from(res.stratNAV).filter((_, i) => i % step === 0);
+        return {
+          label: `#${res.slot.id} ${res.slot.name}`,
+          data: sampleNAV,
+          borderColor: color,
+          backgroundColor: 'transparent',
+          borderWidth: 2.2,
+          fill: false,
+          tension: 0.1,
+          pointRadius: 0
+        };
+      });
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: sampleDates,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                usePointStyle: true,
+                pointStyle: 'circle',
+                boxWidth: 7,
+                padding: 12,
+                font: { weight: '600', size: 11 },
+                color: '#334155'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleFont: { size: 12, weight: '700' },
+              bodyFont: { size: 12 },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                title: (items) => items.length > 0 ? `일자: ${items[0].label}` : '',
+                label: (ctx) => {
+                  const val = ctx.parsed.y;
+                  const rawLabel = ctx.dataset.label || '';
+                  const init = 100000000;
+                  const ret = ((val - init) / init) * 100;
+                  const sign = ret >= 0 ? '+' : '';
+                  return ` ${rawLabel}: ${sign}${ret.toFixed(1)}% (${formatKRW(val)})`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                maxTicksLimit: window.innerWidth <= 768 ? 5 : 10,
+                maxRotation: 0,
+                minRotation: 0,
+                autoSkip: true,
+                color: '#64748b',
+                font: { size: 10, weight: '500' },
+                callback: function(val) {
+                  const d = this.getLabelForValue(val);
+                  return d ? d.slice(0, 7).replace('-', '.') : '';
+                }
+              }
+            },
+            y: {
+              grid: { color: '#f1f5f9' },
+              ticks: {
+                color: '#64748b',
+                font: { size: 10 },
+                callback: val => val >= 100000000 ? (val / 100000000).toFixed(1) + '억원' : Math.round(val / 10000).toLocaleString() + '만원'
+              }
+            }
+          }
+        }
+      });
+    }
               x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#64748b' } },
               y: { 
                 grid: { color: 'rgba(0,0,0,0.06)' }, 
