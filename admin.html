@@ -844,7 +844,7 @@
       <!-- Comparison Mode Active Banner (Hidden by default) -->
       <div id="compareModeBanner" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 12px 18px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 8px; color: #1e40af; font-size: 13px; font-weight: 700;">
-          <i class="fa-solid fa-circle-nodes"></i> <span id="compareModeText">전략 슬롯 멀티 비교 모드</span>
+          <i class="fa-solid fa-circle-nodes"></i> <span id="compareModeText">전략비교 모드</span>
         </div>
         <button class="nav-btn btn-sm" onclick="exitCompareMode()" style="background: #ffffff; border-color: #93c5fd; color: #1e40af;">
           <i class="fa-solid fa-arrow-rotate-left"></i> 단일 전략 편집 모드로 복귀
@@ -1004,8 +1004,8 @@
           <!-- Multi-Strategy Comparison Table Panel (Shown in Compare Mode) -->
           <div class="benchmarks-table-panel" id="compareSummaryPanel" style="display: none;">
             <div style="font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;">
-              <span><i class="fa-solid fa-table text-primary"></i> 전략 슬롯별 핵심 성과 비교</span>
-              <span class="text-dim" style="font-size: 12px;" id="compareTableCountText">총 0개 전략 비교</span>
+              <span><i class="fa-solid fa-table text-primary"></i> 전략별 성과 비교</span>
+              <span class="text-dim" style="font-size: 12px;" id="compareTableCountText">총 0개 전략</span>
             </div>
             <div style="overflow-x: auto;">
               <table class="bm-table">
@@ -1179,7 +1179,7 @@
     <div class="modal-content" style="max-width: 580px; max-height: 85vh; overflow-y: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
         <div style="font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-code-compare text-primary"></i> 전략 슬롯 멀티 비교
+          <i class="fa-solid fa-code-compare text-primary"></i> 전략비교
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <button class="nav-btn btn-sm" onclick="toggleAllCompareSlots(true)">전체 선택</button>
@@ -2434,7 +2434,7 @@
 
       isCompareMode = true;
       document.getElementById('compareModeBanner').style.display = 'flex';
-      document.getElementById('compareModeText').textContent = `전략 슬롯 멀티 비교 모드 (${multiCompareResults.length}개 전략 비교 중)`;
+      document.getElementById('compareModeText').textContent = `전략비교 모드 (${multiCompareResults.length}개 전략)`;
 
       // Hide single benchmark/rebalance tables, Show Multi-Strategy Comparison table
       document.getElementById('singleBmTablePanel').style.display = 'none';
