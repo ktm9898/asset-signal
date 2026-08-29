@@ -1041,14 +1041,23 @@
               <th>등락률</th>
               <th>MDD</th>
               <th>RSI(14)</th>
-              <th>SMA20</th>
-              <th>SMA60</th>
-              <th>SMA200</th>
+              <th>볼린저 %b</th>
               <th>이격도(20)</th>
-              <th>BB 상단</th>
-              <th>BB 하단</th>
+              <th>ADX(14)</th>
+              <th>+DI</th>
+              <th>-DI</th>
+              <th>Stoch %K</th>
+              <th>Stoch %D</th>
               <th>MACD</th>
               <th>Signal</th>
+              <th>Osc</th>
+              <th>SMA5</th>
+              <th>SMA20</th>
+              <th>SMA60</th>
+              <th>SMA120</th>
+              <th>SMA200</th>
+              <th>BB 상단</th>
+              <th>BB 하단</th>
               <th>52주 최고</th>
               <th>52주 최저</th>
             </tr>
@@ -2172,13 +2181,17 @@
       const closePrices = asset.close;
       const N = dates.length;
 
-      // Calculate complete historical indicators
+      // Calculate complete historical Stock-Signal indicators
       const rsiArr = computeFullRSI(closePrices, 14);
+      const sma5Arr = computeFullSMA(closePrices, 5);
       const sma20Arr = computeFullSMA(closePrices, 20);
       const sma60Arr = computeFullSMA(closePrices, 60);
+      const sma120Arr = computeFullSMA(closePrices, 120);
       const sma200Arr = computeFullSMA(closePrices, 200);
       const bbArr = computeFullBollinger(closePrices, 20, 2);
       const macdObj = computeFullMACD(closePrices, 12, 26, 9);
+      const adxObj = computeFullADX(closePrices, 14);
+      const stochObj = computeFullStochastic(closePrices, 14, 3, 3);
       
       const mddArr = new Float64Array(N);
       let peak = 0;
@@ -2193,6 +2206,9 @@
       const chg1D = ((latestClose - prevClose) / prevClose) * 100.0;
       const latestRSI = rsiArr[N - 1];
       const latestMDD = mddArr[N - 1];
+      const latestBB = bbArr[N - 1];
+      const latestADX = adxObj.adx[N - 1];
+      const latestStochK = stochObj.stochK[N - 1];
       const isUp = chg1D >= 0;
 
       const currencyStr = asset.currency === 'KRW' ? `${Math.round(latestClose).toLocaleString()}원` : `$${latestClose.toFixed(2)}`;
@@ -2227,8 +2243,20 @@
           <span class="data-summary-val" style="color: ${latestRSI >= 70 ? 'var(--rose)' : (latestRSI <= 30 ? 'var(--emerald)' : 'var(--text-main)')};">${latestRSI.toFixed(1)}</span>
         </div>
         <div class="data-summary-card">
+          <span class="data-summary-lbl">볼린저 %b</span>
+          <span class="data-summary-val" style="color: ${latestBB.pctB >= 1.0 ? 'var(--rose)' : (latestBB.pctB <= 0.0 ? 'var(--emerald)' : 'var(--text-main)')};">${latestBB.pctB.toFixed(2)}</span>
+        </div>
+        <div class="data-summary-card">
           <span class="data-summary-lbl">SMA20 이격도</span>
           <span class="data-summary-val">${sma20Arr[N-1] > 0 ? ((latestClose / sma20Arr[N-1]) * 100).toFixed(1) + '%' : '-'}</span>
+        </div>
+        <div class="data-summary-card">
+          <span class="data-summary-lbl">ADX (14)</span>
+          <span class="data-summary-val">${latestADX > 0 ? latestADX.toFixed(1) : '-'}</span>
+        </div>
+        <div class="data-summary-card">
+          <span class="data-summary-lbl">Stoch %K</span>
+          <span class="data-summary-val">${latestStochK > 0 ? latestStochK.toFixed(1) : '-'}</span>
         </div>
       `;
 
@@ -2247,13 +2275,21 @@
         const changePct = ((c - p) / p) * 100.0;
         const rsi = rsiArr[i];
         const mdd = mddArr[i];
+        const sma5 = sma5Arr[i];
         const sma20 = sma20Arr[i];
         const sma60 = sma60Arr[i];
+        const sma120 = sma120Arr[i];
         const sma200 = sma200Arr[i];
         const disp20 = sma20 > 0 ? ((c / sma20) * 100).toFixed(1) : '-';
         const bb = bbArr[i];
         const macd = macdObj.macd[i];
         const sig = macdObj.signal[i];
+        const osc = macd - sig;
+        const adx = adxObj.adx[i];
+        const pdi = adxObj.pdi[i];
+        const mdi = adxObj.mdi[i];
+        const stochK = stochObj.stochK[i];
+        const stochD = stochObj.stochD[i];
 
         // Meaningful MDD Color Grading
         let mddHtml = `<span style="color: var(--text-muted);">${mdd.toFixed(2)}%</span>`;
@@ -2263,6 +2299,14 @@
           mddHtml = `<span style="color: var(--rose); font-weight: 700;">${mdd.toFixed(2)}%</span>`;
         } else if (mdd <= -10.0) {
           mddHtml = `<span style="color: var(--amber); font-weight: 600;">${mdd.toFixed(2)}%</span>`;
+        }
+
+        // Bollinger %b Color
+        let bbPctHtml = `<span style="color: var(--text-muted);">${bb.pctB.toFixed(2)}</span>`;
+        if (bb.pctB >= 1.0) {
+          bbPctHtml = `<span style="color: var(--rose); font-weight: 700;">${bb.pctB.toFixed(2)}</span>`;
+        } else if (bb.pctB <= 0.0) {
+          bbPctHtml = `<span style="color: var(--emerald); font-weight: 700;">${bb.pctB.toFixed(2)}</span>`;
         }
 
         // 52-Week High / Low at index i
@@ -2283,14 +2327,23 @@
           <td style="color: ${cColor}; font-weight: 700;">${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%</td>
           <td>${mddHtml}</td>
           <td class="${rsiClass}">${rsi.toFixed(1)}</td>
-          <td>${sma20 > 0 ? (asset.currency === 'KRW' ? Math.round(sma20).toLocaleString() : sma20.toFixed(2)) : '-'}</td>
-          <td>${sma60 > 0 ? (asset.currency === 'KRW' ? Math.round(sma60).toLocaleString() : sma60.toFixed(2)) : '-'}</td>
-          <td>${sma200 > 0 ? (asset.currency === 'KRW' ? Math.round(sma200).toLocaleString() : sma200.toFixed(2)) : '-'}</td>
+          <td>${bbPctHtml}</td>
           <td>${disp20}%</td>
-          <td>${bb ? (asset.currency === 'KRW' ? Math.round(bb.upper).toLocaleString() : bb.upper.toFixed(2)) : '-'}</td>
-          <td>${bb ? (asset.currency === 'KRW' ? Math.round(bb.lower).toLocaleString() : bb.lower.toFixed(2)) : '-'}</td>
+          <td>${adx > 0 ? adx.toFixed(1) : '-'}</td>
+          <td style="color: var(--emerald);">${pdi > 0 ? pdi.toFixed(1) : '-'}</td>
+          <td style="color: var(--rose);">${mdi > 0 ? mdi.toFixed(1) : '-'}</td>
+          <td>${stochK > 0 ? stochK.toFixed(1) : '-'}</td>
+          <td>${stochD > 0 ? stochD.toFixed(1) : '-'}</td>
           <td style="color: ${macd >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${macd.toFixed(2)}</td>
           <td>${sig.toFixed(2)}</td>
+          <td style="color: ${osc >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${osc.toFixed(2)}</td>
+          <td>${sma5 > 0 ? (asset.currency === 'KRW' ? Math.round(sma5).toLocaleString() : sma5.toFixed(2)) : '-'}</td>
+          <td>${sma20 > 0 ? (asset.currency === 'KRW' ? Math.round(sma20).toLocaleString() : sma20.toFixed(2)) : '-'}</td>
+          <td>${sma60 > 0 ? (asset.currency === 'KRW' ? Math.round(sma60).toLocaleString() : sma60.toFixed(2)) : '-'}</td>
+          <td>${sma120 > 0 ? (asset.currency === 'KRW' ? Math.round(sma120).toLocaleString() : sma120.toFixed(2)) : '-'}</td>
+          <td>${sma200 > 0 ? (asset.currency === 'KRW' ? Math.round(sma200).toLocaleString() : sma200.toFixed(2)) : '-'}</td>
+          <td>${bb ? (asset.currency === 'KRW' ? Math.round(bb.upper).toLocaleString() : bb.upper.toFixed(2)) : '-'}</td>
+          <td>${bb ? (asset.currency === 'KRW' ? Math.round(bb.lower).toLocaleString() : bb.lower.toFixed(2)) : '-'}</td>
           <td>${asset.currency === 'KRW' ? Math.round(wHigh).toLocaleString() : wHigh.toFixed(2)}</td>
           <td>${asset.currency === 'KRW' ? Math.round(wLow).toLocaleString() : wLow.toFixed(2)}</td>
         `;
@@ -2298,7 +2351,7 @@
       }
     }
 
-    // Technical Indicator Calculator Functions
+    // Technical Indicator Calculator Functions (Stock-Signal Standard Suite)
     function computeFullSMA(prices, period) {
       const N = prices.length;
       const res = new Float64Array(N);
@@ -2348,7 +2401,7 @@
       const res = new Array(N);
       for (let i = 0; i < N; i++) {
         if (i < period - 1) {
-          res[i] = { upper: prices[i], lower: prices[i], mid: prices[i] };
+          res[i] = { upper: prices[i], lower: prices[i], mid: prices[i], pctB: 0.5 };
           continue;
         }
         let sum = 0;
@@ -2357,7 +2410,11 @@
         let varSum = 0;
         for (let j = i - period + 1; j <= i; j++) varSum += Math.pow(prices[j] - mid, 2);
         const std = Math.sqrt(varSum / period);
-        res[i] = { upper: mid + k * std, lower: mid - k * std, mid: mid };
+        const upper = mid + k * std;
+        const lower = mid - k * std;
+        const bandWidth = upper - lower;
+        const pctB = bandWidth > 0 ? (prices[i] - lower) / bandWidth : 0.5;
+        res[i] = { upper, lower, mid, pctB };
       }
       return res;
     }
@@ -2387,26 +2444,98 @@
       return { macd, signal };
     }
 
+    function computeFullADX(prices, period = 14) {
+      const N = prices.length;
+      const tr = new Float64Array(N);
+      const dmP = new Float64Array(N);
+      const dmM = new Float64Array(N);
+
+      for (let i = 1; i < N; i++) {
+        const c = prices[i];
+        const pc = prices[i - 1];
+        const trVal = Math.abs(c - pc);
+        const diff = c - pc;
+        tr[i] = trVal;
+        dmP[i] = diff > 0 ? diff : 0;
+        dmM[i] = diff < 0 ? -diff : 0;
+      }
+
+      const alpha = 2.0 / (period + 1);
+      const trE = new Float64Array(N);
+      const dpE = new Float64Array(N);
+      const dmE = new Float64Array(N);
+      const pdi = new Float64Array(N);
+      const mdi = new Float64Array(N);
+      const adx = new Float64Array(N);
+
+      trE[1] = tr[1]; dpE[1] = dmP[1]; dmE[1] = dmM[1];
+      for (let i = 2; i < N; i++) {
+        trE[i] = tr[i] * alpha + trE[i - 1] * (1 - alpha);
+        dpE[i] = dmP[i] * alpha + dpE[i - 1] * (1 - alpha);
+        dmE[i] = dmM[i] * alpha + dmE[i - 1] * (1 - alpha);
+        pdi[i] = trE[i] > 0 ? (100 * dpE[i] / trE[i]) : 0;
+        mdi[i] = trE[i] > 0 ? (100 * dmE[i] / trE[i]) : 0;
+        const dx = (pdi[i] + mdi[i]) > 0 ? (100 * Math.abs(pdi[i] - mdi[i]) / (pdi[i] + mdi[i])) : 0;
+        adx[i] = adx[i - 1] > 0 ? (dx * alpha + adx[i - 1] * (1 - alpha)) : dx;
+      }
+      return { pdi, mdi, adx };
+    }
+
+    function computeFullStochastic(prices, period = 14, smoothK = 3, smoothD = 3) {
+      const N = prices.length;
+      const rawK = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        const start = Math.max(0, i - period + 1);
+        let minP = Infinity, maxP = -Infinity;
+        for (let j = start; j <= i; j++) {
+          if (prices[j] < minP) minP = prices[j];
+          if (prices[j] > maxP) maxP = prices[j];
+        }
+        const denom = maxP - minP;
+        rawK[i] = denom > 0 ? ((prices[i] - minP) / denom) * 100 : 50;
+      }
+      const stochK = computeFullSMA(rawK, smoothK);
+      const stochD = computeFullSMA(stochK, smoothD);
+      return { stochK, stochD };
+    }
+
     function exportDataToCSV() {
       const t = selectedDataTicker;
       const asset = etfDataset.universe[t];
       if (!asset || !asset.close) return;
 
-      let csv = "Date,Close,ChangePct,MDD,RSI14,SMA20,SMA60,SMA200\n";
+      let csv = "Date,Close,ChangePct,MDD,RSI14,BollingerPctB,Disparity20,ADX14,PlusDI,MinusDI,StochK,StochD,MACD,Signal,MACD_Osc,SMA5,SMA20,SMA60,SMA120,SMA200,BBUpper,BBLower,W52High,W52Low\n";
       const dates = etfDataset.dates;
       const closePrices = asset.close;
       const rsiArr = computeFullRSI(closePrices, 14);
+      const sma5Arr = computeFullSMA(closePrices, 5);
       const sma20Arr = computeFullSMA(closePrices, 20);
       const sma60Arr = computeFullSMA(closePrices, 60);
+      const sma120Arr = computeFullSMA(closePrices, 120);
       const sma200Arr = computeFullSMA(closePrices, 200);
+      const bbArr = computeFullBollinger(closePrices, 20, 2);
+      const macdObj = computeFullMACD(closePrices, 12, 26, 9);
+      const adxObj = computeFullADX(closePrices, 14);
+      const stochObj = computeFullStochastic(closePrices, 14, 3, 3);
 
       let peak = 0;
       for (let i = 0; i < dates.length; i++) {
-        if (closePrices[i] > peak) peak = closePrices[i];
-        const mdd = peak > 0 ? ((closePrices[i] - peak) / peak) * 100.0 : 0;
-        const prev = i > 0 ? closePrices[i - 1] : closePrices[i];
-        const chg = ((closePrices[i] - prev) / prev) * 100.0;
-        csv += `${dates[i]},${closePrices[i]},${chg.toFixed(2)},${mdd.toFixed(2)},${rsiArr[i].toFixed(1)},${sma20Arr[i].toFixed(2)},${sma60Arr[i].toFixed(2)},${sma200Arr[i].toFixed(2)}\n`;
+        const c = closePrices[i];
+        if (c > peak) peak = c;
+        const mdd = peak > 0 ? ((c - peak) / peak) * 100.0 : 0;
+        const prev = i > 0 ? closePrices[i - 1] : c;
+        const chg = ((c - prev) / prev) * 100.0;
+        const disp20 = sma20Arr[i] > 0 ? ((c / sma20Arr[i]) * 100).toFixed(2) : '';
+        const osc = macdObj.macd[i] - macdObj.signal[i];
+
+        const lookbackStart = Math.max(0, i - 252);
+        let wHigh = -Infinity, wLow = Infinity;
+        for (let k = lookbackStart; k <= i; k++) {
+          if (closePrices[k] > wHigh) wHigh = closePrices[k];
+          if (closePrices[k] < wLow) wLow = closePrices[k];
+        }
+
+        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${disp20},${adxObj.adx[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${stochObj.stochK[i].toFixed(2)},${stochObj.stochD[i].toFixed(2)},${macdObj.macd[i].toFixed(2)},${macdObj.signal[i].toFixed(2)},${osc.toFixed(2)},${sma5Arr[i].toFixed(2)},${sma20Arr[i].toFixed(2)},${sma60Arr[i].toFixed(2)},${sma120Arr[i].toFixed(2)},${sma200Arr[i].toFixed(2)},${bbArr[i].upper.toFixed(2)},${bbArr[i].lower.toFixed(2)},${wHigh.toFixed(2)},${wLow.toFixed(2)}\n`;
       }
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
