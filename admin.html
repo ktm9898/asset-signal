@@ -1192,8 +1192,6 @@
               <th>RSI(14)</th>
               <th>볼린저 %b</th>
               <th>MACD</th>
-              <th>Signal</th>
-              <th>Osc</th>
               <th>STOCH(K/D)</th>
               <th>이격도(20)</th>
             </tr>
@@ -3205,8 +3203,6 @@
           <td style="color: var(--emerald); font-weight: 600;">${pdi > 0 ? pdi.toFixed(1) : '-'}</td>
           <td><span class="${rsiClass}">${rsi.toFixed(1)}</span></td>
           <td>${bbPctHtml}</td>
-          <td style="color: ${macd >= 0 ? 'var(--emerald)' : 'var(--rose)'};">${macd.toFixed(2)}</td>
-          <td>${sig.toFixed(2)}</td>
           <td style="color: ${osc >= 0 ? 'var(--emerald)' : 'var(--rose)'}; font-weight: 600;">${osc.toFixed(2)}</td>
           <td style="font-weight: 600;">${stochK > 0 ? stochK.toFixed(1) : '-'}/${stochD > 0 ? stochD.toFixed(1) : '-'}</td>
           <td>${disp20}%</td>
@@ -3368,7 +3364,7 @@
       const asset = etfDataset.universe[t];
       if (!asset || !asset.close) return;
 
-      let csv = "Date,Close,ChangePct,MDD,ADX14,MinusDI,PlusDI,RSI14,BollingerPctB,MACD,Signal,MACD_Osc,StochK,StochD,Disparity20\n";
+      let csv = "Date,Close,ChangePct,MDD,ADX14,MinusDI,PlusDI,RSI14,BollingerPctB,MACD,StochK,StochD,Disparity20\n";
       const dates = etfDataset.dates;
       const closePrices = asset.close;
       const rsiArr = computeFullRSI(closePrices, 14);
@@ -3388,7 +3384,7 @@
         const disp20 = sma20Arr[i] > 0 ? ((c / sma20Arr[i]) * 100).toFixed(2) : '';
         const osc = macdObj.macd[i] - macdObj.signal[i];
 
-        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${adxObj.adx[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${macdObj.macd[i].toFixed(2)},${macdObj.signal[i].toFixed(2)},${osc.toFixed(2)},${stochObj.stochK[i].toFixed(2)},${stochObj.stochD[i].toFixed(2)},${disp20}\n`;
+        csv += `${dates[i]},${c.toFixed(2)},${chg.toFixed(2)},${mdd.toFixed(2)},${adxObj.adx[i].toFixed(2)},${adxObj.mdi[i].toFixed(2)},${adxObj.pdi[i].toFixed(2)},${rsiArr[i].toFixed(2)},${bbArr[i].pctB.toFixed(4)},${osc.toFixed(2)},${stochObj.stochK[i].toFixed(2)},${stochObj.stochD[i].toFixed(2)},${disp20}\n`;
       }
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
