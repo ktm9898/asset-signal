@@ -722,7 +722,7 @@
           <i class="fa-solid fa-circle-check"></i> <span id="heroStateText">기본 (정상 운용)</span>
         </div>
         <div class="hero-title" id="heroAdviceTitle">
-          기준지표 QQQ (낙폭 -3.3%) — 기본 비중 정상 운용
+          기준지표 나스닥 100 (낙폭 -3.3%) — 기본 비중 정상 운용
         </div>
         <div class="hero-desc" id="heroAdviceDesc">
           현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.
@@ -735,11 +735,11 @@
           <div class="stat-value" id="heroPrice">29,641.56</div>
         </div>
         <div class="hero-stat-box">
-          <div class="stat-label">낙폭 (MDD)</div>
+          <div class="stat-label">고점대비 낙폭</div>
           <div class="stat-value" id="heroMDD" style="color: var(--emerald);">-3.25%</div>
         </div>
         <div class="hero-stat-box">
-          <div class="stat-label" id="heroATHLabel">최고 지수</div>
+          <div class="stat-label" id="heroATHLabel">역대 최고치</div>
           <div class="stat-value" id="heroATH">30,634.20</div>
         </div>
       </div>
@@ -1056,7 +1056,7 @@
       const priceLbl = document.getElementById('heroPriceLabel');
       const athLbl = document.getElementById('heroATHLabel');
       if (priceLbl) priceLbl.textContent = isIndex ? '현재 지수' : '현재가';
-      if (athLbl) athLbl.textContent = isIndex ? '최고 지수' : '최고가';
+      if (athLbl) athLbl.textContent = isIndex ? '역대 최고치' : '최고가';
       
       const mddEl = document.getElementById('heroMDD');
       mddEl.textContent = `${mdd.toFixed(2)}%`;
