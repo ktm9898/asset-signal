@@ -1029,7 +1029,7 @@
       if (isDrop) actionDesc = '하락 대응 분할 편입';
       else if (isRecovery) actionDesc = '반등 분할 익절';
 
-      document.getElementById('heroAdviceTitle').textContent = `기준지표 ${liveSignalData.benchmark} (낙폭 ${mdd.toFixed(1)}%) — ${actionDesc}`;
+      document.getElementById('heroAdviceTitle').textContent = `기준지표 ${formatTickerDisplay(liveSignalData.benchmark)} (낙폭 ${mdd.toFixed(1)}%) — ${actionDesc}`;
       document.getElementById('heroAdviceDesc').textContent = liveSignalData.advice || "현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.";
 
       renderWeightsListAndDonut(liveSignalData.targetWeights, liveSignalData.currentWeights, liveSignalData.deltaWeights, liveSignalData.assetReturns);
@@ -1277,7 +1277,29 @@
         totalReturn = (totalValue - 1.0) * 100.0;
       }
 
-      const curMdd = (liveSignalData && liveSignalData.benchmarkMDD) ? liveSignalData.benchmarkMDD : -3.25;
+      // Calculate active benchmark price, ATH, and MDD from dataset
+      const bmTicker = activeStrat.benchmark || "^NDX";
+      let bmPrice = 721.11;
+      let bmATH = 745.34;
+      let bmMDD = -3.25;
+
+      const bmAsset = ds.universe[bmTicker] || ds.universe["^NDX"] || ds.universe["QQQ"];
+      if (bmAsset && bmAsset.close && bmAsset.close.length > 0) {
+        bmPrice = bmAsset.close[bmAsset.close.length - 1] || bmAsset.latestPrice || bmPrice;
+        bmATH = Math.max(...bmAsset.close);
+        if (bmATH > 0) {
+          bmMDD = ((bmPrice - bmATH) / bmATH) * 100.0;
+        }
+      }
+
+      if (liveSignalData) {
+        liveSignalData.benchmark = bmTicker;
+        liveSignalData.benchmarkPrice = bmPrice;
+        liveSignalData.benchmarkATH = bmATH;
+        liveSignalData.benchmarkMDD = bmMDD;
+      }
+
+      const curMdd = bmMDD;
       let targetWeights = {};
       Object.entries(baseWeights).forEach(([t, w]) => {
         targetWeights[t] = Math.round(w * 100);
