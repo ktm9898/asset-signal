@@ -58,7 +58,7 @@ def calculate_macd(series, fast=12, slow=26, signal=9):
     hist = macd - sig
     return macd, sig, hist
 
-def build_etf_dataset(start_date="2010-01-01", output_file="data/etf_history.json"):
+def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.json"):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     print(f"[INFO] Fetching historical data for {len(MARKET_UNIVERSE)} assets/indices from {start_date}...")
     
