@@ -1895,8 +1895,11 @@
     window.addEventListener('DOMContentLoaded', async () => {
       loadLocalSlots();
       renderSlotsNav();
+      populateCurrentSlotUI(); // Unfold left sidebar immediately on load with active slot data
+      
       await fetchEtfDataset();
       await fetchGoogleSheetSlots();
+      
       populateDataTickerDropdown();
       if (etfDataset && etfDataset.dates && etfDataset.dates.length > 0) {
         const startInput = document.getElementById('customStartDate');
@@ -1916,6 +1919,8 @@
         customStartStr = firstD;
         customEndStr = lastD;
       }
+      
+      populateCurrentSlotUI(); // Refresh left sidebar with confirmed GAS strategy data
       runInteractiveBacktest();
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -2028,10 +2033,12 @@
             if (data.activeSlotId) {
               activeSlotId = data.activeSlotId;
               localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
+              currentSlotId = activeSlotId;
             }
             saveLocalSlots();
             updateSavedSnapshots();
             renderSlotsNav();
+            populateCurrentSlotUI();
           }
         }
       } catch (err) {
@@ -2792,35 +2799,73 @@
       const numDays = dates.length;
       if (numDays === 0) return null;
 
-      const initialCapital = 100000000; // 1억원
-      const benchmarkTicker = s.benchmark || "^NDX";
+      const initialCapital = 100000000;
+      const hasBaseWeights = s && s.baseWeights && Object.keys(s.baseWeights).length > 0;
+      if (!hasBaseWeights) {
+        const emptyNAV = new Float64Array(numDays).fill(initialCapital);
+        const pNDX = etfDataset.universe["^NDX"] ? etfDataset.universe["^NDX"].adjClose.slice(startIndex, endIndex + 1) : new Array(numDays).fill(1.0);
+        const pGSPC = etfDataset.universe["^GSPC"] ? etfDataset.universe["^GSPC"].adjClose.slice(startIndex, endIndex + 1) : new Array(numDays).fill(1.0);
+        const pKS11 = etfDataset.universe["^KS11"] ? etfDataset.universe["^KS11"].adjClose.slice(startIndex, endIndex + 1) : new Array(numDays).fill(1.0);
+        
+        const bmNDX = new Float64Array(numDays);
+        const bmGSPC = new Float64Array(numDays);
+        const bmKS11 = new Float64Array(numDays);
+        for (let i = 0; i < numDays; i++) {
+          bmNDX[i] = pNDX[0] > 0 ? (pNDX[i] / pNDX[0]) * initialCapital : initialCapital;
+          bmGSPC[i] = pGSPC[0] > 0 ? (pGSPC[i] / pGSPC[0]) * initialCapital : initialCapital;
+          bmKS11[i] = pKS11[0] > 0 ? (pKS11[i] / pKS11[0]) * initialCapital : initialCapital;
+        }
+        const years = (new Date(dates[numDays - 1]) - new Date(dates[0])) / (365.25 * 24 * 3600 * 1000) || 1.0;
+        return {
+          isEmpty: true,
+          slotName: s.name || `전략 ${s.id}`,
+          slotId: s.id,
+          stratMetrics: {
+            totalReturnPct: "0.0",
+            cagrPct: "0.0",
+            mddPct: "0.0",
+            sharpe: "0.00",
+            sortino: "0.00",
+            finalNAV: initialCapital,
+            dds: new Float64Array(numDays)
+          },
+          ndxMetrics: computeMetrics(bmNDX, years),
+          gspcMetrics: computeMetrics(bmGSPC, years),
+          ks11Metrics: computeMetrics(bmKS11, years),
+          stratNAV: emptyNAV,
+          bmNDX,
+          bmGSPC,
+          bmKS11,
+          bmDrawdowns: new Float64Array(numDays),
+          dates,
+          years,
+          rebalanceEvents: [],
+          initialCapital
+        };
+      }
+
+      const normBase = normalizeWeights(s.baseWeights || {});
+      const holdings = {};
+      const feeRate = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate / 100 : s.feeRate) : 0.0015;
 
       const allTickers = new Set(Object.keys(s.baseWeights || {}));
-      allTickers.add(benchmarkTicker);
       (s.dropStages || []).forEach(stg => Object.keys(stg.weights || {}).forEach(t => allTickers.add(t)));
-      (s.recoveryStages || []).forEach(stg => Object.keys(stg.weights || {}).forEach(t => allTickers.add(t)));
-      ["^NDX", "^GSPC", "^KS11", "QQQ", "SPY"].forEach(t => { if (etfDataset.universe[t]) allTickers.add(t); });
+      ["^NDX", "^GSPC", "^KS11"].forEach(t => { if (etfDataset.universe[t]) allTickers.add(t); });
 
       const prices = {};
       allTickers.forEach(t => {
-        if (etfDataset.universe[t] && etfDataset.universe[t].adjClose) {
-          prices[t] = etfDataset.universe[t].adjClose.slice(startIndex, endIndex + 1);
-        } else {
-          prices[t] = new Array(numDays).fill(1.0);
-        }
+        prices[t] = etfDataset.universe[t] && etfDataset.universe[t].adjClose 
+          ? etfDataset.universe[t].adjClose.slice(startIndex, endIndex + 1) 
+          : new Array(numDays).fill(1.0);
       });
 
-      const bmPrices = prices[benchmarkTicker] || prices["^NDX"] || prices["QQQ"];
+      const bmPrices = prices[s.benchmark || "^NDX"] || prices["^NDX"] || prices["QQQ"] || new Array(numDays).fill(1.0);
       const bmDrawdowns = new Float64Array(numDays);
       let bmMax = 0;
       for (let i = 0; i < numDays; i++) {
         if (bmPrices[i] > bmMax) bmMax = bmPrices[i];
         bmDrawdowns[i] = bmMax > 0 ? ((bmPrices[i] - bmMax) / bmMax) * 100.0 : 0;
       }
-
-      const normBase = normalizeWeights(s.baseWeights || {});
-      const holdings = {};
-      const feeRate = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate / 100 : s.feeRate) : 0.0015;
 
       allTickers.forEach(t => {
         const w = normBase[t] || 0;
@@ -2829,121 +2874,88 @@
 
       const stratNAV = new Float64Array(numDays);
       const rebalanceEvents = [];
-      let currentStageIdx = -1; // -1: Base Normal State (기본), 0: 1차 하락, 1: 2차 하락...
+      let currentStageIdx = -1; 
       let lastRebalanceDay = 0;
       let lastRebalanceNAV = initialCapital;
 
-      const stages = [...(s.dropStages || [])].sort((a, b) => b.threshold - a.threshold); // e.g. -15%, -25%, -35%
+      const stages = [...(s.dropStages || [])].sort((a, b) => a.threshold - b.threshold);
 
       for (let day = 0; day < numDays; day++) {
         let currentNAV = 0;
-        allTickers.forEach(t => {
-          currentNAV += holdings[t] * prices[t][day];
-        });
+        allTickers.forEach(t => { currentNAV += holdings[t] * prices[t][day]; });
         stratNAV[day] = currentNAV;
 
         const currentBM_DD = bmDrawdowns[day];
-
         let targetWeights = null;
         let triggerReason = null;
         let nextStageIdx = currentStageIdx;
-        const daysSinceRebal = day - lastRebalanceDay;
 
         if (stages.length > 0) {
           if (currentStageIdx < 0) {
-            // In Base State: Check if market falls below any drop threshold
             let deepestIdx = -1;
             for (let i = 0; i < stages.length; i++) {
-              if (currentBM_DD <= stages[i].threshold) {
-                deepestIdx = i;
-              }
+              if (currentBM_DD <= stages[i].threshold) deepestIdx = i;
             }
             if (deepestIdx >= 0) {
               nextStageIdx = deepestIdx;
               targetWeights = normalizeWeights(stages[deepestIdx].weights);
-              triggerReason = `[낙폭 도달] ${currentBM_DD.toFixed(1)}% (${stages[deepestIdx].name || (deepestIdx + 1) + '차 하락'} 진입)`;
+              triggerReason = `[낙폭 진입] ${currentBM_DD.toFixed(1)}% (${stages[deepestIdx].name || (deepestIdx + 1) + '차 하락'})`;
             }
           } else {
-            // Already in a stage:
-            // 1. Check if market drops deeper (하향 돌파)
             let deeperIdx = currentStageIdx;
             for (let i = currentStageIdx + 1; i < stages.length; i++) {
-              if (currentBM_DD <= stages[i].threshold) {
-                deeperIdx = i;
-              }
+              if (currentBM_DD <= stages[i].threshold) deeperIdx = i;
             }
             if (deeperIdx > currentStageIdx) {
               nextStageIdx = deeperIdx;
               targetWeights = normalizeWeights(stages[deeperIdx].weights);
-              triggerReason = `[낙폭 심화] ${currentBM_DD.toFixed(1)}% (${stages[deeperIdx].name || (deeperIdx + 1) + '차 하락'} 진입)`;
+              triggerReason = `[추가 낙폭] ${currentBM_DD.toFixed(1)}% (${stages[deeperIdx].name || (deeperIdx + 1) + '차 하락'} 추가 진입)`;
             } else {
-              // 2. Check if market rebounds above previous stage threshold (상향 돌파)
-              const upperBarrier = currentStageIdx === 0 ? 0.0 : stages[currentStageIdx - 1].threshold;
-              if (currentBM_DD >= upperBarrier) {
-                nextStageIdx = currentStageIdx - 1;
-                if (nextStageIdx < 0) {
-                  targetWeights = normalizeWeights(s.baseWeights);
-                  triggerReason = `[고점 복귀] 0.0% (기본 비중 원복)`;
-                } else {
-                  targetWeights = normalizeWeights(stages[nextStageIdx].weights);
-                  triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% (${stages[nextStageIdx].name || (nextStageIdx + 1) + '차 하락'} 복귀)`;
-                }
+              const gainPct = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0;
+              const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
+              const isATH = currentBM_DD >= -0.5;
+              const isTakeProfit = currentGain >= gainPct;
+              if (isATH || isTakeProfit) {
+                nextStageIdx = -1;
+                targetWeights = normBase;
+                triggerReason = isATH ? `[전고점 회복] ${currentBM_DD.toFixed(1)}% (기본 비중 전량 원복)` : `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 안전 원복)`;
               }
             }
           }
         }
 
-        // 3. Check Gain Rebalance (Only in Base Normal State)
-        if (!targetWeights && currentStageIdx < 0 && daysSinceRebal >= 20) {
-          const navGainPct = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
-          if (s.gainThresholdPct > 0 && navGainPct >= s.gainThresholdPct) {
-            targetWeights = normalizeWeights(s.baseWeights);
-            triggerReason = `[이익실현] +${navGainPct.toFixed(1)}%`;
-          }
-        }
-
-        // Execute Rebalance
-        if (targetWeights) {
-          let tradeVol = 0.0;
+        if (targetWeights && nextStageIdx !== currentStageIdx) {
+          const totalVal = currentNAV;
           allTickers.forEach(t => {
-            const oldVal = holdings[t] * prices[t][day];
-            const newVal = currentNAV * (targetWeights[t] || 0);
-            tradeVol += Math.abs(newVal - oldVal);
+            const tw = targetWeights[t] || 0;
+            const targetVal = totalVal * tw;
+            const p = prices[t][day];
+            if (p > 0) {
+              const curVal = holdings[t] * p;
+              const tradeVal = Math.abs(targetVal - curVal);
+              const fee = tradeVal * feeRate;
+              holdings[t] = (targetVal - fee) / p;
+            } else {
+              holdings[t] = 0;
+            }
           });
-
-          const feeCost = (tradeVol / 2.0) * feeRate;
-          const netNAV = currentNAV - feeCost;
-
-          allTickers.forEach(t => {
-            const tgtVal = netNAV * (targetWeights[t] || 0);
-            holdings[t] = prices[t][day] > 0 ? tgtVal / prices[t][day] : 0;
-          });
-
+          let postNAV = 0;
+          allTickers.forEach(t => { postNAV += holdings[t] * prices[t][day]; });
+          stratNAV[day] = postNAV;
+          let stateName = nextStageIdx >= 0 && stages[nextStageIdx] ? (stages[nextStageIdx].name || `${nextStageIdx + 1}차 하락`) : '기본 (정상 운용)';
+          rebalanceEvents.push({ date: dates[day], dayIndex: day, reason: triggerReason, state: stateName, benchmarkDD: currentBM_DD.toFixed(2), nav: Math.round(postNAV), weights: targetWeights });
           currentStageIdx = nextStageIdx;
           lastRebalanceDay = day;
-          lastRebalanceNAV = netNAV;
-          const stateName = currentStageIdx < 0 ? "기본 (정상 운용)" : (stages[currentStageIdx].name || `${currentStageIdx + 1}차 단계`);
-
-          rebalanceEvents.push({
-            date: dates[day],
-            reason: triggerReason,
-            state: stateName,
-            benchmarkDD: currentBM_DD.toFixed(1),
-            nav: Math.round(netNAV),
-            weights: Object.fromEntries(Object.entries(targetWeights).map(([k, v]) => [formatTickerDisplay(k), Math.round(v * 100)]))
-          });
+          lastRebalanceNAV = postNAV;
         }
       }
 
-      // Benchmarks Series (Major Market Indices Only: NDX, GSPC, KS11)
+      const pNDX = prices["^NDX"] || prices["QQQ"] || new Array(numDays).fill(1.0);
+      const pGSPC = prices["^GSPC"] || prices["SPY"] || new Array(numDays).fill(1.0);
+      const pKS11 = prices["^KS11"] || new Array(numDays).fill(1.0);
       const bmNDX = new Float64Array(numDays);
       const bmGSPC = new Float64Array(numDays);
       const bmKS11 = new Float64Array(numDays);
-
-      const pNDX = prices["^NDX"] || prices["QQQ"];
-      const pGSPC = prices["^GSPC"] || prices["SPY"];
-      const pKS11 = prices["^KS11"] || prices["069500.KS"];
-
       for (let i = 0; i < numDays; i++) {
         bmNDX[i] = pNDX[0] > 0 ? (pNDX[i] / pNDX[0]) * initialCapital : initialCapital;
         bmGSPC[i] = pGSPC[0] > 0 ? (pGSPC[i] / pGSPC[0]) * initialCapital : initialCapital;
@@ -2951,16 +2963,12 @@
       }
 
       const years = (new Date(dates[numDays - 1]) - new Date(dates[0])) / (365.25 * 24 * 3600 * 1000) || 1.0;
-      const stratMetrics = computeMetrics(stratNAV, years);
-      const ndxMetrics = computeMetrics(bmNDX, years);
-      const gspcMetrics = computeMetrics(bmGSPC, years);
-      const ks11Metrics = computeMetrics(bmKS11, years);
-
       return {
-        stratMetrics,
-        ndxMetrics,
-        gspcMetrics,
-        ks11Metrics,
+        isEmpty: false,
+        stratMetrics: computeMetrics(stratNAV, years),
+        ndxMetrics: computeMetrics(bmNDX, years),
+        gspcMetrics: computeMetrics(bmGSPC, years),
+        ks11Metrics: computeMetrics(bmKS11, years),
         stratNAV,
         bmNDX,
         bmGSPC,
@@ -2980,9 +2988,9 @@
 
       lastBacktestResult = res;
 
-      updateMetricsUI(res.stratMetrics, res.years, res.rebalanceEvents.length, res.initialCapital);
-      updateBenchmarkTableUI(res.stratMetrics, res.ndxMetrics, res.gspcMetrics, res.ks11Metrics);
-      updateRebalanceEventsUI(res.rebalanceEvents);
+      updateMetricsUI(res.stratMetrics, res.years, res.rebalanceEvents.length, res.initialCapital, res.isEmpty);
+      updateBenchmarkTableUI(res.stratMetrics, res.ndxMetrics, res.gspcMetrics, res.ks11Metrics, res.isEmpty);
+      updateRebalanceEventsUI(res.rebalanceEvents, res.isEmpty, s ? s.id : 1);
       renderChart();
       if (showToastMsg) showToast("백테스트 계산 및 차트 갱신이 완료되었습니다!");
     }
@@ -2997,7 +3005,7 @@
           sum += num;
         }
       });
-      if (sum <= 0) return { "QQQ": 1.0 };
+      if (sum <= 0) return {};
       const res = {};
       Object.keys(clean).forEach(k => res[k] = clean[k] / sum);
       return res;
@@ -3044,7 +3052,19 @@
       };
     }
 
-    function updateMetricsUI(m, years, rebalCount, initCap) {
+    function updateMetricsUI(m, years, rebalCount, initCap, isEmpty = false) {
+      if (isEmpty) {
+        document.getElementById('mTotalReturn').textContent = `0.0% (비중 미설정)`;
+        document.getElementById('mInitialToFinal').textContent = `${formatKRW(initCap)} → ${formatKRW(initCap)}`;
+        document.getElementById('mCAGR').textContent = `0.0%`;
+        document.getElementById('mYears').textContent = `${years.toFixed(1)}년 시뮬레이션`;
+        document.getElementById('mMDD').textContent = `0.0%`;
+        document.getElementById('mSharpe').textContent = `0.00`;
+        document.getElementById('mSortino').textContent = `Sortino: 0.00`;
+        document.getElementById('mRebalanceCount').textContent = `0회`;
+        document.getElementById('mRebalanceAnnual').textContent = `연평균 0.0회`;
+        return;
+      }
       document.getElementById('mTotalReturn').textContent = `+${m.totalReturnPct}%`;
       document.getElementById('mInitialToFinal').textContent = `${formatKRW(initCap)} → ${formatKRW(m.finalNAV)}`;
       document.getElementById('mCAGR').textContent = `${m.cagrPct}%`;
@@ -3056,16 +3076,16 @@
       document.getElementById('mRebalanceAnnual').textContent = `연평균 ${(rebalCount / years).toFixed(1)}회`;
     }
 
-    function updateBenchmarkTableUI(strat, ndx, gspc, ks11) {
+    function updateBenchmarkTableUI(strat, ndx, gspc, ks11, isEmpty = false) {
       const tbody = document.getElementById('bmTableBody');
       tbody.innerHTML = `
         <tr class="row-highlight">
           <td style="white-space: nowrap; text-align: center;"><i class="fa-solid fa-star text-primary"></i> <strong>전략지수</strong></td>
-          <td style="white-space: nowrap; text-align: center;">+${strat.totalReturnPct}%</td>
-          <td style="white-space: nowrap; text-align: center;">${strat.cagrPct}%</td>
-          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-weight: 700;">${strat.mddPct}%</td>
-          <td style="white-space: nowrap; text-align: center;">${strat.sharpe}</td>
-          <td style="white-space: nowrap; text-align: center;">${strat.sortino}</td>
+          <td style="white-space: nowrap; text-align: center;">${isEmpty ? '0.0% (미설정)' : '+' + strat.totalReturnPct + '%'}</td>
+          <td style="white-space: nowrap; text-align: center;">${isEmpty ? '0.0%' : strat.cagrPct + '%'}</td>
+          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-weight: 700;">${isEmpty ? '0.0%' : strat.mddPct + '%'}</td>
+          <td style="white-space: nowrap; text-align: center;">${isEmpty ? '0.00' : strat.sharpe}</td>
+          <td style="white-space: nowrap; text-align: center;">${isEmpty ? '0.00' : strat.sortino}</td>
         </tr>
         <tr>
           <td style="white-space: nowrap; text-align: center; font-weight: 600;">나스닥 100</td>
@@ -3094,10 +3114,15 @@
       `;
     }
 
-    function updateRebalanceEventsUI(events) {
+    function updateRebalanceEventsUI(events, isEmpty = false, slotId = 1) {
       document.getElementById('rebalanceCountText').textContent = `총 ${events.length}건 (기간 전체)`;
       const tbody = document.getElementById('rebalanceTableBody');
       tbody.innerHTML = '';
+
+      if (isEmpty) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 16px;">전략 #${slotId}에 설정된 기본 자산 비중이 없습니다. 왼쪽 패널에서 '기본 자산 비중'을 추가해주세요.</td></tr>`;
+        return;
+      }
 
       if (events.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 16px;">해당 기간 내 리밸런싱 이력이 없습니다.</td></tr>';
