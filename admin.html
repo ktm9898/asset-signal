@@ -1172,6 +1172,20 @@
         font-size: 13px !important;
       }
 
+      .chart-tab .chart-tab-text,
+      .chart-tab .nav-text {
+        display: none !important;
+      }
+      .chart-tab {
+        padding: 5px 8px !important;
+        font-size: 13px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 30px !important;
+        height: 30px !important;
+      }
+
     }
   </style>
 </head>
@@ -1350,10 +1364,10 @@
                 </div>
                 <div class="chart-tabs" style="display: flex; align-items: center; gap: 4px;">
                   <button class="chart-tab active" id="chartTabBtnNav" onclick="switchChartTab('nav')" title="자산 성장 곡선">
-                    <i class="fa-solid fa-chart-line"></i> <span class="nav-text">자산 성장 곡선</span>
+                    <i class="fa-solid fa-chart-line"></i> <span class="chart-tab-text">성장 곡선</span>
                   </button>
                   <button class="chart-tab" id="chartTabBtnDd" onclick="switchChartTab('drawdown')" title="고점 대비 낙폭">
-                    <i class="fa-solid fa-chart-area"></i> <span class="nav-text">고점 대비 낙폭</span>
+                    <i class="fa-solid fa-chart-area"></i> <span class="chart-tab-text">낙폭(MDD)</span>
                   </button>
                   <button class="chart-tab" onclick="openFullscreenChartModal()" title="전체화면 확대">
                     <i class="fa-solid fa-expand"></i>
@@ -1763,8 +1777,12 @@
       <!-- Right: Chart Tabs & Close Button -->
       <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
         <div class="chart-tabs" style="display:flex; gap:4px;">
-          <button class="chart-tab active" id="fsChartTabBtnNav" onclick="switchFsChartTab('nav')">성장 곡선</button>
-          <button class="chart-tab" id="fsChartTabBtnDd" onclick="switchFsChartTab('drawdown')">낙폭(MDD)</button>
+          <button class="chart-tab active" id="fsChartTabBtnNav" onclick="switchFsChartTab('nav')" title="자산 성장 곡선">
+            <i class="fa-solid fa-chart-line"></i> <span class="chart-tab-text">성장 곡선</span>
+          </button>
+          <button class="chart-tab" id="fsChartTabBtnDd" onclick="switchFsChartTab('drawdown')" title="고점 대비 낙폭">
+            <i class="fa-solid fa-chart-area"></i> <span class="chart-tab-text">낙폭(MDD)</span>
+          </button>
         </div>
         <button onclick="closeFullscreenChartModal()" style="background:#1e293b; color:#ffffff; border:none; border-radius:6px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(0,0,0,0.15); flex-shrink:0;">
           <i class="fa-solid fa-xmark"></i> 닫기
