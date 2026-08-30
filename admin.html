@@ -3611,8 +3611,10 @@
       if (!modal) return;
       const isMobilePortrait = (window.innerWidth <= 768 && window.innerHeight > window.innerWidth);
       if (isMobilePortrait) {
-        const screenW = window.innerWidth;
-        const screenH = window.innerHeight;
+        // visualViewport is more stable than innerWidth/Height on Android Chrome
+        const vv = window.visualViewport;
+        const screenW = Math.round(vv ? vv.width  : window.innerWidth);
+        const screenH = Math.round(vv ? vv.height : window.innerHeight);
         modal.style.position = 'fixed';
         modal.style.top = '0px';
         modal.style.left = '0px';
@@ -3727,8 +3729,11 @@
       const isMobilePortrait = (window.innerWidth <= 768 && window.innerHeight > window.innerWidth);
       if (isMobilePortrait) {
         // Mobile rotated: canvas must be exact pixels because CSS transform rotates the element
-        const targetWidth = Math.floor(window.innerHeight - 20);
-        const targetHeight = Math.floor(window.innerWidth - 52);
+        const vv = window.visualViewport;
+        const screenW = Math.round(vv ? vv.width  : window.innerWidth);
+        const screenH = Math.round(vv ? vv.height : window.innerHeight);
+        const targetWidth  = screenH - 20;   // modal width(=screenH) minus left+right padding
+        const targetHeight = screenW - 52;   // modal height(=screenW) minus header+top+bottom padding
         fullCanvas.width = targetWidth;
         fullCanvas.height = targetHeight;
         fullCanvas.style.width = targetWidth + 'px';
