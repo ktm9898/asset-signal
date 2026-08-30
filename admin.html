@@ -391,6 +391,8 @@
       font-size: 13px;
       transition: var(--transition);
       outline: none;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .form-input:focus, .form-select:focus {
@@ -3642,9 +3644,13 @@
     function openFullscreenChartModal() {
       const modal = document.getElementById('chart-landscape-modal');
       if (!modal) return;
+      window.scrollTo(0, 0); // Reset viewport scroll to prevent fixed modal shift
       applyModalLandscapeLayout();
       openModalWithHistory(modal);
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.height = '100%';
+      document.documentElement.style.height = '100%';
 
       const cur = getCurrentSlot();
       const titleEl = document.getElementById('fullscreenChartTitle');
@@ -3684,6 +3690,9 @@
       const modal = document.getElementById('chart-landscape-modal');
       if (modal) closeModalWithHistory(modal);
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.height = '';
+      document.documentElement.style.height = '';
 
       const fullCanvas = document.getElementById('fullscreenBacktestChart');
       if (fullCanvas && fullCanvas._touchHandler) {
@@ -3852,8 +3861,8 @@
           options: baseChartOptions
         });
       } else {
-        const stratDD = Array.from(lastBacktestResult.stratDD).filter((_, i) => i % step === 0);
-        const bmDD = Array.from(lastBacktestResult.bmNDX_DD).filter((_, i) => i % step === 0);
+        const stratDD = Array.from(lastBacktestResult.stratMetrics.dds).filter((_, i) => i % step === 0);
+        const bmDD = Array.from(lastBacktestResult.bmDrawdowns).filter((_, i) => i % step === 0);
 
         fullscreenChartInstance = new Chart(fullCanvas.getContext('2d'), {
           type: 'line',
@@ -3877,16 +3886,18 @@
       if (!isPortrait) return;
 
       function handleRotatedTouch(e) {
-        if (!fullscreenChartInstance) return;
+        if (!fullscreenChartInstance || !fullscreenChartInstance.chartArea) return;
         const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : e);
         if (!touch) return;
         if (e.cancelable && e.type && e.type.startsWith('touch')) e.preventDefault();
 
+        const chartArea = fullscreenChartInstance.chartArea;
         const totalPoints = fullscreenChartInstance.data.labels ? fullscreenChartInstance.data.labels.length : 0;
         if (totalPoints === 0) return;
 
-        const screenH = window.innerHeight || 800;
-        const ratio = (touch.clientY - 20) / Math.max(1, screenH - 40);
+        const rect = fullCanvas.getBoundingClientRect();
+        const canvasLocalX = touch.clientY - rect.top;
+        const ratio = (canvasLocalX - chartArea.left) / Math.max(1, chartArea.right - chartArea.left);
         const clampedRatio = Math.max(0, Math.min(1, ratio));
         const dataIndex = Math.min(totalPoints - 1, Math.max(0, Math.round(clampedRatio * (totalPoints - 1))));
 
