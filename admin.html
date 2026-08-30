@@ -1172,24 +1172,6 @@
         font-size: 13px !important;
       }
 
-      @media (orientation: portrait) {
-        #chart-landscape-modal {
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          width: 100vh !important;
-          height: 100vw !important;
-          transform-origin: top left !important;
-          transform: rotate(90deg) translateY(-100vw) !important;
-          overflow: hidden !important;
-          z-index: 99999 !important;
-          display: none;
-          flex-direction: column !important;
-          background: #ffffff !important;
-          padding: 8px 12px !important;
-          box-sizing: border-box !important;
-        }
-      }
     }
   </style>
 </head>
@@ -1768,7 +1750,7 @@
   </div>
 
   <!-- Fullscreen Landscape Chart Modal (Stock-Signal Standard Mobile & Desktop) -->
-  <div id="chart-landscape-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#ffffff; z-index:99999; flex-direction:column; padding:8px 12px; box-sizing:border-box;">
+  <div id="chart-landscape-modal" class="modal-overlay" style="display:none; background:#ffffff; z-index:99999; flex-direction:column; padding:8px 12px; box-sizing:border-box;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid var(--border-color); padding-bottom:6px; gap:8px; flex-wrap:nowrap;">
       <div style="display:flex; align-items:center; gap:8px; overflow-x:auto; flex:1; min-width:0; scrollbar-width:none;">
         <span style="font-weight:800; font-size:13px; color:var(--text-main); white-space:nowrap; flex-shrink:0;">
@@ -3600,9 +3582,39 @@
     // ==========================================
     let fullscreenChartInstance = null;
 
+    function applyModalLandscapeLayout() {
+      const modal = document.getElementById('chart-landscape-modal');
+      if (!modal) return;
+      const isMobilePortrait = (window.innerWidth <= 768 && window.innerHeight > window.innerWidth);
+      if (isMobilePortrait) {
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+        modal.style.position = 'fixed';
+        modal.style.top = '0px';
+        modal.style.left = '0px';
+        modal.style.width = screenH + 'px';
+        modal.style.height = screenW + 'px';
+        modal.style.transformOrigin = 'top left';
+        modal.style.transform = `rotate(90deg) translateY(-${screenW}px)`;
+        modal.style.zIndex = '99999';
+        modal.style.overflow = 'hidden';
+        modal.style.background = '#ffffff';
+      } else {
+        modal.style.position = 'fixed';
+        modal.style.top = '0px';
+        modal.style.left = '0px';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.transform = 'none';
+        modal.style.zIndex = '99999';
+        modal.style.background = '#ffffff';
+      }
+    }
+
     function openFullscreenChartModal() {
       const modal = document.getElementById('chart-landscape-modal');
       if (!modal) return;
+      applyModalLandscapeLayout();
       openModalWithHistory(modal);
       document.body.style.overflow = 'hidden';
 
@@ -3621,6 +3633,24 @@
       
       setTimeout(renderFullscreenChart, 60);
     }
+
+    window.addEventListener('resize', () => {
+      const modal = document.getElementById('chart-landscape-modal');
+      if (modal && modal.style.display === 'flex') {
+        applyModalLandscapeLayout();
+        renderFullscreenChart();
+      }
+    });
+
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => {
+        const modal = document.getElementById('chart-landscape-modal');
+        if (modal && modal.style.display === 'flex') {
+          applyModalLandscapeLayout();
+          renderFullscreenChart();
+        }
+      }, 200);
+    });
 
     function closeFullscreenChartModal() {
       const modal = document.getElementById('chart-landscape-modal');
