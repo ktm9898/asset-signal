@@ -52,15 +52,8 @@
     }
 
     html {
-      overflow-y: scroll;
-      scrollbar-gutter: stable;
-      overscroll-behavior: none;
-      overscroll-behavior-y: none;
-    }
-
-    body {
-      overscroll-behavior: none;
-      overscroll-behavior-y: none;
+      overflow-x: hidden;
+      overscroll-behavior-y: contain;
     }
 
     * {
@@ -77,6 +70,10 @@
       display: flex;
       flex-direction: column;
       line-height: 1.5;
+      overflow-x: hidden;
+      width: 100%;
+      overscroll-behavior-y: contain;
+      padding-bottom: 80px;
     }
 
     /* Top Header */
@@ -680,6 +677,7 @@
       position: relative;
       height: 400px;
       width: 100%;
+      touch-action: pan-y;
     }
 
     .data-control-bar {
@@ -936,7 +934,7 @@
     @media (max-width: 768px) {
       body {
         overflow-x: hidden;
-        width: 100vw;
+        width: 100%;
       }
 
       .header-inner {
@@ -972,12 +970,19 @@
       }
       
       .container {
-        padding: 6px 10px 60px;
+        padding: 6px 10px 90px;
         margin: 4px auto;
         gap: 10px;
         width: 100%;
-        max-width: 100vw;
-        overflow-x: hidden;
+        max-width: 100%;
+      }
+
+      .chart-canvas-container {
+        height: 250px !important;
+        touch-action: pan-y !important;
+      }
+      #backtestChart {
+        touch-action: pan-y !important;
       }
 
       .slots-wrapper {

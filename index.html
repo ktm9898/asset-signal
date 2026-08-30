@@ -51,15 +51,8 @@
     }
 
     html {
-      overflow-y: scroll;
-      scrollbar-gutter: stable;
-      overscroll-behavior: none;
-      overscroll-behavior-y: none;
-    }
-
-    body {
-      overscroll-behavior: none;
-      overscroll-behavior-y: none;
+      overflow-x: hidden;
+      overscroll-behavior-y: contain;
     }
 
     * {
@@ -76,6 +69,10 @@
       display: flex;
       flex-direction: column;
       line-height: 1.5;
+      overflow-x: hidden;
+      width: 100%;
+      overscroll-behavior-y: contain;
+      padding-bottom: 80px;
     }
 
     /* Top Navigation Bar */
@@ -683,7 +680,7 @@
     @media (max-width: 768px) {
       body {
         overflow-x: hidden;
-        width: 100vw;
+        width: 100%;
       }
       .header-inner {
         padding: 0 14px;
@@ -715,12 +712,11 @@
         display: none !important;
       }
       .container {
-        padding: 8px 12px 60px;
+        padding: 8px 12px 90px;
         margin: 6px auto;
         gap: 12px;
         width: 100%;
-        max-width: 100vw;
-        overflow-x: hidden;
+        max-width: 100%;
       }
       .hero-banner {
         padding: 16px 18px;
