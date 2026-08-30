@@ -313,32 +313,41 @@ function doPost(e) {
       const sig = data.signal || {};
       const nowStr = Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd HH:mm:ss");
       
+      let prevState = "";
       if (sheet.getLastRow() > 1) {
+        prevState = String(sheet.getRange(2, 6).getValue() || "").trim();
         sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
       }
       
+      const curState = String(sig.currentState || "기본 (정상 운용)").trim();
+      const hasDelta = sig.deltaWeights && Object.keys(sig.deltaWeights).length > 0;
+      const isStateChanged = prevState && prevState !== curState;
+      const isSpecialState = !curState.includes("평시") && !curState.includes("정상");
+
       sheet.getRange(2, 1, 1, 10).setValues([[
         sig.date || Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd"),
         sig.benchmark || "QQQ",
         sig.benchmarkPrice || 0,
         sig.benchmarkATH || 0,
         sig.benchmarkMDD || 0,
-        sig.currentState || "평시 (Normal)",
+        curState,
         JSON.stringify(sig.targetWeights || {}),
         JSON.stringify(sig.deltaWeights || {}),
         sig.advice || "",
         nowStr
       ]]);
 
-      // Append to Execution Logs
-      const logSheet = ss.getSheetByName("Execution_Logs");
-      logSheet.appendRow([
-        nowStr,
-        "SUCCESS",
-        sig.benchmarkMDD || 0,
-        sig.currentState || "평시 (Normal)",
-        sig.advice || "일일 포트폴리오 신호 갱신 완료"
-      ]);
+      // Only append to Execution_Logs when an actual signal/rebalance occurs (state change or drop stage entered)
+      if (isStateChanged || isSpecialState || hasDelta) {
+        const logSheet = ss.getSheetByName("Execution_Logs");
+        logSheet.appendRow([
+          nowStr,
+          "신호발생",
+          sig.benchmarkMDD || 0,
+          curState,
+          sig.advice || "포트폴리오 리밸런싱 신호 발생"
+        ]);
+      }
 
       return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success" }))
         .setMimeType(ContentService.MimeType.JSON);

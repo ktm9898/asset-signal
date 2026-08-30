@@ -845,7 +845,7 @@
 
       <!-- Top Navigation: 새로고침, 대시보드, 백테스트, 데이터조회 -->
       <div class="header-actions">
-        <button class="nav-btn" onclick="triggerManualScreening()" title="새로고침">
+        <button class="nav-btn" id="refreshNavBtn" onclick="triggerManualScreening()" title="새로고침">
           <i class="fa-solid fa-arrows-rotate"></i> <span class="nav-text">새로고침</span>
         </button>
         <a href="index.html" class="nav-btn btn-primary" title="실전 대시보드">
@@ -1509,17 +1509,77 @@
       }
     }
 
+    async function triggerManualScreening() {
+      const btn = document.getElementById('refreshNavBtn');
+      const icon = btn ? btn.querySelector('i') : null;
+      if (icon) icon.classList.add('fa-spin');
+      if (btn) btn.disabled = true;
+
+      showToast("데이터를 새로고침하는 중입니다...");
+
+      try {
+        await fetchLiveDashboardData();
+        showToast("대시보드 데이터가 최신 상태로 갱신되었습니다!");
+      } catch (err) {
+        showToast("데이터 새로고침 실패");
+      } finally {
+        if (icon) icon.classList.remove('fa-spin');
+        if (btn) btn.disabled = false;
+      }
+    }
+
     function renderHistoryLogs(logs) {
       const tbody = document.getElementById('historyTableBody');
       tbody.innerHTML = '';
 
-      logs.slice(0, 10).forEach(l => {
+      if (!logs || !Array.isArray(logs) || logs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 28px 16px; font-size: 13px;">
+              <i class="fa-solid fa-circle-check text-emerald" style="margin-right: 6px;"></i> 현재까지 발생한 리밸런싱 및 국면 전환 신호가 없습니다. (정상 운용 중)
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      // Filter to meaningful signal events (exclude routine heartbeat logs without weight/regime change)
+      const signalLogs = logs.filter(l => {
+        const state = String(l.CurrentState || '').trim();
+        const msg = String(l.Message || l.Advice || '').trim();
+        const status = String(l.Status || '').trim();
+        
+        const isSpecialState = state && !state.includes('평시') && !state.includes('기본 (정상');
+        const isSignalStatus = status === '신호발생' || status === 'REBALANCE';
+        const hasWeightAction = msg.includes('매수') || msg.includes('매도') || msg.includes('리밸런싱');
+        
+        return isSpecialState || isSignalStatus || hasWeightAction;
+      });
+
+      if (signalLogs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 28px 16px; font-size: 13px;">
+              <i class="fa-solid fa-circle-check text-emerald" style="margin-right: 6px;"></i> 현재까지 발생한 리밸런싱 및 국면 전환 신호가 없습니다. (정상 운용 중)
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      signalLogs.slice(0, 10).forEach(l => {
         let stateStr = l.CurrentState || '기본';
         if (stateStr.includes("평시")) stateStr = "기본 (정상 운용)";
+        const isDrop = stateStr.includes('하락');
+        const isRec = stateStr.includes('복귀') || stateStr.includes('반등');
+        const badgeBg = isDrop ? '#fee2e2' : (isRec ? '#dbeafe' : '#dcfce7');
+        const badgeColor = isDrop ? '#dc2626' : (isRec ? '#2563eb' : '#059669');
+        const badgeBorder = isDrop ? '#fca5a5' : (isRec ? '#93c5fd' : '#bbf7d0');
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${l.Timestamp || '-'}</td>
-          <td><span class="brand-badge" style="font-size: 11px; background: #dcfce7; color: #059669; border: 1px solid #bbf7d0;">${stateStr}</span></td>
+          <td><span class="brand-badge" style="font-size: 11px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder};">${stateStr}</span></td>
           <td style="color: var(--rose); font-family: 'Outfit', sans-serif; font-weight: 700;">${l.BenchmarkMDD || 0}%</td>
           <td style="font-size: 12px; color: var(--primary); font-weight: 700;">${l.TargetWeights ? JSON.stringify(l.TargetWeights).replace(/"/g, '').replace(/\{|\}/g, '') : '-'}</td>
           <td style="font-size: 12px; color: var(--text-muted); text-align: left;">${l.Message || l.Advice || ''}</td>
