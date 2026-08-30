@@ -1936,9 +1936,17 @@
     // Initialization
     // ==========================================
     window.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDataView = (urlParams.get('view') === 'data' || window.location.hash === '#data');
+
       loadLocalSlots();
       renderSlotsNav();
       populateCurrentSlotUI(); // Unfold left sidebar immediately on load with active slot data
+
+      // Instant 0ms view switch before any network fetch
+      if (isDataView) {
+        switchMainView('data');
+      }
       
       await fetchEtfDataset();
       await fetchGoogleSheetSlots();
@@ -1963,12 +1971,12 @@
         customEndStr = lastD;
       }
       
-      populateCurrentSlotUI(); // Refresh left sidebar with confirmed GAS strategy data
-      runInteractiveBacktest();
-
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('view') === 'data') {
+      if (isDataView) {
         switchMainView('data');
+        renderDataTable();
+      } else {
+        populateCurrentSlotUI(); // Refresh left sidebar with confirmed GAS strategy data
+        runInteractiveBacktest();
       }
     });
 

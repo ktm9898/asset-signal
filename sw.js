@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asset-signal-v2';
+const CACHE_NAME = 'asset-signal-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
 
   // Cache-first with network fallback for local static assets
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
         // Fetch in background to keep cache fresh
         fetch(event.request).then((networkResponse) => {

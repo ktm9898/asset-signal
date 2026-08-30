@@ -54,39 +54,7 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // 0.5 Ticker History (public)
-  if (action === "fetch_ticker_history") {
-    const slotId = parseInt(e.parameter.slotId || "1", 10);
-    PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(slotId));
-    
-    setupSheets();
-    const sheet = ss.getSheetByName("Strategy_Slots");
-    if (sheet && sheet.getLastRow() > 1) {
-      const lastRow = sheet.getLastRow();
-      const lastCol = sheet.getLastColumn();
-      const activeFlags = [];
-      for (let i = 2; i <= lastRow; i++) {
-        const rowId = parseInt(sheet.getRange(i, 1).getValue(), 10);
-        activeFlags.push([rowId === slotId ? "적용중 (ACTIVE)" : ""]);
-      }
-      sheet.getRange(2, lastCol, activeFlags.length, 1).setValues(activeFlags);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", activeSlotId: slotId }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // 1.5 Set Rebalance Date
-  if (action === "set_rebalance_date") {
-    const dateVal = String(e.parameter.date || "").trim();
-    if (dateVal) {
-      PropertiesService.getScriptProperties().setProperty("REBALANCE_DATE", dateVal);
-    }
-    return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", rebalanceDate: dateVal }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // 2. On-Demand Fetch Ticker History from Yahoo Finance
+  // 0.5 On-Demand Fetch Ticker History from Yahoo Finance (public)
   if (action === "fetch_ticker_history") {
     const ticker = String(e.parameter.ticker || "").trim().toUpperCase();
     if (!ticker) {
