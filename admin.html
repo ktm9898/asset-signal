@@ -4242,6 +4242,7 @@
 
     async function activateCurrentSlot() {
       activeSlotId = currentSlotId;
+      localStorage.setItem("asset_active_slot_id", String(activeSlotId));
       renderSlotsNav();
       showToast(`전략 #${activeSlotId}을(를) 실전 적용 중...`);
 

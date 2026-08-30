@@ -1118,14 +1118,26 @@
       syncActiveStrategySpecs();
 
       try {
-        const resp = await fetch(`${GAS_WEBAPP_URL}?action=all`);
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.success) {
-            if (data.activeSlotId) {
-              localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
-              syncActiveStrategySpecs();
+        // Fetch all dashboard data + strategy slots in parallel
+        const [allResp, slotsResp] = await Promise.all([
+          fetch(`${GAS_WEBAPP_URL}?action=all`),
+          fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`)
+        ]);
+
+        if (slotsResp.ok) {
+          const slotsData = await slotsResp.json();
+          if (slotsData.success && Array.isArray(slotsData.slots) && slotsData.slots.length > 0) {
+            localStorage.setItem("asset_strategy_slots_v4", JSON.stringify(slotsData.slots));
+            if (slotsData.activeSlotId) {
+              localStorage.setItem("asset_active_slot_id", String(slotsData.activeSlotId));
             }
+            syncActiveStrategySpecs();
+          }
+        }
+
+        if (allResp.ok) {
+          const data = await allResp.json();
+          if (data.success) {
             if (data.executionLogs) {
               renderHistoryLogs(data.executionLogs);
             }
@@ -1620,44 +1632,56 @@
 
     async function renderStrategySelectList() {
       const container = document.getElementById('strategySelectListContainer');
-      container.innerHTML = '<div style="text-align:center; color: var(--text-dim); padding: 24px; font-size: 13px;"><i class="fa-solid fa-spinner fa-spin"></i> 전략 목록 불러오는 중...</div>';
-
-      // Always fetch fresh from GAS (online-only strategy storage)
-      let slots = [];
       let activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "1", 10);
-      let fetchError = false;
+
+      // 1. Show cached slots immediately from localStorage (instant 0ms)
+      let cachedSlots = [];
+      const stored = localStorage.getItem("asset_strategy_slots_v4");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          cachedSlots = parsed.filter(s => s && s.baseWeights && Object.keys(s.baseWeights).length > 0);
+        } catch(e) {}
+      }
+
+      if (cachedSlots.length > 0) {
+        renderSlotCards(container, cachedSlots, activeId);
+      } else {
+        container.innerHTML = '<div style="text-align:center; color: var(--text-dim); padding: 24px; font-size: 13px;"><i class="fa-solid fa-spinner fa-spin"></i> 전략 목록 불러오는 중...</div>';
+      }
+
+      // 2. Refresh from GAS in background (online authoritative)
       try {
         const resp = await fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`);
         if (resp.ok) {
           const data = await resp.json();
           if (data.success && Array.isArray(data.slots) && data.slots.length > 0) {
-            slots = data.slots.filter(s => s.baseWeights && Object.keys(s.baseWeights).length > 0);
+            const freshSlots = data.slots.filter(s => s && s.baseWeights && Object.keys(s.baseWeights).length > 0);
             if (data.activeSlotId) {
-              activeId = data.activeSlotId;
-              localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
+              activeId = parseInt(data.activeSlotId, 10);
+              localStorage.setItem("asset_active_slot_id", String(activeId));
+            }
+            if (freshSlots.length > 0) {
+              localStorage.setItem("asset_strategy_slots_v4", JSON.stringify(data.slots));
+              renderSlotCards(container, freshSlots, activeId);
+              syncActiveStrategySpecs();
             }
           }
-        } else {
-          fetchError = true;
+        } else if (cachedSlots.length === 0) {
+          showSlotFetchError(container);
         }
       } catch(e) {
         console.warn("[WARN] GAS fetch failed:", e);
-        fetchError = true;
+        if (cachedSlots.length === 0) {
+          showSlotFetchError(container);
+        }
       }
+    }
 
+    function renderSlotCards(container, slots, activeId) {
       container.innerHTML = '';
-
-      // Error state — no localStorage fallback (user wants online-only)
-      if (fetchError || !slots || slots.length === 0) {
-        const msg = fetchError
-          ? '서버 연결에 실패했습니다. 인터넷 연결을 확인하시고 다시 시도해주세요.'
-          : '저장된 전략이 없습니다. 백테스트 스튜디오에서 전략을 먼저 저장해주세요.';
-        container.innerHTML = `
-          <div style="text-align:center; padding: 28px 16px;">
-            <div style="font-size: 32px; margin-bottom: 10px;">${fetchError ? '⚠️' : '📂'}</div>
-            <div style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;">${msg}</div>
-            ${fetchError ? `<button onclick="renderStrategySelectList()" style="padding: 8px 20px; border-radius: 8px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 13px; font-weight: 600;"><i class="fa-solid fa-rotate-right"></i> 다시 시도</button>` : ''}
-          </div>`;
+      if (!slots || slots.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color: var(--text-dim); padding: 24px; font-size: 13px;">📂 저장된 전략이 없습니다. 백테스트 스튜디오에서 전략을 먼저 저장해주세요.</div>';
         return;
       }
 
@@ -1702,40 +1726,52 @@
       });
     }
 
+    function showSlotFetchError(container) {
+      container.innerHTML = `
+        <div style="text-align:center; padding: 28px 16px;">
+          <div style="font-size: 32px; margin-bottom: 10px;">⚠️</div>
+          <div style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;">서버 연결에 실패했습니다. 인터넷 연결을 확인하시고 다시 시도해주세요.</div>
+          <button onclick="renderStrategySelectList()" style="padding: 8px 20px; border-radius: 8px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 13px; font-weight: 600;"><i class="fa-solid fa-rotate-right"></i> 다시 시도</button>
+        </div>`;
+    }
+
     async function activateStrategyFromDashboard(slotId) {
-      // 1. Persist activeSlotId locally as fast cache
+      // 1. Immediately update localStorage & active ID
       localStorage.setItem("asset_active_slot_id", String(slotId));
 
-      // 2. Save to GAS (primary/online storage) — await so it's confirmed
-      try {
-        showToast("전략 적용 중...");
-        await fetch(`${GAS_WEBAPP_URL}?action=saveActiveSlot&activeSlotId=${slotId}`);
-      } catch (err) {
-        console.warn("[WARN] Failed to sync active slot to GAS:", err);
-      }
-
-      // 3. Reload from GAS to get the confirmed active strategy data
-      try {
-        const resp = await fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`);
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.success && Array.isArray(data.slots)) {
-            localStorage.setItem("asset_strategy_slots_v4", JSON.stringify(data.slots));
-            if (data.activeSlotId) {
-              localStorage.setItem("asset_active_slot_id", String(data.activeSlotId));
-            }
-          }
-        }
-      } catch(e) {}
-
-      // 4. Refresh dashboard
+      // 2. Immediately update dashboard UI for instant responsiveness
       loadInitialData();
       syncActiveStrategySpecs();
       renderDashboardUI();
       calculateAndRenderLiveReturn();
 
-      closeStrategySelectModal();
+      // 3. Update modal buttons state
+      const container = document.getElementById('strategySelectListContainer');
+      const stored = localStorage.getItem("asset_strategy_slots_v4");
+      if (stored && container) {
+        try {
+          const parsed = JSON.parse(stored);
+          const validSlots = parsed.filter(s => s && s.baseWeights && Object.keys(s.baseWeights).length > 0);
+          renderSlotCards(container, validSlots, slotId);
+        } catch(e) {}
+      }
+
       showToast(`전략 #${slotId}이(가) 실전 대시보드 전략으로 적용되었습니다.`);
+      setTimeout(closeStrategySelectModal, 300);
+
+      // 4. Save to GAS online storage in background
+      try {
+        await fetch(GAS_WEBAPP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "set_active_strategy_slot",
+            slotId: slotId
+          })
+        });
+      } catch (err) {
+        console.warn("[WARN] Failed to sync active slot to GAS:", err);
+      }
     }
 
     // Wire strategy bar onclick on load (backup — HTML already has onclick)
