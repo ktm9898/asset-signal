@@ -3587,8 +3587,8 @@
       if (!modal) return;
       const isMobilePortrait = (window.innerWidth <= 768 && window.innerHeight > window.innerWidth);
       if (isMobilePortrait) {
-        const screenW = window.innerWidth;
-        const screenH = window.innerHeight;
+        const screenW = document.documentElement.clientWidth || window.innerWidth;
+        const screenH = document.documentElement.clientHeight || window.innerHeight;
         modal.style.position = 'fixed';
         modal.style.top = '0px';
         modal.style.left = '0px';
@@ -3599,6 +3599,8 @@
         modal.style.zIndex = '99999';
         modal.style.overflow = 'hidden';
         modal.style.background = '#ffffff';
+        modal.style.boxSizing = 'border-box';
+        modal.style.padding = '6px 10px';
       } else {
         modal.style.position = 'fixed';
         modal.style.top = '0px';
@@ -3608,6 +3610,8 @@
         modal.style.transform = 'none';
         modal.style.zIndex = '99999';
         modal.style.background = '#ffffff';
+        modal.style.boxSizing = 'border-box';
+        modal.style.padding = '8px 12px';
       }
     }
 
@@ -3697,8 +3701,11 @@
       }
 
       const isMobilePortrait = (window.innerWidth <= 768 && window.innerHeight > window.innerWidth);
-      const targetWidth = isMobilePortrait ? Math.floor(window.innerHeight - 24) : (chartBox.clientWidth || window.innerWidth - 24);
-      const targetHeight = isMobilePortrait ? Math.floor(window.innerWidth - 56) : (chartBox.clientHeight || window.innerHeight - 60);
+      const screenW = document.documentElement.clientWidth || window.innerWidth;
+      const screenH = document.documentElement.clientHeight || window.innerHeight;
+
+      const targetWidth = isMobilePortrait ? Math.floor(screenH - 20) : (chartBox.clientWidth || screenW - 24);
+      const targetHeight = isMobilePortrait ? Math.max(160, Math.floor(screenW - 50)) : (chartBox.clientHeight || screenH - 56);
 
       fullCanvas.width = targetWidth;
       fullCanvas.height = targetHeight;
