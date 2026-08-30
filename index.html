@@ -53,6 +53,13 @@
     html {
       overflow-y: scroll;
       scrollbar-gutter: stable;
+      overscroll-behavior: none;
+      overscroll-behavior-y: none;
+    }
+
+    body {
+      overscroll-behavior: none;
+      overscroll-behavior-y: none;
     }
 
     * {
@@ -1016,7 +1023,7 @@
   </div>
 
   <!-- Strategy Selection Modal -->
-  <div class="modal-overlay" id="strategySelectModal" onclick="if(event.target === this) closeStrategySelectModal()">
+  <div class="modal-overlay" id="strategySelectModal">
     <div class="modal-content" style="max-width: 520px; width: 92vw; max-height: 85vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 18px 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <div style="font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
@@ -1030,6 +1037,26 @@
       <div id="strategySelectListContainer" style="display: flex; flex-direction: column; gap: 10px;">
         <!-- Dynamically rendered slot cards -->
       </div>
+    </div>
+  </div>
+
+  <!-- PIN Authentication Modal -->
+  <div class="modal-overlay" id="pinAuthModal" style="z-index: 10000; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px);">
+    <div class="modal-content" style="max-width: 360px; text-align: center; padding: 28px 24px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+      <div style="width: 52px; height: 52px; background: #eff6ff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px; border: 1px solid #bfdbfe;">
+        <i class="fa-solid fa-lock text-primary" style="font-size: 22px;"></i>
+      </div>
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">보안 인증</h3>
+      <p style="font-size: 12.5px; color: var(--text-dim); margin-bottom: 18px;">접속을 위해 설정된 비밀번호(PIN)를 입력해주세요.</p>
+      
+      <div style="margin-bottom: 16px;">
+        <input type="password" id="pinAuthInput" maxlength="20" placeholder="PIN 번호 입력" style="width: 100%; text-align: center; font-size: 19px; font-weight: 700; letter-spacing: 4px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); outline: none; background: #f8fafc; font-family: 'Outfit', sans-serif;" onkeydown="if(event.key==='Enter') submitPinAuth()">
+        <div id="pinAuthError" style="color: var(--rose); font-size: 12px; font-weight: 600; margin-top: 8px; display: none;">비밀번호가 올바르지 않습니다.</div>
+      </div>
+
+      <button type="button" id="pinAuthSubmitBtn" onclick="submitPinAuth()" style="width: 100%; padding: 12px; border-radius: 10px; background: var(--primary); color: #fff; font-size: 14px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+        <i class="fa-solid fa-key"></i> 인증하기
+      </button>
     </div>
   </div>
 
@@ -1132,18 +1159,96 @@
       calculateAndRenderLiveReturn();
     }
 
+    // ==========================================
+    // PIN Authentication & Global Session Handling
+    // ==========================================
+    function getStoredPin() {
+      return localStorage.getItem("asset_auth_pin") || "";
+    }
+
+    function buildGasUrl(action, extraParams = "") {
+      const pin = getStoredPin();
+      let url = `${GAS_WEBAPP_URL}?action=${encodeURIComponent(action)}`;
+      if (pin) url += `&pin=${encodeURIComponent(pin)}`;
+      if (extraParams) url += `&${extraParams}`;
+      return url;
+    }
+
+    function showPinAuthModal() {
+      const modal = document.getElementById('pinAuthModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        const input = document.getElementById('pinAuthInput');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        const err = document.getElementById('pinAuthError');
+        if (err) err.style.display = 'none';
+      }
+    }
+
+    function hidePinAuthModal() {
+      const modal = document.getElementById('pinAuthModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitPinAuth() {
+      const input = document.getElementById('pinAuthInput');
+      const errEl = document.getElementById('pinAuthError');
+      const btn = document.getElementById('pinAuthSubmitBtn');
+      const pinVal = input ? input.value.trim() : '';
+
+      if (!pinVal) {
+        errEl.textContent = '비밀번호를 입력해주세요.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 확인 중...';
+
+      try {
+        const resp = await fetch(`${GAS_WEBAPP_URL}?action=verify_pin&pin=${encodeURIComponent(pinVal)}`);
+        const res = await resp.json();
+
+        if (res.success && (res.valid !== false)) {
+          localStorage.setItem("asset_auth_pin", pinVal);
+          hidePinAuthModal();
+          showToast("보안 인증이 완료되었습니다.");
+          await fetchLiveDashboardData();
+        } else {
+          errEl.textContent = '비밀번호가 올바르지 않습니다.';
+          errEl.style.display = 'block';
+          input.value = '';
+          input.focus();
+        }
+      } catch (err) {
+        errEl.textContent = '서버 연결 실패. 다시 시도해주세요.';
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-key"></i> 인증하기';
+      }
+    }
+
     async function fetchLiveDashboardData() {
       syncActiveStrategySpecs();
 
       try {
-        // Fetch all dashboard data + strategy slots in parallel
+        // Fetch all dashboard data + strategy slots in parallel with PIN
         const [allResp, slotsResp] = await Promise.all([
-          fetch(`${GAS_WEBAPP_URL}?action=all`),
-          fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`)
+          fetch(buildGasUrl('all')),
+          fetch(buildGasUrl('get_strategy_slots'))
         ]);
 
         if (slotsResp.ok) {
           const slotsData = await slotsResp.json();
+          if (slotsData.pinRequired && slotsData.status === "error") {
+            localStorage.removeItem("asset_auth_pin");
+            showPinAuthModal();
+            return;
+          }
           if (slotsData.success && Array.isArray(slotsData.slots) && slotsData.slots.length > 0) {
             localStorage.setItem("asset_strategy_slots_v4", JSON.stringify(slotsData.slots));
             if (slotsData.activeSlotId) {
@@ -1161,6 +1266,11 @@
 
         if (allResp.ok) {
           const data = await allResp.json();
+          if (data.pinRequired && data.status === "error") {
+            localStorage.removeItem("asset_auth_pin");
+            showPinAuthModal();
+            return;
+          }
           if (data.success) {
             if (data.rebalanceDate) {
               localStorage.setItem("asset_user_start_date", data.rebalanceDate);
@@ -1431,7 +1541,7 @@
 
         // Sync to GAS online storage so all devices stay in sync
         try {
-          await fetch(`${GAS_WEBAPP_URL}?action=set_rebalance_date&date=${dateVal}`);
+          await fetch(buildGasUrl('set_rebalance_date', `date=${encodeURIComponent(dateVal)}`));
         } catch (e) {
           console.warn("[WARN] Failed to sync rebalance date to GAS:", e);
         }
@@ -1670,17 +1780,55 @@
     }
 
     // ==========================================
-    // Dashboard Strategy Selector Modal & Activation
+    // Dashboard Strategy Selector Modal & Activation (with History Stack)
     // ==========================================
     async function openStrategySelectModal() {
-      // Show modal immediately with loading state
-      document.getElementById('strategySelectModal').style.display = 'flex';
+      const modal = document.getElementById('strategySelectModal');
+      openModalWithHistory(modal);
       await renderStrategySelectList();
     }
 
     function closeStrategySelectModal() {
-      document.getElementById('strategySelectModal').style.display = 'none';
+      const modal = document.getElementById('strategySelectModal');
+      closeModalWithHistory(modal);
     }
+
+    function openModalWithHistory(modalEl) {
+      if (!modalEl) return;
+      modalEl.style.display = 'flex';
+      if (!history.state || !history.state.modalOpen) {
+        history.pushState({ modalOpen: true }, '');
+      }
+    }
+
+    function closeModalWithHistory(modalEl) {
+      if (!modalEl) return;
+      modalEl.style.display = 'none';
+      if (history.state && history.state.modalOpen) {
+        history.back();
+      }
+    }
+
+    window.addEventListener('popstate', (e) => {
+      // Close all open modals when user presses back button
+      const openModals = document.querySelectorAll('.modal-overlay');
+      openModals.forEach(m => {
+        if (m.id !== 'pinAuthModal') {
+          m.style.display = 'none';
+        }
+      });
+    });
+
+    // Close modal on backdrop click
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal && modal.id !== 'pinAuthModal') {
+            closeModalWithHistory(modal);
+          }
+        });
+      });
+    });
 
     async function renderStrategySelectList() {
       const container = document.getElementById('strategySelectListContainer');
@@ -1703,9 +1851,15 @@
 
       // 2. Refresh from GAS in background (online authoritative)
       try {
-        const resp = await fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`);
+        const resp = await fetch(buildGasUrl('get_strategy_slots'));
         if (resp.ok) {
           const data = await resp.json();
+          if (data.pinRequired && data.status === "error") {
+            localStorage.removeItem("asset_auth_pin");
+            closeStrategySelectModal();
+            showPinAuthModal();
+            return;
+          }
           if (data.success && Array.isArray(data.slots) && data.slots.length > 0) {
             if (data.activeSlotId) {
               activeId = parseInt(data.activeSlotId, 10);
@@ -1832,7 +1986,8 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
             action: "set_active_strategy_slot",
-            slotId: slotId
+            slotId: slotId,
+            pin: getStoredPin()
           })
         });
       } catch (err) {

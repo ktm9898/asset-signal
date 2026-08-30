@@ -54,6 +54,13 @@
     html {
       overflow-y: scroll;
       scrollbar-gutter: stable;
+      overscroll-behavior: none;
+      overscroll-behavior-y: none;
+    }
+
+    body {
+      overscroll-behavior: none;
+      overscroll-behavior-y: none;
     }
 
     * {
@@ -1775,6 +1782,26 @@
     </div>
   </div>
 
+  <!-- PIN Authentication Modal -->
+  <div class="modal-overlay" id="pinAuthModal" style="z-index: 10000; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px);">
+    <div class="modal-content" style="max-width: 360px; text-align: center; padding: 28px 24px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+      <div style="width: 52px; height: 52px; background: #eff6ff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px; border: 1px solid #bfdbfe;">
+        <i class="fa-solid fa-lock text-primary" style="font-size: 22px;"></i>
+      </div>
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">보안 인증</h3>
+      <p style="font-size: 12.5px; color: var(--text-dim); margin-bottom: 18px;">스튜디오 접속을 위해 비밀번호(PIN)를 입력해주세요.</p>
+      
+      <div style="margin-bottom: 16px;">
+        <input type="password" id="pinAuthInput" maxlength="20" placeholder="PIN 번호 입력" style="width: 100%; text-align: center; font-size: 19px; font-weight: 700; letter-spacing: 4px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); outline: none; background: #f8fafc; font-family: 'Outfit', sans-serif;" onkeydown="if(event.key==='Enter') submitPinAuth()">
+        <div id="pinAuthError" style="color: var(--rose); font-size: 12px; font-weight: 600; margin-top: 8px; display: none;">비밀번호가 올바르지 않습니다.</div>
+      </div>
+
+      <button type="button" id="pinAuthSubmitBtn" onclick="submitPinAuth()" style="width: 100%; padding: 12px; border-radius: 10px; background: var(--primary); color: #fff; font-size: 14px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+        <i class="fa-solid fa-key"></i> 인증하기
+      </button>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div class="toast" id="toastMessage">
     <i class="fa-solid fa-circle-check text-emerald"></i>
@@ -2023,12 +2050,130 @@
       }
     }
 
+    // ==========================================
+    // PIN Authentication & Global Session Handling
+    // ==========================================
+    function getStoredPin() {
+      return localStorage.getItem("asset_auth_pin") || "";
+    }
+
+    function buildGasUrl(action, extraParams = "") {
+      const pin = getStoredPin();
+      let url = `${GAS_WEBAPP_URL}?action=${encodeURIComponent(action)}`;
+      if (pin) url += `&pin=${encodeURIComponent(pin)}`;
+      if (extraParams) url += `&${extraParams}`;
+      return url;
+    }
+
+    function showPinAuthModal() {
+      const modal = document.getElementById('pinAuthModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        const input = document.getElementById('pinAuthInput');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        const err = document.getElementById('pinAuthError');
+        if (err) err.style.display = 'none';
+      }
+    }
+
+    function hidePinAuthModal() {
+      const modal = document.getElementById('pinAuthModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitPinAuth() {
+      const input = document.getElementById('pinAuthInput');
+      const errEl = document.getElementById('pinAuthError');
+      const btn = document.getElementById('pinAuthSubmitBtn');
+      const pinVal = input ? input.value.trim() : '';
+
+      if (!pinVal) {
+        errEl.textContent = '비밀번호를 입력해주세요.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 확인 중...';
+
+      try {
+        const resp = await fetch(`${GAS_WEBAPP_URL}?action=verify_pin&pin=${encodeURIComponent(pinVal)}`);
+        const res = await resp.json();
+
+        if (res.success && (res.valid !== false)) {
+          localStorage.setItem("asset_auth_pin", pinVal);
+          hidePinAuthModal();
+          showToast("보안 인증이 완료되었습니다.");
+          await fetchGoogleSheetSlots();
+        } else {
+          errEl.textContent = '비밀번호가 올바르지 않습니다.';
+          errEl.style.display = 'block';
+          input.value = '';
+          input.focus();
+        }
+      } catch (err) {
+        errEl.textContent = '서버 연결 실패. 다시 시도해주세요.';
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-key"></i> 인증하기';
+      }
+    }
+
+    // ==========================================
+    // History & Mobile Back-Button Modal Manager
+    // ==========================================
+    function openModalWithHistory(modalEl) {
+      if (!modalEl) return;
+      modalEl.style.display = 'flex';
+      if (!history.state || !history.state.modalOpen) {
+        history.pushState({ modalOpen: true }, '');
+      }
+    }
+
+    function closeModalWithHistory(modalEl) {
+      if (!modalEl) return;
+      modalEl.style.display = 'none';
+      if (history.state && history.state.modalOpen) {
+        history.back();
+      }
+    }
+
+    window.addEventListener('popstate', (e) => {
+      // Close all open modals when user presses mobile back button
+      const openModals = document.querySelectorAll('.modal-overlay');
+      openModals.forEach(m => {
+        if (m.id !== 'pinAuthModal') {
+          m.style.display = 'none';
+        }
+      });
+    });
+
+    // Close modal on backdrop click
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal && modal.id !== 'pinAuthModal') {
+            closeModalWithHistory(modal);
+          }
+        });
+      });
+    });
+
     async function fetchGoogleSheetSlots() {
       if (!GAS_WEBAPP_URL) return;
       try {
-        const resp = await fetch(`${GAS_WEBAPP_URL}?action=get_strategy_slots`);
+        const resp = await fetch(buildGasUrl('get_strategy_slots'));
         if (resp.ok) {
           const data = await resp.json();
+          if (data.pinRequired && data.status === "error") {
+            localStorage.removeItem("asset_auth_pin");
+            showPinAuthModal();
+            return;
+          }
           if (data.success && Array.isArray(data.slots) && data.slots.length > 0) {
             data.slots.forEach(s => {
               const idx = strategySlots.findIndex(item => item.id === s.id);
@@ -2142,11 +2287,11 @@
       });
 
       document.getElementById('saveStratIsActiveCheck').checked = (cur.id === activeSlotId);
-      document.getElementById('saveStratModal').style.display = 'flex';
+      openModalWithHistory(document.getElementById('saveStratModal'));
     }
 
     function closeSaveStrategyModal() {
-      document.getElementById('saveStratModal').style.display = 'none';
+      closeModalWithHistory(document.getElementById('saveStratModal'));
     }
 
     async function confirmSaveStrategy() {
@@ -2217,9 +2362,9 @@
       strategySlots.forEach(s => {
         const isCur = (s.id === currentSlotId);
         const isActive = (s.id === activeSlotId);
-        const hasData = s.baseWeights && Object.keys(s.baseWeights).length > 0;
+        const hasData = s.baseWeights && Object.keys(s.baseWeights).length > 0 && Object.values(s.baseWeights).reduce((a, b) => a + Number(b), 0) > 0;
 
-        let baseStr = '설정된 자산 없음';
+        let baseStr = '설정된 자산 없음 (비어있음)';
         if (hasData) {
           baseStr = Object.entries(s.baseWeights).map(([t, w]) => `${formatTickerDisplay(t)} ${Math.round(w * 100)}%`).join(' : ');
         }
@@ -2249,11 +2394,11 @@
         listEl.appendChild(item);
       });
 
-      document.getElementById('loadStratModal').style.display = 'flex';
+      openModalWithHistory(document.getElementById('loadStratModal'));
     }
 
     function closeLoadStrategyModal() {
-      document.getElementById('loadStratModal').style.display = 'none';
+      closeModalWithHistory(document.getElementById('loadStratModal'));
     }
 
     function loadSlotFromModal(slotId) {
@@ -4285,33 +4430,13 @@
           body: JSON.stringify({
             action: "save_strategy_slots",
             slots: strategySlots,
-            activeSlotId: activeSlotId
+            activeSlotId: activeSlotId,
+            pin: getStoredPin()
           })
         });
         showToast("전략 저장이 완료되었습니다!");
       } catch (err) {
         showToast("저장 완료 (로컬 저장)");
-      }
-    }
-
-    async function activateCurrentSlot() {
-      activeSlotId = currentSlotId;
-      localStorage.setItem("asset_active_slot_id", String(activeSlotId));
-      renderSlotsNav();
-      showToast(`전략 #${activeSlotId}을(를) 실전 적용 중...`);
-
-      try {
-        await fetch(GAS_WEBAPP_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "set_active_strategy_slot",
-            slotId: activeSlotId
-          })
-        });
-        showToast(`전략 #${activeSlotId} 적용이 완료되었습니다!`);
-      } catch (err) {
-        showToast("전략 적용 완료");
       }
     }
 
@@ -4322,11 +4447,11 @@
       const s = getCurrentSlot();
       document.getElementById('modalSlotName').value = s.name;
       document.getElementById('modalSlotMemo').value = s.memo || '';
-      document.getElementById('renameModal').style.display = 'flex';
+      openModalWithHistory(document.getElementById('renameModal'));
     }
 
     function closeRenameModal() {
-      document.getElementById('renameModal').style.display = 'none';
+      closeModalWithHistory(document.getElementById('renameModal'));
     }
 
     function saveRenameModal() {

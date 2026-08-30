@@ -40,8 +40,22 @@ function doGet(e) {
   const action = e.parameter.action || "all";
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // 1. Set Active Strategy Slot
-  if (action === "set_active_strategy_slot") {
+  // 0. Dedicated PIN Verification Action
+  if (action === "verify_pin") {
+    if (!authPin) {
+      return ContentService.createTextOutput(JSON.stringify({ success: true, pinRequired: false, valid: true, message: "No PIN configured" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    if (inputPin === authPin) {
+      return ContentService.createTextOutput(JSON.stringify({ success: true, pinRequired: true, valid: true, message: "PIN verified" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ success: false, pinRequired: true, valid: false, message: "Invalid PIN" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 0.5 Ticker History (public)
+  if (action === "fetch_ticker_history") {
     const slotId = parseInt(e.parameter.slotId || "1", 10);
     PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(slotId));
     
@@ -101,22 +115,18 @@ function doGet(e) {
           const adjClosePrices = [];
           
           for (let i = 0; i < timestamps.length; i++) {
-            const d = new Date(timestamps[i] * 1000);
-            const dStr = Utilities.formatDate(d, "GMT", "yyyy-MM-dd");
-            const cVal = quotes.close[i];
-            const aVal = adjclose[i];
-            
-            if (cVal !== null && aVal !== null && !isNaN(cVal) && !isNaN(aVal)) {
-              dates.push(dStr);
-              closePrices.push(Math.round(cVal * 10000) / 10000);
-              adjClosePrices.push(Math.round(aVal * 10000) / 10000);
+            if (quotes.close[i] !== null && quotes.close[i] !== undefined) {
+              const d = new Date(timestamps[i] * 1000);
+              const dateStr = Utilities.formatDate(d, "GMT", "yyyy-MM-dd");
+              dates.push(dateStr);
+              closePrices.push(Number(quotes.close[i].toFixed(2)));
+              adjClosePrices.push(adjclose && adjclose[i] !== null ? Number(adjclose[i].toFixed(2)) : Number(quotes.close[i].toFixed(2)));
             }
           }
           
           return ContentService.createTextOutput(JSON.stringify({
             success: true,
             ticker: ticker,
-            currency: (chart.meta && chart.meta.currency) || "USD",
             name: (chart.meta && (chart.meta.shortName || chart.meta.symbol)) || ticker,
             dates: dates,
             close: closePrices,
@@ -131,6 +141,48 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.toString() }))
         .setMimeType(ContentService.MimeType.JSON);
     }
+  }
+
+  // 1. PIN Authorization Check for Protected Endpoints
+  if (authPin && inputPin !== authPin) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: false, 
+      status: "error", 
+      pinRequired: true, 
+      message: "Unauthorized: Invalid PIN" 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 2. Set Active Strategy Slot
+  if (action === "set_active_strategy_slot") {
+    const slotId = parseInt(e.parameter.slotId || "1", 10);
+    PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(slotId));
+    
+    setupSheets();
+    const sheet = ss.getSheetByName("Strategy_Slots");
+    if (sheet && sheet.getLastRow() > 1) {
+      const lastRow = sheet.getLastRow();
+      const lastCol = sheet.getLastColumn();
+      const activeFlags = [];
+      for (let i = 2; i <= lastRow; i++) {
+        const rowId = parseInt(sheet.getRange(i, 1).getValue(), 10);
+        activeFlags.push([rowId === slotId ? "적용중 (ACTIVE)" : ""]);
+      }
+      sheet.getRange(2, lastCol, activeFlags.length, 1).setValues(activeFlags);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", activeSlotId: slotId }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 2.5 Set Rebalance Date
+  if (action === "set_rebalance_date") {
+    const dateVal = String(e.parameter.date || "").trim();
+    if (dateVal) {
+      PropertiesService.getScriptProperties().setProperty("REBALANCE_DATE", dateVal);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", rebalanceDate: dateVal }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 
   // 3. Get Strategy Slots
@@ -203,6 +255,17 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const authPin = getAuthPin();
+    const inputPin = (data.pin || "").toString().trim();
+
+    // 0. PIN Authorization Check for POST
+    if (authPin && inputPin !== authPin) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        status: "error", 
+        pinRequired: true, 
+        message: "Unauthorized: Invalid PIN" 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
 
     // 1. Set Active Strategy Slot
     if (data.action === "set_active_strategy_slot") {
