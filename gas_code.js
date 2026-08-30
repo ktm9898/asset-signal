@@ -62,6 +62,16 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  // 1.5 Set Rebalance Date
+  if (action === "set_rebalance_date") {
+    const dateVal = String(e.parameter.date || "").trim();
+    if (dateVal) {
+      PropertiesService.getScriptProperties().setProperty("REBALANCE_DATE", dateVal);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", rebalanceDate: dateVal }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   // 2. On-Demand Fetch Ticker History from Yahoo Finance
   if (action === "fetch_ticker_history") {
     const ticker = String(e.parameter.ticker || "").trim().toUpperCase();
@@ -151,8 +161,13 @@ function doGet(e) {
     }
     
     const activeSlotId = PropertiesService.getScriptProperties().getProperty("ACTIVE_STRATEGY_SLOT_ID") || "1";
-    return ContentService.createTextOutput(JSON.stringify({ success: true, slots: slots, activeSlotId: parseInt(activeSlotId, 10) }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const rebalanceDate = PropertiesService.getScriptProperties().getProperty("REBALANCE_DATE") || "2024-01-02";
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: true, 
+      slots: slots, 
+      activeSlotId: parseInt(activeSlotId, 10),
+      rebalanceDate: rebalanceDate 
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 
   // 4. PIN Authorization Check for Protected Endpoints
@@ -176,7 +191,9 @@ function doGet(e) {
   }
 
   const activeSlotId = PropertiesService.getScriptProperties().getProperty("ACTIVE_STRATEGY_SLOT_ID") || "1";
+  const rebalanceDate = PropertiesService.getScriptProperties().getProperty("REBALANCE_DATE") || "2024-01-02";
   result.activeSlotId = parseInt(activeSlotId, 10);
+  result.rebalanceDate = rebalanceDate;
 
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -206,6 +223,16 @@ function doPost(e) {
       }
 
       return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", activeSlotId: slotId }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 1.5 Set Rebalance Date
+    if (data.action === "set_rebalance_date") {
+      const dateVal = String(data.date || "").trim();
+      if (dateVal) {
+        PropertiesService.getScriptProperties().setProperty("REBALANCE_DATE", dateVal);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", rebalanceDate: dateVal }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 

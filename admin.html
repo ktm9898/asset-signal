@@ -997,6 +997,10 @@
         flex-shrink: 0 !important;
       }
 
+      .load-btn-text {
+        display: none !important;
+      }
+
       .studio-grid {
         display: flex;
         flex-direction: column;
@@ -2205,8 +2209,8 @@
               ${isCur ? '<span class="brand-badge" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; padding: 1px 5px; flex-shrink: 0;">선택중</span>' : ''}
             </div>
             <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-              <button class="nav-btn btn-sm ${isCur ? '' : 'btn-primary'}" onclick="loadSlotFromModal(${s.id})" style="padding: 4px 10px; font-size: 11.5px; height: 28px; white-space: nowrap;">
-                <i class="fa-solid fa-folder-open"></i> 불러오기
+              <button class="nav-btn btn-sm ${isCur ? '' : 'btn-primary'}" onclick="loadSlotFromModal(${s.id})" style="padding: 4px 8px; font-size: 11.5px; height: 28px; white-space: nowrap;">
+                <i class="fa-solid fa-folder-open"></i><span class="load-btn-text" style="margin-left: 4px;">불러오기</span>
               </button>
               <button class="btn-icon-del" onclick="deleteSlotFromModal(${s.id})" title="슬롯 초기화/삭제" style="padding: 4px 6px; height: 28px; width: 28px; display: inline-flex; align-items: center; justify-content: center;">
                 <i class="fa-solid fa-trash-can" style="font-size: 12px;"></i>

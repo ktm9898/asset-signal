@@ -710,6 +710,9 @@
       .hero-title {
         font-size: 17px;
       }
+      #heroBenchmarkTag {
+        display: none !important;
+      }
       .hero-desc {
         font-size: 12.5px;
       }
@@ -902,7 +905,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div style="font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-calendar-day text-primary"></i>
-              <span>운용 시작일</span>
+              <span>리밸런싱일</span>
             </div>
             <input type="date" class="calc-input" id="userStartDate" style="width: 140px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
           </div>
@@ -1131,6 +1134,12 @@
             if (slotsData.activeSlotId) {
               localStorage.setItem("asset_active_slot_id", String(slotsData.activeSlotId));
             }
+            if (slotsData.rebalanceDate) {
+              localStorage.setItem("asset_user_start_date", slotsData.rebalanceDate);
+              userStartDateStr = slotsData.rebalanceDate;
+              const dateInput = document.getElementById('userStartDate');
+              if (dateInput) dateInput.value = slotsData.rebalanceDate;
+            }
             syncActiveStrategySpecs();
           }
         }
@@ -1138,6 +1147,12 @@
         if (allResp.ok) {
           const data = await allResp.json();
           if (data.success) {
+            if (data.rebalanceDate) {
+              localStorage.setItem("asset_user_start_date", data.rebalanceDate);
+              userStartDateStr = data.rebalanceDate;
+              const dateInput = document.getElementById('userStartDate');
+              if (dateInput) dateInput.value = data.rebalanceDate;
+            }
             if (data.executionLogs) {
               renderHistoryLogs(data.executionLogs);
             }
@@ -1261,9 +1276,9 @@
             </span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px; font-family: 'Outfit', sans-serif;">
-            <span style="font-size: 12.5px; color: var(--text-muted);">기준 <strong style="color: var(--text-main); font-size: 13.5px;">${targetPct.toFixed(1)}%</strong></span>
+            <strong style="color: var(--text-dim); font-size: 13px;">${targetPct.toFixed(1)}%</strong>
             <span style="font-size: 11px; color: var(--text-dim);"><i class="fa-solid fa-arrow-right-long"></i></span>
-            <span style="font-size: 12.5px; color: var(--primary);">현재 <strong style="color: var(--primary); font-size: 14.5px;">${currPct.toFixed(1)}%</strong></span>
+            <strong style="color: var(--primary); font-size: 14.5px;">${currPct.toFixed(1)}%</strong>
           </div>
         `;
         container.appendChild(card);
@@ -1289,17 +1304,7 @@
           cutout: '70%',
           plugins: {
             legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(ctx) {
-                  const idx = ctx.dataIndex;
-                  const t = rawLabels[idx];
-                  const cur = values[idx].toFixed(1);
-                  const tgt = (targetWeights[t] || 0).toFixed(1);
-                  return ` ${formatTickerDisplay(t)}: 현재 ${cur}% (목표 ${tgt}%)`;
-                }
-              }
-            }
+            tooltip: { enabled: false }
           }
         }
       });
@@ -1376,13 +1381,20 @@
     let etfDatasetCache = null;
     let userStartDateStr = "";
 
-    function onStartDateChange() {
+    async function onStartDateChange() {
       const inputEl = document.getElementById('userStartDate');
       const dateVal = inputEl ? inputEl.value : "";
       if (dateVal) {
         userStartDateStr = dateVal;
         localStorage.setItem("asset_user_start_date", dateVal);
         calculateAndRenderLiveReturn();
+
+        // Sync to GAS online storage so all devices stay in sync
+        try {
+          await fetch(`${GAS_WEBAPP_URL}?action=set_rebalance_date&date=${dateVal}`);
+        } catch (e) {
+          console.warn("[WARN] Failed to sync rebalance date to GAS:", e);
+        }
       }
     }
 
@@ -1718,7 +1730,7 @@
           <div style="flex-shrink: 0;">
             ${isActive 
               ? '<button class="nav-btn btn-sm" disabled style="background: #e2e8f0; color: #64748b; border: none; cursor: default;"><i class="fa-solid fa-check"></i> 적용중</button>' 
-              : `<button class="nav-btn btn-sm btn-primary" onclick="activateStrategyFromDashboard(${s.id})"><i class="fa-solid fa-bolt"></i> 실전 적용</button>`
+              : `<button class="nav-btn btn-sm btn-primary" onclick="activateStrategyFromDashboard(${s.id})">적용</button>`
             }
           </div>
         `;
