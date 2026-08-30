@@ -63,6 +63,7 @@
       color: var(--text-main);
       line-height: 1.5;
       padding-bottom: 80px;
+      overscroll-behavior-y: contain;
     }
 
     /* Top Header */
@@ -3725,6 +3726,7 @@
 
       const isMobilePortrait = (window.innerWidth <= 768 && window.innerHeight > window.innerWidth);
       if (isMobilePortrait) {
+        // Mobile rotated: canvas must be exact pixels because CSS transform rotates the element
         const targetWidth = Math.floor(window.innerHeight - 20);
         const targetHeight = Math.floor(window.innerWidth - 52);
         fullCanvas.width = targetWidth;
@@ -3732,15 +3734,16 @@
         fullCanvas.style.width = targetWidth + 'px';
         fullCanvas.style.height = targetHeight + 'px';
       } else {
-        fullCanvas.style.width = '100%';
-        fullCanvas.style.height = '100%';
-        fullCanvas.width = chartBox.clientWidth || window.innerWidth - 36;
-        fullCanvas.height = chartBox.clientHeight || window.innerHeight - 70;
+        // PC/desktop: clear any manual sizing, let responsive:true handle it
+        fullCanvas.removeAttribute('width');
+        fullCanvas.removeAttribute('height');
+        fullCanvas.style.width = '';
+        fullCanvas.style.height = '';
       }
 
       const isMobile = isMobilePortrait;
       const baseChartOptions = {
-        responsive: !isMobile,
+        responsive: true,
         maintainAspectRatio: false,
         animation: false,
         events: isMobile ? [] : undefined,
