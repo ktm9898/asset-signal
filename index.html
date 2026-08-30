@@ -744,6 +744,9 @@
       .weights-list {
         width: 100%;
       }
+      .weight-lbl-hide-mobile {
+        display: none !important;
+      }
       .calc-input-box {
         flex-direction: column;
         align-items: flex-start;
@@ -1275,10 +1278,10 @@
               ${isRetPlus ? '+' : ''}${ret.toFixed(1)}%
             </span>
           </div>
-          <div style="display: flex; align-items: center; gap: 6px; font-family: 'Outfit', sans-serif;">
-            <strong style="color: var(--text-dim); font-size: 13px;">${targetPct.toFixed(1)}%</strong>
+          <div style="display: flex; align-items: center; gap: 5px; font-family: 'Outfit', sans-serif;">
+            <span style="font-size: 12px; color: var(--text-muted);"><span class="weight-lbl-hide-mobile">기준 </span><strong style="color: var(--text-main); font-size: 13.5px;">${targetPct.toFixed(1)}%</strong></span>
             <span style="font-size: 11px; color: var(--text-dim);"><i class="fa-solid fa-arrow-right-long"></i></span>
-            <strong style="color: var(--primary); font-size: 14.5px;">${currPct.toFixed(1)}%</strong>
+            <span style="font-size: 12px; color: var(--primary);"><span class="weight-lbl-hide-mobile">현재 </span><strong style="color: var(--primary); font-size: 14.5px;">${currPct.toFixed(1)}%</strong></span>
           </div>
         `;
         container.appendChild(card);
@@ -1294,14 +1297,39 @@
           datasets: [{
             data: values,
             backgroundColor: colors,
-            borderWidth: 0,
-            hoverOffset: 4
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverOffset: 3
           }]
         },
+        plugins: [{
+          id: 'slicePercentLabels',
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data) return;
+
+            meta.data.forEach((element, index) => {
+              const val = values[index];
+              if (!val || val < 8) return; // Only show if slice is large enough
+
+              const { x, y } = element.tooltipPosition();
+              ctx.save();
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 11.5px Outfit, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+              ctx.shadowBlur = 4;
+              ctx.fillText(`${val.toFixed(1)}%`, x, y);
+              ctx.restore();
+            });
+          }
+        }],
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '70%',
+          cutout: '66%',
           plugins: {
             legend: { display: false },
             tooltip: { enabled: false }
