@@ -1,12 +1,14 @@
-﻿{
-  "name": "StockSignal - KOSPI 200 ADX 매매 신호",
-  "short_name": "StockSignal",
-  "description": "KOSPI 200 한국투자증권 ADX 매매 신호 & 보유 종목 감시 모바일 앱",
+{
+  "name": "Asset Signal | 동적 자산배분 & 리밸런싱",
+  "short_name": "Asset Signal",
+  "description": "나스닥100 & S&P500 기반 동적 자산배분 및 일일 리밸런싱 감시 웹앱",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#0f172a",
   "theme_color": "#2563eb",
   "orientation": "portrait",
+  "categories": ["finance", "productivity"],
   "icons": [
     {
       "src": "./icon-192.png",
@@ -19,7 +21,16 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }
-

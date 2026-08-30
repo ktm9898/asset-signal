@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#172554"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="blueArc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="greenArc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="purpleArc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- Rounded Base -->
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#bgGrad)" stroke="rgba(255,255,255,0.15)" stroke-width="6"/>
+  
+  <!-- Donut Ring Background Glow -->
+  <circle cx="256" cy="256" r="130" fill="rgba(37,99,235,0.2)" filter="url(#glow)"/>
+  
+  <!-- Segmented Donut Slices -->
+  <!-- Arc 1: Blue (QQQ/Equity) -->
+  <path d="M 256 106 A 150 150 0 0 1 403 282 L 354 273 A 100 100 0 0 0 256 156 Z" fill="url(#blueArc)"/>
+  
+  <!-- Arc 2: Green (SCHD/Dividend) -->
+  <path d="M 388 335 A 150 150 0 0 1 123 335 L 167 309 A 100 100 0 0 0 344 309 Z" fill="url(#greenArc)"/>
+  
+  <!-- Arc 3: Purple (Leverage/Cash) -->
+  <path d="M 109 282 A 150 150 0 0 1 220 110 L 232 159 A 100 100 0 0 0 158 273 Z" fill="url(#purpleArc)"/>
+  
+  <!-- Center Signal Bars -->
+  <rect x="200" y="260" width="18" height="34" rx="7" fill="#93c5fd"/>
+  <rect x="228" y="236" width="18" height="58" rx="7" fill="#38bdf8"/>
+  <rect x="256" y="208" width="18" height="86" rx="7" fill="#34d399"/>
+  
+  <!-- Center Diagonal Growth Arrow -->
+  <path d="M 195 285 L 245 235 L 290 255 L 340 180" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="345,165 315,185 345,215" fill="#ffffff" transform="rotate(45 345 180)"/>
+</svg>
