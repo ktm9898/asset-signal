@@ -1691,8 +1691,7 @@
       const stored = localStorage.getItem("asset_strategy_slots_v4");
       if (stored) {
         try {
-          const parsed = JSON.parse(stored);
-          cachedSlots = parsed.filter(s => s && s.baseWeights && Object.keys(s.baseWeights).length > 0);
+          cachedSlots = JSON.parse(stored);
         } catch(e) {}
       }
 
@@ -1708,16 +1707,13 @@
         if (resp.ok) {
           const data = await resp.json();
           if (data.success && Array.isArray(data.slots) && data.slots.length > 0) {
-            const freshSlots = data.slots.filter(s => s && s.baseWeights && Object.keys(s.baseWeights).length > 0);
             if (data.activeSlotId) {
               activeId = parseInt(data.activeSlotId, 10);
               localStorage.setItem("asset_active_slot_id", String(activeId));
             }
-            if (freshSlots.length > 0) {
-              localStorage.setItem("asset_strategy_slots_v4", JSON.stringify(data.slots));
-              renderSlotCards(container, freshSlots, activeId);
-              syncActiveStrategySpecs();
-            }
+            localStorage.setItem("asset_strategy_slots_v4", JSON.stringify(data.slots));
+            renderSlotCards(container, data.slots, activeId);
+            syncActiveStrategySpecs();
           }
         } else if (cachedSlots.length === 0) {
           showSlotFetchError(container);
@@ -1739,8 +1735,10 @@
 
       slots.forEach(s => {
         const isActive = (s.id === activeId);
+        const hasWeights = s.baseWeights && Object.keys(s.baseWeights).length > 0 && Object.values(s.baseWeights).reduce((a, b) => a + Number(b), 0) > 0;
+
         const card = document.createElement('div');
-        card.style.background = isActive ? '#f0fdf4' : '#f8fafc';
+        card.style.background = isActive ? '#f0fdf4' : (hasWeights ? '#f8fafc' : '#ffffff');
         card.style.border = `1px solid ${isActive ? '#86efac' : 'var(--border-color)'}`;
         card.style.borderRadius = 'var(--radius-sm)';
         card.style.padding = '12px 14px';
@@ -1749,19 +1747,20 @@
         card.style.alignItems = 'center';
         card.style.gap = '10px';
 
-        const baseSummary = Object.entries(s.baseWeights || {})
-          .map(([t, w]) => `${formatTickerDisplay(t)} ${Math.round(w * 100)}%`)
-          .join(', ') || '비중 미설정';
+        const baseSummary = hasWeights 
+          ? Object.entries(s.baseWeights).map(([t, w]) => `${formatTickerDisplay(t)} ${Math.round(w * 100)}%`).join(', ')
+          : '<span style="color: #94a3b8;">비어있음 (비중 미설정)</span>';
 
         const bmName = formatTickerDisplay(s.benchmark || "^NDX");
 
         card.innerHTML = `
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
-              <span style="font-weight: 800; font-size: 13.5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              <span style="font-weight: 800; font-size: 13.5px; color: ${hasWeights ? 'var(--text-main)' : 'var(--text-dim)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 #${s.id}. ${s.name || `전략 ${s.id}`}
               </span>
               ${isActive ? '<span class="slot-badge-active">ACTIVE</span>' : ''}
+              ${!hasWeights ? '<span style="font-size: 10px; padding: 1px 5px; border-radius: 4px; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; font-weight: 700;">미설정</span>' : ''}
             </div>
             <div style="font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
               기준 지표: <strong>${bmName}</strong> · 기본: ${baseSummary}
@@ -1770,7 +1769,10 @@
           <div style="flex-shrink: 0;">
             ${isActive 
               ? '<button class="nav-btn btn-sm" disabled style="background: #e2e8f0; color: #64748b; border: none; cursor: default;"><i class="fa-solid fa-check"></i> 적용중</button>' 
-              : `<button class="nav-btn btn-sm btn-primary" onclick="activateStrategyFromDashboard(${s.id})">적용</button>`
+              : (hasWeights 
+                  ? `<button class="nav-btn btn-sm btn-primary" onclick="activateStrategyFromDashboard(${s.id})">적용</button>`
+                  : '<button class="nav-btn btn-sm" disabled style="background: #f8fafc; color: #cbd5e1; border: 1px solid #e2e8f0; cursor: not-allowed;" title="자산 비중이 설정되지 않은 빈 전략입니다.">미설정</button>'
+                )
             }
           </div>
         `;
@@ -1788,6 +1790,20 @@
     }
 
     async function activateStrategyFromDashboard(slotId) {
+      // 0. Safety check: ensure target slot is not empty
+      const stored = localStorage.getItem("asset_strategy_slots_v4");
+      if (stored) {
+        try {
+          const slots = JSON.parse(stored);
+          const target = slots.find(s => s.id === slotId);
+          const hasWeights = target && target.baseWeights && Object.keys(target.baseWeights).length > 0 && Object.values(target.baseWeights).reduce((a, b) => a + Number(b), 0) > 0;
+          if (!hasWeights) {
+            showToast("자산 비중이 설정되지 않은 빈 전략은 실전 적용할 수 없습니다.");
+            return;
+          }
+        } catch(e) {}
+      }
+
       // 1. Immediately update localStorage & active ID
       localStorage.setItem("asset_active_slot_id", String(slotId));
 
@@ -1799,12 +1815,10 @@
 
       // 3. Update modal buttons state
       const container = document.getElementById('strategySelectListContainer');
-      const stored = localStorage.getItem("asset_strategy_slots_v4");
       if (stored && container) {
         try {
           const parsed = JSON.parse(stored);
-          const validSlots = parsed.filter(s => s && s.baseWeights && Object.keys(s.baseWeights).length > 0);
-          renderSlotCards(container, validSlots, slotId);
+          renderSlotCards(container, parsed, slotId);
         } catch(e) {}
       }
 

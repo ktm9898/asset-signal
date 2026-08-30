@@ -2103,6 +2103,13 @@
     }
 
     async function activateCurrentSlot() {
+      const cur = getCurrentSlot();
+      const hasWeights = cur && cur.baseWeights && Object.keys(cur.baseWeights).length > 0 && Object.values(cur.baseWeights).reduce((a, b) => a + Number(b), 0) > 0;
+      if (!hasWeights) {
+        showToast("자산 비중이 설정되지 않은 빈 전략은 실전 적용할 수 없습니다. 먼저 비중을 설정해주세요.");
+        return;
+      }
+
       activeSlotId = currentSlotId;
       localStorage.setItem("asset_active_slot_id", String(currentSlotId));
       
@@ -2114,7 +2121,7 @@
       saveLocalSlots();
       renderSlotsNav();
 
-      showToast(`전략 #${currentSlotId} (${getCurrentSlot().name})이(가) 실전 적용 전략으로 활성화되었습니다!`);
+      showToast(`전략 #${currentSlotId} (${cur.name})이(가) 실전 적용 전략으로 활성화되었습니다!`);
       await saveSlotsToGAS();
     }
 
@@ -2128,7 +2135,7 @@
         const opt = document.createElement('option');
         opt.value = s.id;
         const isCur = (s.id === currentSlotId);
-        const hasData = s.baseWeights && Object.keys(s.baseWeights).length > 0;
+        const hasData = s.baseWeights && Object.keys(s.baseWeights).length > 0 && Object.values(s.baseWeights).reduce((a, b) => a + Number(b), 0) > 0;
         opt.textContent = `슬롯 ${s.id}: ${s.name || '빈 슬롯'}${isCur ? ' (현재 슬롯)' : (hasData ? '' : ' [빈 슬롯]')}`;
         if (isCur) opt.selected = true;
         selectEl.appendChild(opt);
@@ -2145,7 +2152,7 @@
     async function confirmSaveStrategy() {
       const targetId = parseInt(document.getElementById('saveStratTargetSlotSelect').value, 10);
       const newName = document.getElementById('saveStratNameInput').value.trim() || `전략 ${targetId}`;
-      const isActive = document.getElementById('saveStratIsActiveCheck').checked;
+      let isActive = document.getElementById('saveStratIsActiveCheck').checked;
       const cur = getCurrentSlot();
 
       // Current edited payload
@@ -2175,6 +2182,13 @@
       const targetIdx = strategySlots.findIndex(s => s.id === targetId);
       if (targetIdx !== -1) {
         strategySlots[targetIdx] = editedPayload;
+      }
+
+      const hasWeights = editedPayload.baseWeights && Object.keys(editedPayload.baseWeights).length > 0 && Object.values(editedPayload.baseWeights).reduce((a, b) => a + Number(b), 0) > 0;
+      if (isActive && !hasWeights) {
+        showToast("자산 비중이 설정되지 않은 빈 전략은 실전 적용할 수 없어 적용 플래그가 해제되었습니다.");
+        isActive = false;
+        editedPayload.isActive = false;
       }
 
       if (isActive) {
