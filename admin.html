@@ -52,7 +52,8 @@
     }
 
     html {
-      overscroll-behavior-y: contain;
+      overscroll-behavior-y: contain !important;
+      overscroll-behavior: contain !important;
     }
 
     * {
@@ -62,12 +63,19 @@
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
+    /* Disable pull-to-refresh on all scrollable elements */
+    [style*="overflow-y: auto"], [style*="overflow-y: scroll"], [style*="overflow: auto"], [style*="overflow: scroll"], .history-table-container, .modal-content, .container {
+      overscroll-behavior-y: contain !important;
+      overscroll-behavior: contain !important;
+    }
+
     body {
       background-color: var(--bg-main);
       color: var(--text-main);
       line-height: 1.5;
       padding-bottom: 80px;
-      overscroll-behavior-y: contain;
+      overscroll-behavior-y: contain !important;
+      overscroll-behavior: contain !important;
     }
 
     /* Top Header */
@@ -4712,6 +4720,14 @@
             reg.update();
           })
           .catch((err) => console.warn('[PWA] Service Worker registration failed:', err));
+      });
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
       });
     }
   </script>
