@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asset-signal-v17';
+const CACHE_NAME = 'asset-signal-v18';
 const STATIC_ASSETS = [
   './',
   './index.html',
