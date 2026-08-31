@@ -3083,11 +3083,12 @@
 
       const stratNAV = new Float64Array(numDays);
       const rebalanceEvents = [];
-      let currentStageIdx = -1; 
+      let currentStageIdx = -1; // -1: Base Normal State (기본), 0: 1차 하락, 1: 2차 하락...
       let lastRebalanceDay = 0;
       let lastRebalanceNAV = initialCapital;
 
-      const stages = [...(s.dropStages || [])].sort((a, b) => a.threshold - b.threshold);
+      // Sort descending (e.g. -10%, -25%, -40%, -60%, -80%)
+      const stages = [...(s.dropStages || [])].sort((a, b) => b.threshold - a.threshold);
 
       for (let day = 0; day < numDays; day++) {
         let currentNAV = 0;
@@ -3098,12 +3099,16 @@
         let targetWeights = null;
         let triggerReason = null;
         let nextStageIdx = currentStageIdx;
+        const daysSinceRebal = day - lastRebalanceDay;
 
         if (stages.length > 0) {
           if (currentStageIdx < 0) {
+            // In Base State: Check if market falls below any drop threshold
             let deepestIdx = -1;
             for (let i = 0; i < stages.length; i++) {
-              if (currentBM_DD <= stages[i].threshold) deepestIdx = i;
+              if (currentBM_DD <= stages[i].threshold) {
+                deepestIdx = i;
+              }
             }
             if (deepestIdx >= 0) {
               nextStageIdx = deepestIdx;
@@ -3111,29 +3116,59 @@
               triggerReason = `[낙폭 진입] ${currentBM_DD.toFixed(1)}% (${stages[deepestIdx].name || (deepestIdx + 1) + '차 하락'})`;
             }
           } else {
+            // Already in a drop stage:
+            // 1. Check if market drops deeper (하향 돌파 / 추가 하락 단계 진입)
             let deeperIdx = currentStageIdx;
             for (let i = currentStageIdx + 1; i < stages.length; i++) {
-              if (currentBM_DD <= stages[i].threshold) deeperIdx = i;
+              if (currentBM_DD <= stages[i].threshold) {
+                deeperIdx = i;
+              }
             }
             if (deeperIdx > currentStageIdx) {
               nextStageIdx = deeperIdx;
               targetWeights = normalizeWeights(stages[deeperIdx].weights);
               triggerReason = `[추가 낙폭] ${currentBM_DD.toFixed(1)}% (${stages[deeperIdx].name || (deeperIdx + 1) + '차 하락'} 추가 진입)`;
             } else {
+              // 2. Check if profit taking target is reached during rebound, or check stepwise rebound recovery
               const gainPct = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0;
               const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
-              const isATH = currentBM_DD >= -0.5;
-              const isTakeProfit = currentGain >= gainPct;
-              if (isATH || isTakeProfit) {
+              const isTakeProfit = (gainPct > 0 && currentGain >= gainPct);
+
+              if (isTakeProfit) {
                 nextStageIdx = -1;
                 targetWeights = normBase;
-                triggerReason = isATH ? `[전고점 회복] ${currentBM_DD.toFixed(1)}% (기본 비중 전량 원복)` : `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 안전 원복)`;
+                triggerReason = `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 안전 원복)`;
+              } else {
+                const upperBarrier = currentStageIdx === 0 ? -0.5 : stages[currentStageIdx - 1].threshold;
+                if (currentBM_DD >= upperBarrier) {
+                  nextStageIdx = currentStageIdx - 1;
+                  if (nextStageIdx < 0) {
+                    targetWeights = normBase;
+                    triggerReason = `[전고점 회복] ${currentBM_DD.toFixed(1)}% (기본 비중 전량 원복)`;
+                  } else {
+                    targetWeights = normalizeWeights(stages[nextStageIdx].weights);
+                    triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% (${stages[nextStageIdx].name || (nextStageIdx + 1) + '차 하락'} 복귀)`;
+                  }
+                }
               }
             }
           }
         }
 
-        if (targetWeights && nextStageIdx !== currentStageIdx) {
+        // 3. Check Gain Rebalance (In Base Normal State after at least 20 trading days)
+        if (!targetWeights && currentStageIdx < 0 && daysSinceRebal >= 20) {
+          const gainPct = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0;
+          if (gainPct > 0) {
+            const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
+            if (currentGain >= gainPct) {
+              targetWeights = normBase;
+              triggerReason = `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 재정렬)`;
+              nextStageIdx = -1;
+            }
+          }
+        }
+
+        if (targetWeights) {
           const totalVal = currentNAV;
           allTickers.forEach(t => {
             const tw = targetWeights[t] || 0;
@@ -3151,8 +3186,18 @@
           let postNAV = 0;
           allTickers.forEach(t => { postNAV += holdings[t] * prices[t][day]; });
           stratNAV[day] = postNAV;
-          let stateName = nextStageIdx >= 0 && stages[nextStageIdx] ? (stages[nextStageIdx].name || `${nextStageIdx + 1}차 하락`) : '기본 (정상 운용)';
-          rebalanceEvents.push({ date: dates[day], dayIndex: day, reason: triggerReason, state: stateName, benchmarkDD: currentBM_DD.toFixed(2), nav: Math.round(postNAV), weights: targetWeights });
+          let stateName = nextStageIdx >= 0 && stages[nextStageIdx] 
+            ? (stages[nextStageIdx].name || `${nextStageIdx + 1}차 하락`) 
+            : (triggerReason.includes('이익 실현') ? '기본 (이익실현)' : '기본 (정상 운용)');
+          rebalanceEvents.push({ 
+            date: dates[day], 
+            dayIndex: day, 
+            reason: triggerReason, 
+            state: stateName, 
+            benchmarkDD: currentBM_DD.toFixed(2), 
+            nav: Math.round(postNAV), 
+            weights: targetWeights 
+          });
           currentStageIdx = nextStageIdx;
           lastRebalanceDay = day;
           lastRebalanceNAV = postNAV;
