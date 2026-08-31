@@ -3103,7 +3103,8 @@
 
         if (stages.length > 0) {
           if (currentStageIdx < 0) {
-            // In Base State: Check if market falls below any drop threshold
+            // [기본(평시) 상태]
+            // 1. 시장 낙폭 발생 시 하락 단계 진입 검사
             let deepestIdx = -1;
             for (let i = 0; i < stages.length; i++) {
               if (currentBM_DD <= stages[i].threshold) {
@@ -3114,10 +3115,21 @@
               nextStageIdx = deepestIdx;
               targetWeights = normalizeWeights(stages[deepestIdx].weights);
               triggerReason = `[낙폭 진입] ${currentBM_DD.toFixed(1)}% (${stages[deepestIdx].name || (deepestIdx + 1) + '차 하락'})`;
+            } else if (daysSinceRebal >= 20) {
+              // 2. 평시 상태에서만 자산 +20% 상승 시 이익실현 비중 재정렬 검사
+              const gainPct = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0;
+              if (gainPct > 0) {
+                const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
+                if (currentGain >= gainPct) {
+                  targetWeights = normBase;
+                  triggerReason = `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 재정렬)`;
+                  nextStageIdx = -1;
+                }
+              }
             }
           } else {
-            // Already in a drop stage:
-            // 1. Check if market drops deeper (하향 돌파 / 추가 하락 단계 진입)
+            // [하락 단계 진입 상태]
+            // 1. 추가 낙폭 발생 시 더 깊은 하락 단계로 진입 (하향 돌파)
             let deeperIdx = currentStageIdx;
             for (let i = currentStageIdx + 1; i < stages.length; i++) {
               if (currentBM_DD <= stages[i].threshold) {
@@ -3129,41 +3141,22 @@
               targetWeights = normalizeWeights(stages[deeperIdx].weights);
               triggerReason = `[추가 낙폭] ${currentBM_DD.toFixed(1)}% (${stages[deeperIdx].name || (deeperIdx + 1) + '차 하락'} 추가 진입)`;
             } else {
-              // 2. Check if profit taking target is reached during rebound, or check stepwise rebound recovery
-              const gainPct = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0;
-              const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
-              const isTakeProfit = (gainPct > 0 && currentGain >= gainPct);
+              // 2. 반등 시 오직 순수 지수 상향 돌파선에 따라 계단식으로만 단계별 복귀
+              // 1차 하락(currentStageIdx == 0)일 때 상향 돌파선은 0.0%(전고점 회복)
+              // 2차 하락(currentStageIdx == 1)일 때 상향 돌파선은 1차 하락선(-10%)
+              const upperBarrier = (currentStageIdx === 0) ? 0.0 : stages[currentStageIdx - 1].threshold;
+              const isCrossed = (currentStageIdx === 0) ? (currentBM_DD >= -0.0001) : (currentBM_DD >= upperBarrier);
 
-              if (isTakeProfit) {
-                nextStageIdx = -1;
-                targetWeights = normBase;
-                triggerReason = `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 안전 원복)`;
-              } else {
-                const upperBarrier = currentStageIdx === 0 ? -0.5 : stages[currentStageIdx - 1].threshold;
-                if (currentBM_DD >= upperBarrier) {
-                  nextStageIdx = currentStageIdx - 1;
-                  if (nextStageIdx < 0) {
-                    targetWeights = normBase;
-                    triggerReason = `[전고점 회복] ${currentBM_DD.toFixed(1)}% (기본 비중 전량 원복)`;
-                  } else {
-                    targetWeights = normalizeWeights(stages[nextStageIdx].weights);
-                    triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% (${stages[nextStageIdx].name || (nextStageIdx + 1) + '차 하락'} 복귀)`;
-                  }
+              if (isCrossed) {
+                nextStageIdx = currentStageIdx - 1;
+                if (nextStageIdx < 0) {
+                  targetWeights = normBase;
+                  triggerReason = `[전고점 회복] 0.0% (기본 비중 전량 원복)`;
+                } else {
+                  targetWeights = normalizeWeights(stages[nextStageIdx].weights);
+                  triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% (${stages[nextStageIdx].name || (nextStageIdx + 1) + '차 하락'} 복귀)`;
                 }
               }
-            }
-          }
-        }
-
-        // 3. Check Gain Rebalance (In Base Normal State after at least 20 trading days)
-        if (!targetWeights && currentStageIdx < 0 && daysSinceRebal >= 20) {
-          const gainPct = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0;
-          if (gainPct > 0) {
-            const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
-            if (currentGain >= gainPct) {
-              targetWeights = normBase;
-              triggerReason = `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 재정렬)`;
-              nextStageIdx = -1;
             }
           }
         }
