@@ -1161,9 +1161,9 @@
 
       liveSignalData = {
         benchmark: bmTicker,
-        benchmarkPrice: 721.11,
-        benchmarkATH: 745.34,
-        benchmarkMDD: -3.25,
+        benchmarkPrice: 0,
+        benchmarkATH: 0,
+        benchmarkMDD: 0,
         currentState: "기본 (정상 운용)",
         targetWeights: initBase,
         currentWeights: initBase,
@@ -1294,6 +1294,40 @@
               userStartDateStr = data.rebalanceDate;
               const dateInput = document.getElementById('userStartDate');
               if (dateInput) dateInput.value = data.rebalanceDate;
+            }
+            if (data.portfolioSignals && Array.isArray(data.portfolioSignals) && data.portfolioSignals.length > 0) {
+              const latestSig = data.portfolioSignals[0];
+              const pBenchmark = latestSig.Benchmark || (liveSignalData ? liveSignalData.benchmark : "^NDX");
+              const pPrice = parseFloat(latestSig.BenchmarkPrice) || 0;
+              const pATH = parseFloat(latestSig.BenchmarkATH) || 0;
+              const pMDD = parseFloat(latestSig.BenchmarkMDD) || 0;
+              const pState = latestSig.CurrentState || "기본 (정상 운용)";
+              
+              let pTargetW = {};
+              if (typeof latestSig.TargetWeights === 'object' && latestSig.TargetWeights !== null) {
+                pTargetW = latestSig.TargetWeights;
+              } else if (typeof latestSig.TargetWeights === 'string') {
+                try { pTargetW = JSON.parse(latestSig.TargetWeights); } catch(e) {}
+              }
+              
+              let pDeltaW = {};
+              if (typeof latestSig.DeltaWeights === 'object' && latestSig.DeltaWeights !== null) {
+                pDeltaW = latestSig.DeltaWeights;
+              } else if (typeof latestSig.DeltaWeights === 'string') {
+                try { pDeltaW = JSON.parse(latestSig.DeltaWeights); } catch(e) {}
+              }
+
+              if (liveSignalData) {
+                liveSignalData.benchmark = pBenchmark;
+                if (pPrice > 0) liveSignalData.benchmarkPrice = pPrice;
+                if (pATH > 0) liveSignalData.benchmarkATH = pATH;
+                liveSignalData.benchmarkMDD = pMDD;
+                liveSignalData.currentState = pState;
+                if (pTargetW && Object.keys(pTargetW).length > 0) liveSignalData.targetWeights = pTargetW;
+                if (pDeltaW && Object.keys(pDeltaW).length > 0) liveSignalData.deltaWeights = pDeltaW;
+                if (latestSig.Advice) liveSignalData.advice = latestSig.Advice;
+                renderDashboardUI();
+              }
             }
             if (data.executionLogs) {
               renderHistoryLogs(data.executionLogs);
@@ -1707,13 +1741,13 @@
 
       // Calculate active benchmark price, ATH, and MDD from dataset
       const bmTicker = activeStrat.benchmark || "^NDX";
-      let bmPrice = 721.11;
-      let bmATH = 745.34;
-      let bmMDD = -3.25;
+      let bmPrice = 0;
+      let bmATH = 0;
+      let bmMDD = 0;
 
       const bmAsset = ds.universe[bmTicker] || ds.universe["^NDX"] || ds.universe["QQQ"];
       if (bmAsset && bmAsset.close && bmAsset.close.length > 0) {
-        bmPrice = bmAsset.close[bmAsset.close.length - 1] || bmAsset.latestPrice || bmPrice;
+        bmPrice = bmAsset.close[bmAsset.close.length - 1] || bmAsset.latestPrice || 0;
         bmATH = Math.max(...bmAsset.close);
         if (bmATH > 0) {
           bmMDD = ((bmPrice - bmATH) / bmATH) * 100.0;

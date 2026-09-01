@@ -2602,7 +2602,6 @@
       s.baseWeights[ticker] = newPct / 100.0;
       saveLocalSlots();
       renderBaseWeightsTable(s.baseWeights);
-      runInteractiveBacktest();
     }
 
     function deleteBaseWeightRow(ticker) {
@@ -2911,7 +2910,6 @@
       s.baseRecoveryPct = Math.max(0, parseFloat(document.getElementById('cfgBaseRecovery').value) || 0);
       s.feeRate = parseFloat(document.getElementById('cfgFeeRate').value) / 100.0;
       saveLocalSlots();
-      runInteractiveBacktest();
     }
 
     // ==========================================
@@ -3189,6 +3187,17 @@
                   dropEntryPeak = 0.0;
                 }
               }
+            }
+          }
+        } else {
+          // [하락 단계가 없을 때: 평시 상태에서 목표수익률 달성 시 기본 비중 정적 재정렬]
+          const gainPct = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0;
+          if (gainPct > 0) {
+            const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
+            if (currentGain >= gainPct) {
+              targetWeights = normBase;
+              triggerReason = `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 재정렬)`;
+              nextStageIdx = -1;
             }
           }
         }

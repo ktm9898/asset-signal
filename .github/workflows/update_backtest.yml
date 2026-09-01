@@ -3,8 +3,8 @@ name: Update ETF Backtest Dataset
 on:
   workflow_dispatch:
   schedule:
-    # Every Saturday at 08:00 KST (23:00 UTC Friday)
-    - cron: '0 23 * * 5'
+    # Every Tuesday to Saturday at 06:30 KST (21:30 UTC Mon-Fri, after US Market Close)
+    - cron: '30 21 * * 1-5'
 
 permissions:
   contents: write
