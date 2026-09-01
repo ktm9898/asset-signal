@@ -2041,8 +2041,20 @@
     }
 
     async function triggerManualScreening() {
-      showToast("데이터를 새로고침하는 중입니다...");
-      await fetchEtfDataset();
+      showToast("강력 새로고침 & 최신 데이터 갱신 중...");
+      if ('caches' in window) {
+        try {
+          const cacheKeys = await caches.keys();
+          await Promise.all(cacheKeys.map(k => caches.delete(k)));
+        } catch (e) {}
+      }
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) await reg.update();
+        } catch (e) {}
+      }
+      await fetchEtfDataset(true);
       await fetchGoogleSheetSlots();
       populateCurrentSlotUI();
       populateDataTickerDropdown();
@@ -2051,7 +2063,7 @@
       } else {
         renderDataTable();
       }
-      showToast("새로고침이 완료되었습니다.");
+      showToast("최신 데이터로 강력 새로고침이 완료되었습니다.");
     }
 
     function updateSavedSnapshots() {
@@ -2087,9 +2099,10 @@
       localStorage.setItem(LOCAL_SLOTS_KEY, JSON.stringify(strategySlots));
     }
 
-    async function fetchEtfDataset() {
+    async function fetchEtfDataset(forceReload = false) {
       try {
-        const resp = await fetch('data/etf_history.json');
+        const url = forceReload ? `data/etf_history.json?_t=${Date.now()}` : 'data/etf_history.json';
+        const resp = await fetch(url, { cache: forceReload ? 'no-store' : 'default' });
         if (resp.ok) {
           etfDataset = await resp.json();
         }

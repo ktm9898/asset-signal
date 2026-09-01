@@ -1566,13 +1566,36 @@
       if (icon) icon.classList.add('fa-spin');
       if (btn) btn.disabled = true;
 
-      showToast("데이터를 새로고침하는 중입니다...");
+      showToast("강력 새로고침 & 최신 데이터 갱신 중...");
 
       try {
+        // 1. Evict all CacheStorage (Service Worker / PWA caches)
+        if ('caches' in window) {
+          try {
+            const cacheKeys = await caches.keys();
+            await Promise.all(cacheKeys.map(k => caches.delete(k)));
+          } catch (e) {}
+        }
+
+        // 2. Clear memory dataset cache
+        etfDatasetCache = null;
+
+        // 3. Force Service Worker update
+        if ('serviceWorker' in navigator) {
+          try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) await reg.update();
+          } catch (e) {}
+        }
+
+        // 4. Refetch fresh data from GAS & local dataset with cache-busting
         await fetchLiveDashboardData();
-        showToast("대시보드 데이터가 최신 상태로 갱신되었습니다!");
+        await loadEtfDatasetForReturn(true);
+        await calculateAndRenderLiveReturn();
+
+        showToast("최신 데이터로 강력 새로고침이 완료되었습니다!");
       } catch (err) {
-        showToast("데이터 새로고침 실패");
+        showToast("데이터 새로고침 실패: " + err.message);
       } finally {
         if (icon) icon.classList.remove('fa-spin');
         if (btn) btn.disabled = false;
@@ -1659,10 +1682,11 @@
       }
     }
 
-    async function loadEtfDatasetForReturn() {
-      if (!etfDatasetCache) {
+    async function loadEtfDatasetForReturn(forceReload = false) {
+      if (!etfDatasetCache || forceReload) {
         try {
-          const resp = await fetch('data/etf_history.json');
+          const url = forceReload ? `data/etf_history.json?_t=${Date.now()}` : 'data/etf_history.json';
+          const resp = await fetch(url, { cache: forceReload ? 'no-store' : 'default' });
           if (resp.ok) {
             etfDatasetCache = await resp.json();
           }

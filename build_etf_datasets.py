@@ -88,6 +88,19 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
     low_df = data['Low'] if 'Low' in data else close_df
     volume_df = data['Volume'] if 'Volume' in data else pd.DataFrame(0, index=close_df.index, columns=close_df.columns)
 
+    # Filter out unclosed / incomplete US trading dates (e.g. today's date during KST daytime before US market opens)
+    # Ensure that major US benchmark indices and ETFs have actual non-null traded prices before ffill
+    us_check_tickers = ['^NDX', '^GSPC', 'QQQ', 'SPY', 'QLD']
+    avail_us = [t for t in us_check_tickers if t in close_df.columns]
+    if avail_us:
+        # A date is kept only if major US benchmarks have actual trading data on that date
+        valid_dates_mask = close_df[avail_us].notna().any(axis=1)
+        adj_close_df = adj_close_df.loc[valid_dates_mask]
+        close_df = close_df.loc[valid_dates_mask]
+        high_df = high_df.loc[valid_dates_mask]
+        low_df = low_df.loc[valid_dates_mask]
+        volume_df = volume_df.loc[valid_dates_mask]
+
     # Clean date index
     adj_close_df = adj_close_df.ffill().bfill()
     close_df = close_df.ffill().bfill()
