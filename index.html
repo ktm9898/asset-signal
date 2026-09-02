@@ -943,14 +943,17 @@
         <div class="calc-input-box" style="flex-direction: column; gap: 10px; padding: 14px 16px; margin-top: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div style="font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px;">
-              <i class="fa-solid fa-calendar-day text-primary"></i>
-              <span>리밸런싱일</span>
+              <i class="fa-solid fa-calendar-check text-primary"></i>
+              <span>투자 시작일</span>
             </div>
             <input type="date" class="calc-input" id="userStartDate" style="width: 140px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
           </div>
+          <div style="font-size: 11px; color: var(--text-dim); line-height: 1.4; margin-top: -4px;">
+            * 시작일 이후의 낙폭 대응 및 이익실현 자동 리밸런싱이 반영된 누적 성과입니다.
+          </div>
 
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12.5px;">
-            <span style="color: var(--text-dim); font-weight: 600;">누적 수익률</span>
+            <span style="color: var(--text-dim); font-weight: 600;">전략 누적 수익률</span>
             <div style="display: flex; align-items: center; gap: 8px;">
               <span id="trackerReturnVal" style="font-weight: 800; font-size: 15px; color: var(--emerald);">+0.0%</span>
               <span id="trackerTargetBadge" style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: #eff6ff; color: var(--primary); font-weight: 700;">목표 +20% 추적중</span>
@@ -1697,6 +1700,265 @@
       return etfDatasetCache;
     }
 
+    function normalizeWeights(wDict) {
+      const norm = {};
+      let total = 0.0;
+      Object.keys(wDict || {}).forEach(k => {
+        const val = parseFloat(wDict[k]) || 0;
+        norm[k] = val;
+        total += val;
+      });
+      if (total > 0) {
+        Object.keys(norm).forEach(k => { norm[k] /= total; });
+      }
+      return norm;
+    }
+
+    function runLiveStrategySimulation(activeStrat, sDate, ds) {
+      if (!ds || !ds.dates || !ds.universe) return null;
+
+      const allDates = ds.dates;
+      let sIdx = allDates.findIndex(d => d >= sDate);
+      if (sIdx === -1) sIdx = allDates.length > 0 ? allDates.length - 1 : 0;
+      const dates = allDates.slice(sIdx);
+      const numDays = dates.length;
+      if (numDays === 0) return null;
+
+      const initialCapital = 100000000;
+      const baseWeights = activeStrat.baseWeights || { "SCHD": 0.60, "QQQ": 0.40 };
+      const normBase = normalizeWeights(baseWeights);
+      const stages = [...(activeStrat.dropStages || [])].sort((a, b) => b.threshold - a.threshold);
+      const gainPct = activeStrat.gainThresholdPct !== undefined && activeStrat.gainThresholdPct !== null ? Number(activeStrat.gainThresholdPct) : 20.0;
+      const baseRecPct = activeStrat.baseRecoveryPct !== undefined && activeStrat.baseRecoveryPct !== null ? Number(activeStrat.baseRecoveryPct) : 0.0;
+      let rawFee = parseFloat(activeStrat.feeRate);
+      if (isNaN(rawFee) || rawFee < 0) rawFee = 0.15;
+      if (rawFee > 0 && rawFee < 0.05) rawFee = rawFee * 100.0;
+      const feeRate = rawFee / 100.0;
+
+      const allTickers = new Set(Object.keys(baseWeights));
+      stages.forEach(stg => Object.keys(stg.weights || {}).forEach(t => allTickers.add(t)));
+      const bmTicker = activeStrat.benchmark || "^NDX";
+      allTickers.add(bmTicker);
+      if (ds.universe["^NDX"]) allTickers.add("^NDX");
+      if (ds.universe["QQQ"]) allTickers.add("QQQ");
+
+      const prices = {};
+      allTickers.forEach(t => {
+        const asset = ds.universe[t];
+        if (asset && asset.adjClose && asset.adjClose.length > 0) {
+          prices[t] = asset.adjClose.slice(sIdx);
+        } else if (asset && asset.close && asset.close.length > 0) {
+          prices[t] = asset.close.slice(sIdx);
+        } else {
+          prices[t] = new Array(numDays).fill(1.0);
+        }
+      });
+
+      const bmPrices = prices[bmTicker] || prices["^NDX"] || prices["QQQ"] || new Array(numDays).fill(1.0);
+
+      // Find rolling benchmark ATH leading up to sIdx
+      const fullBmAsset = ds.universe[bmTicker] || ds.universe["^NDX"] || ds.universe["QQQ"];
+      const fullBmPrices = (fullBmAsset && (fullBmAsset.adjClose || fullBmAsset.close)) || bmPrices;
+      let preMax = 0;
+      for (let i = 0; i < sIdx; i++) {
+        if (fullBmPrices[i] > preMax) preMax = fullBmPrices[i];
+      }
+
+      const holdings = {};
+      allTickers.forEach(t => {
+        const w = normBase[t] || 0;
+        holdings[t] = prices[t][0] > 0 ? (initialCapital * w * (1.0 - feeRate)) / prices[t][0] : 0;
+      });
+
+      let currentStageIdx = -1; // -1: Base Normal, 0: 1차 하락, 1: 2차 하락...
+      let lastRebalanceNAV = initialCapital;
+      let dropEntryPeak = 0.0;
+      let currentBMPeak = preMax > 0 ? preMax : (bmPrices[0] || 0.0);
+      let finalNAV = initialCapital;
+      let rebalanceEvents = [];
+
+      for (let day = 0; day < numDays; day++) {
+        let currentNAV = 0;
+        allTickers.forEach(t => { currentNAV += holdings[t] * prices[t][day]; });
+
+        const currentP = bmPrices[day];
+        if (currentP > currentBMPeak) currentBMPeak = currentP;
+        const currentBM_DD = currentBMPeak > 0 ? ((currentP - currentBMPeak) / currentBMPeak) * 100.0 : 0.0;
+
+        let targetWeights = null;
+        let triggerReason = null;
+        let nextStageIdx = currentStageIdx;
+
+        if (stages.length > 0) {
+          if (currentStageIdx < 0) {
+            // [Normal State]
+            let deepestIdx = -1;
+            for (let i = 0; i < stages.length; i++) {
+              if (currentBM_DD <= stages[i].threshold) {
+                deepestIdx = i;
+              }
+            }
+            if (deepestIdx >= 0) {
+              nextStageIdx = deepestIdx;
+              targetWeights = normalizeWeights(stages[deepestIdx].weights);
+              triggerReason = `[낙폭 진입] ${currentBM_DD.toFixed(1)}% (${stages[deepestIdx].name || (deepestIdx + 1) + '차 하락'})`;
+              dropEntryPeak = currentBMPeak;
+            } else if (gainPct > 0) {
+              const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
+              if (currentGain >= gainPct) {
+                targetWeights = normBase;
+                triggerReason = `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 재정렬)`;
+                nextStageIdx = -1;
+              }
+            }
+          } else {
+            // [In Drop Stage]
+            let deeperIdx = currentStageIdx;
+            for (let i = currentStageIdx + 1; i < stages.length; i++) {
+              if (currentBM_DD <= stages[i].threshold) {
+                deeperIdx = i;
+              }
+            }
+            if (deeperIdx > currentStageIdx) {
+              nextStageIdx = deeperIdx;
+              targetWeights = normalizeWeights(stages[deeperIdx].weights);
+              triggerReason = `[추가 낙폭] ${currentBM_DD.toFixed(1)}% (${stages[deeperIdx].name || (deeperIdx + 1) + '차 하락'} 추가 진입)`;
+            } else if (currentStageIdx > 0) {
+              const upperBarrier = stages[currentStageIdx - 1].threshold;
+              if (currentBM_DD >= upperBarrier) {
+                nextStageIdx = currentStageIdx - 1;
+                targetWeights = normalizeWeights(stages[nextStageIdx].weights);
+                triggerReason = `[반등 회복] ${currentBM_DD.toFixed(1)}% (${stages[nextStageIdx].name || (nextStageIdx + 1) + '차 하락'} 복귀)`;
+              }
+            } else {
+              // 1차 하락 -> 복귀 검사
+              const gainFromPeak = dropEntryPeak > 0 ? ((currentP - dropEntryPeak) / dropEntryPeak) * 100.0 : currentBM_DD;
+              if (gainFromPeak >= baseRecPct) {
+                nextStageIdx = -1;
+                targetWeights = normBase;
+                triggerReason = baseRecPct > 0 ? `[전고점 +${baseRecPct.toFixed(0)}% 돌파] 기본 비중 전량 복귀` : `[전고점 회복] 기본 비중 전량 원복`;
+                dropEntryPeak = 0.0;
+              }
+            }
+          }
+        } else if (gainPct > 0) {
+          const currentGain = ((currentNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0;
+          if (currentGain >= gainPct) {
+            targetWeights = normBase;
+            triggerReason = `[이익 실현] +${currentGain.toFixed(1)}% 달성 (기본 비중 재정렬)`;
+            nextStageIdx = -1;
+          }
+        }
+
+        if (targetWeights) {
+          const totalVal = currentNAV;
+          allTickers.forEach(t => {
+            const tw = targetWeights[t] || 0;
+            const targetVal = totalVal * tw;
+            const p = prices[t][day];
+            if (p > 0) {
+              const curVal = holdings[t] * p;
+              const tradeVal = Math.abs(targetVal - curVal);
+              const fee = tradeVal * feeRate;
+              holdings[t] = (targetVal - fee) / p;
+            } else {
+              holdings[t] = 0;
+            }
+          });
+          let postNAV = 0;
+          allTickers.forEach(t => { postNAV += holdings[t] * prices[t][day]; });
+          currentNAV = postNAV;
+          let stateName = nextStageIdx >= 0 && stages[nextStageIdx]
+            ? (stages[nextStageIdx].name || `${nextStageIdx + 1}차 하락`)
+            : (triggerReason.includes('이익 실현') ? '기본 (이익실현)' : '기본 (정상 운용)');
+          rebalanceEvents.push({
+            date: dates[day],
+            reason: triggerReason,
+            state: stateName,
+            benchmarkDD: currentBM_DD.toFixed(2),
+            nav: Math.round(postNAV),
+            weights: targetWeights
+          });
+          currentStageIdx = nextStageIdx;
+          lastRebalanceNAV = postNAV;
+        }
+
+        finalNAV = currentNAV;
+      }
+
+      // Calculate today's final actual drifted weights
+      const lastDay = numDays - 1;
+      const currentWeights = {};
+      const assetReturns = {};
+      allTickers.forEach(t => {
+        const val = holdings[t] * prices[t][lastDay];
+        const wPct = finalNAV > 0 ? (val / finalNAV) * 100.0 : 0.0;
+        if (wPct > 0.1 || (normBase[t] && normBase[t] > 0)) {
+          currentWeights[t] = Math.round(wPct * 10) / 10.0;
+        }
+        const startP = prices[t][0];
+        const endP = prices[t][lastDay];
+        assetReturns[t] = startP > 0 ? ((endP - startP) / startP) * 100.0 : 0.0;
+      });
+
+      // Target weights for today's active stage
+      let activeTargetWeights = {};
+      if (currentStageIdx >= 0 && stages[currentStageIdx]) {
+        const stW = stages[currentStageIdx].weights || {};
+        Object.entries(stW).forEach(([t, w]) => {
+          activeTargetWeights[t] = Math.round(w * 1000) / 10.0;
+        });
+      } else {
+        Object.entries(normBase).forEach(([t, w]) => {
+          activeTargetWeights[t] = Math.round(w * 1000) / 10.0;
+        });
+      }
+
+      // Delta weights (difference between target and current actual weights)
+      const deltaWeights = {};
+      const allActiveTickers = new Set([...Object.keys(activeTargetWeights), ...Object.keys(currentWeights)]);
+      allActiveTickers.forEach(t => {
+        const tgt = activeTargetWeights[t] || 0.0;
+        const cur = currentWeights[t] || 0.0;
+        const d = Math.round((tgt - cur) * 10) / 10.0;
+        if (Math.abs(d) >= 0.5) {
+          deltaWeights[t] = d;
+        }
+      });
+
+      const totalReturn = ((finalNAV - initialCapital) / initialCapital) * 100.0;
+      const latestBM = bmPrices[lastDay];
+      const bmATH = Math.max(...fullBmPrices);
+      const bmMDD = bmATH > 0 ? ((latestBM - bmATH) / bmATH) * 100.0 : 0.0;
+
+      let stateName = "기본 (정상 운용)";
+      let advice = `현재 기준 지표가 안정적인 범위 내에 있으며, 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.`;
+
+      if (currentStageIdx >= 0 && stages[currentStageIdx]) {
+        stateName = stages[currentStageIdx].name || `${currentStageIdx + 1}차 하락`;
+        const recStr = baseRecPct > 0 ? `전고점 +${baseRecPct.toFixed(0)}% 돌파` : `전고점(0.0%) 복귀`;
+        advice = `현재 ${stateName} 국면이 적용 중입니다 (고점 대비 ${bmMDD.toFixed(1)}%). ${recStr} 시점까지 하락 대응 비중을 유지합니다.`;
+      }
+
+      return {
+        totalReturn,
+        currentWeights,
+        targetWeights: activeTargetWeights,
+        deltaWeights,
+        assetReturns,
+        stateName,
+        advice,
+        bmPrice: latestBM,
+        bmATH,
+        bmMDD,
+        currentStageIdx,
+        rebalanceEvents,
+        lastRebalanceNAV,
+        finalNAV,
+        gainPct
+      };
+    }
+
     async function calculateAndRenderLiveReturn() {
       const returnEl = document.getElementById('trackerReturnVal');
       const badgeEl = document.getElementById('trackerTargetBadge');
@@ -1713,12 +1975,6 @@
         dateInput.value = sDate;
       }
 
-      // Find closest date index in dataset
-      let sIdx = ds.dates.findIndex(d => d >= sDate);
-      if (sIdx === -1) {
-        sIdx = ds.dates.length > 0 ? ds.dates.length - 1 : 0;
-      }
-
       // Get active strategy slot specs
       let activeStrat = { baseWeights: { "SCHD": 0.60, "QQQ": 0.40 }, dropStages: [] };
       try {
@@ -1731,99 +1987,27 @@
         }
       } catch (e) {}
 
-      const baseWeights = activeStrat.baseWeights || { "SCHD": 0.60, "QQQ": 0.40 };
-      const dropStages = activeStrat.dropStages || [];
+      // Run full time-series State Machine from userStartDate to today
+      const sim = runLiveStrategySimulation(activeStrat, sDate, ds);
+      if (!sim) return;
 
-      // 1. Calculate Individual Asset Returns and Drifted Current Weights
-      let assetReturns = {};
-      let driftedValues = {};
-      let totalValue = 0.0;
-
-      Object.entries(baseWeights).forEach(([ticker, w]) => {
-        const asset = ds.universe[ticker];
-        if (asset && asset.close && asset.close.length > 0) {
-          const startPrice = asset.close[sIdx] || asset.close[0];
-          const latestPrice = asset.close[asset.close.length - 1] || asset.latestPrice || startPrice;
-          const ret = startPrice > 0 ? ((latestPrice - startPrice) / startPrice) * 100.0 : 0.0;
-          assetReturns[ticker] = ret;
-          const val = w * (1.0 + ret / 100.0);
-          driftedValues[ticker] = val;
-          totalValue += val;
-        } else {
-          assetReturns[ticker] = 0.0;
-          driftedValues[ticker] = w;
-          totalValue += w;
-        }
-      });
-
-      let currentWeights = {};
-      let totalReturn = 0.0;
-      if (totalValue > 0) {
-        Object.entries(driftedValues).forEach(([ticker, val]) => {
-          currentWeights[ticker] = Math.round((val / totalValue) * 1000) / 10.0;
-        });
-        totalReturn = (totalValue - 1.0) * 100.0;
-      }
-
-      // Calculate active benchmark price, ATH, and MDD from dataset
-      const bmTicker = activeStrat.benchmark || "^NDX";
-      let bmPrice = 0;
-      let bmATH = 0;
-      let bmMDD = 0;
-
-      const bmAsset = ds.universe[bmTicker] || ds.universe["^NDX"] || ds.universe["QQQ"];
-      if (bmAsset && bmAsset.close && bmAsset.close.length > 0) {
-        bmPrice = bmAsset.close[bmAsset.close.length - 1] || bmAsset.latestPrice || 0;
-        bmATH = Math.max(...bmAsset.close);
-        if (bmATH > 0) {
-          bmMDD = ((bmPrice - bmATH) / bmATH) * 100.0;
-        }
-      }
+      const { totalReturn, currentWeights, targetWeights, deltaWeights, assetReturns, stateName, advice, bmPrice, bmATH, bmMDD, lastRebalanceNAV, finalNAV, gainPct } = sim;
 
       if (liveSignalData) {
-        liveSignalData.benchmark = bmTicker;
+        liveSignalData.benchmark = activeStrat.benchmark || "^NDX";
         liveSignalData.benchmarkPrice = bmPrice;
         liveSignalData.benchmarkATH = bmATH;
         liveSignalData.benchmarkMDD = bmMDD;
+        liveSignalData.currentState = stateName;
+        liveSignalData.targetWeights = targetWeights;
+        liveSignalData.currentWeights = currentWeights;
+        liveSignalData.deltaWeights = deltaWeights;
+        liveSignalData.assetReturns = assetReturns;
+        liveSignalData.advice = advice;
+        renderDashboardUI();
       }
 
-      const curMdd = bmMDD;
-      let targetWeights = {};
-      Object.entries(baseWeights).forEach(([t, w]) => {
-        targetWeights[t] = Math.round(w * 100);
-      });
-
-      let currentDropStage = null;
-      const sortedDrops = [...dropStages].sort((a, b) => (b.threshold || 0) - (a.threshold || 0));
-      for (const st of sortedDrops) {
-        if (curMdd <= st.threshold) {
-          currentDropStage = st;
-          targetWeights = {};
-          Object.entries(st.weights || {}).forEach(([t, w]) => {
-            targetWeights[t] = Math.round(w * 100);
-          });
-          break;
-        }
-      }
-
-      // Calculate Delta Weights ONLY on Strategic Regime Changes (when Drop Stage is active)
-      let deltaWeights = {};
-      if (currentDropStage) {
-        const baseW = activeStrat.baseWeights || { "SCHD": 0.60, "QQQ": 0.40 };
-        const stageW = currentDropStage.weights || {};
-        const allTickers = new Set([...Object.keys(baseW), ...Object.keys(stageW)]);
-        allTickers.forEach(t => {
-          const tgt = Math.round((stageW[t] || 0.0) * 100);
-          const cur = Math.round((baseW[t] || 0.0) * 100);
-          const d = tgt - cur;
-          if (Math.abs(d) > 0) {
-            deltaWeights[t] = d;
-          }
-        });
-      } else {
-        deltaWeights = {};
-      }
-
+      // Update Live Return & Donut Center
       const isPlus = totalReturn >= 0;
       returnEl.textContent = `${isPlus ? '+' : ''}${totalReturn.toFixed(1)}%`;
       returnEl.style.color = isPlus ? 'var(--emerald)' : 'var(--rose)';
@@ -1834,60 +2018,42 @@
         donutCenterEl.style.color = isPlus ? 'var(--emerald)' : 'var(--rose)';
       }
 
-      const gainThreshold = activeStrat.gainThresholdPct || 20.0;
-      const isTakeProfit = totalReturn >= gainThreshold;
-      if (isTakeProfit) {
-        badgeEl.textContent = `+${gainThreshold}% 이익실현`;
-        badgeEl.style.background = '#dcfce7';
-        badgeEl.style.color = 'var(--emerald)';
-        badgeEl.style.border = '1px solid #bbf7d0';
-
-        if (liveSignalData) {
-          liveSignalData.currentState = "기본 (정상 운용)";
-          liveSignalData.advice = `현재 기준 지표가 안정적인 범위 내에 있습니다. 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.`;
+      // Gain threshold progress badge
+      if (gainPct > 0) {
+        const currentGainFromRebal = lastRebalanceNAV > 0 ? ((finalNAV - lastRebalanceNAV) / lastRebalanceNAV) * 100.0 : totalReturn;
+        if (currentGainFromRebal >= gainPct) {
+          badgeEl.textContent = `+${gainPct.toFixed(0)}% 이익실현 달성`;
+          badgeEl.style.background = '#dcfce7';
+          badgeEl.style.color = 'var(--emerald)';
+          badgeEl.style.border = '1px solid #bbf7d0';
+        } else {
+          const remain = Math.max(0, gainPct - currentGainFromRebal);
+          badgeEl.textContent = `익절까지 +${remain.toFixed(1)}%p 남음`;
+          badgeEl.style.background = '#eff6ff';
+          badgeEl.style.color = 'var(--primary)';
+          badgeEl.style.border = '1px solid #dbeafe';
         }
       } else {
-        const remain = gainThreshold - totalReturn;
-        badgeEl.textContent = `익절까지 +${remain.toFixed(1)}%p 남음`;
-        badgeEl.style.background = '#eff6ff';
-        badgeEl.style.color = 'var(--primary)';
-        badgeEl.style.border = '1px solid #dbeafe';
-
-        if (liveSignalData) {
-          if (currentDropStage) {
-            liveSignalData.currentState = currentDropStage.name || `하락 ${currentDropStage.threshold}%`;
-            liveSignalData.advice = `기준지표 낙폭(${curMdd.toFixed(1)}%)이 ${currentDropStage.threshold}% 기준에 도달하여 ${currentDropStage.name} 비중으로 분할 편입을 실행합니다.`;
-          } else {
-            liveSignalData.currentState = "기본 (정상 운용)";
-            liveSignalData.advice = `현재 기준 지표가 안정적인 범위 내에 있으며, 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.`;
-          }
-        }
-      }
-
-      if (liveSignalData) {
-        liveSignalData.targetWeights = targetWeights;
-        liveSignalData.currentWeights = currentWeights;
-        liveSignalData.deltaWeights = deltaWeights;
-        liveSignalData.assetReturns = assetReturns;
-        renderDashboardUI();
+        badgeEl.textContent = `정상 운용 추적중`;
       }
 
       // Update distance to next threshold line
       const nextThEl = document.getElementById('nextThresholdDistance');
       if (nextThEl && liveSignalData) {
-        const curMdd = liveSignalData.benchmarkMDD || -3.25;
-        if (dropStages && dropStages.length > 0) {
+        const dropStages = activeStrat.dropStages || [];
+        if (dropStages.length > 0) {
           const firstTh = dropStages[0].threshold || -10.0;
-          if (curMdd > firstTh) {
-            const gap = curMdd - firstTh;
+          if (bmMDD > firstTh) {
+            const gap = bmMDD - firstTh;
             nextThEl.textContent = `1차 하락(${firstTh}%)까지 -${gap.toFixed(2)}%p 여유`;
           } else {
-            nextThEl.textContent = `하락 대응 국면 진행 중`;
+            nextThEl.textContent = `하락 대응 국면 (${stateName}) 진행 중`;
           }
-        } else {
-          nextThEl.textContent = `정상 국면 운용 중`;
         }
       }
+
+      renderWeightsListAndDonut(targetWeights, currentWeights, deltaWeights, assetReturns);
+      renderOrdersList(targetWeights, deltaWeights);
     }
 
     async function triggerManualScreening() {
