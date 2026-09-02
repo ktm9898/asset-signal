@@ -23,8 +23,8 @@ function setupSheets() {
   let slotsSheet = ss.getSheetByName("Strategy_Slots") || ss.insertSheet("Strategy_Slots");
   slotsSheet.getRange("A1:N1").setValues([[
     "SlotID", "Name", "Memo", "Benchmark", "BaseWeights", 
-    "DropStages", "RecoveryStages", "GainThresholdPct", "BaseRecoveryPct", "ToleranceBandPct", 
-    "CooldownDays", "FeeRate", "UpdatedAt", "IsActive"
+    "DropStages", "RecoveryStages", "GainThresholdPct", "ToleranceBandPct", 
+    "CooldownDays", "FeeRate", "UpdatedAt", "IsActive", "BaseRecoveryPct"
   ]]);
   slotsSheet.getRange("A1:N1").setFontWeight("bold").setBackground("#dbeafe");
 
@@ -177,18 +177,18 @@ function doGet(e) {
         const dsRaw = r[findCol("dropstages", 5)];
         const rsRaw = r[findCol("recoverystages", 6)];
         const gainVal = r[findCol("gainthresholdpct", 7)];
-        
+        const tolVal = r[findCol("tolerancebandpct", 8)];
+        const cdVal = r[findCol("cooldowndays", 9)];
+        const feeVal = r[findCol("feerate", 10)];
+        const updVal = r[findCol("updatedat", 11)] || '-';
+        const actVal = r[findCol("isactive", 12)] || '';
+
         let baseRecVal = 0.0;
-        if (hasBaseRecCol) {
-          const rawRec = r[findCol("baserecoverypct", 8)];
+        const recIdx = findCol("baserecoverypct", 13);
+        if (recIdx >= 0 && recIdx < r.length) {
+          const rawRec = r[recIdx];
           baseRecVal = (rawRec !== '' && rawRec !== null && rawRec !== undefined) ? Number(rawRec) : 0.0;
         }
-
-        const tolVal = r[findCol("tolerancebandpct", hasBaseRecCol ? 9 : 8)];
-        const cdVal = r[findCol("cooldowndays", hasBaseRecCol ? 10 : 9)];
-        const feeVal = r[findCol("feerate", hasBaseRecCol ? 11 : 10)];
-        const updVal = r[findCol("updatedat", hasBaseRecCol ? 12 : 11)] || '-';
-        const actVal = r[findCol("isactive", hasBaseRecCol ? 13 : 12)] || '';
 
         return {
           id: slotId,
@@ -199,12 +199,12 @@ function doGet(e) {
           dropStages: dsRaw ? parseJsonSafe(dsRaw, []) : [],
           recoveryStages: rsRaw ? parseJsonSafe(rsRaw, []) : [],
           gainThresholdPct: gainVal !== '' && gainVal !== null && gainVal !== undefined ? Number(gainVal) : 20.0,
-          baseRecoveryPct: baseRecVal,
           toleranceBandPct: tolVal !== '' && tolVal !== null && tolVal !== undefined ? Number(tolVal) : 5.0,
           cooldownDays: cdVal !== '' && cdVal !== null && cdVal !== undefined ? Number(cdVal) : 5,
-          feeRate: feeVal !== '' && feeVal !== null && feeVal !== undefined ? Number(feeVal) : 0.001,
+          feeRate: feeVal !== '' && feeVal !== null && feeVal !== undefined ? Number(feeVal) : 0.15,
           updatedAt: updVal,
           isActive: String(actVal).includes('적용') || String(actVal).includes('ACTIVE'),
+          baseRecoveryPct: baseRecVal,
           isEmpty: (nameVal && String(nameVal).includes('비어있음')) || !bwRaw
         };
       });
@@ -321,12 +321,12 @@ function doPost(e) {
             JSON.stringify(s.dropStages || []),
             JSON.stringify(s.recoveryStages || []),
             s.gainThresholdPct !== undefined && s.gainThresholdPct !== null ? Number(s.gainThresholdPct) : 20.0,
-            s.baseRecoveryPct !== undefined && s.baseRecoveryPct !== null ? Number(s.baseRecoveryPct) : 0.0,
             s.toleranceBandPct !== undefined && s.toleranceBandPct !== null ? Number(s.toleranceBandPct) : 5.0,
             s.cooldownDays !== undefined && s.cooldownDays !== null ? Number(s.cooldownDays) : 5,
-            s.feeRate !== undefined && s.feeRate !== null ? Number(s.feeRate) : 0.001,
+            s.feeRate !== undefined && s.feeRate !== null ? (Number(s.feeRate) > 0.05 ? Number(s.feeRate) : Number(s.feeRate) * 100) : 0.15,
             nowStr,
-            isActive ? "적용중 (ACTIVE)" : ""
+            isActive ? "적용중 (ACTIVE)" : "",
+            s.baseRecoveryPct !== undefined && s.baseRecoveryPct !== null ? Number(s.baseRecoveryPct) : 0.0
           ];
         });
         sheet.getRange(2, 1, rows.length, 14).setValues(rows);
