@@ -2571,7 +2571,10 @@
       document.getElementById('cfgBenchmark').value = s.benchmark || "^NDX";
       document.getElementById('cfgGainThreshold').value = s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20;
       document.getElementById('cfgBaseRecovery').value = s.baseRecoveryPct !== undefined ? s.baseRecoveryPct : 0;
-      document.getElementById('cfgFeeRate').value = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate : s.feeRate * 100) : 0.15;
+      let feeVal = parseFloat(s.feeRate);
+      if (isNaN(feeVal) || feeVal < 0) feeVal = 0.15;
+      if (feeVal > 0 && feeVal < 0.05) feeVal = feeVal * 100.0;
+      document.getElementById('cfgFeeRate').value = feeVal.toFixed(2);
 
       const nameText = document.getElementById('overviewSlotNameText');
       if (nameText) nameText.textContent = `#${s.id}. ${s.name || `전략 ${s.id}`}`;
@@ -2937,7 +2940,9 @@
       s.benchmark = document.getElementById('cfgBenchmark').value;
       s.gainThresholdPct = parseFloat(document.getElementById('cfgGainThreshold').value);
       s.baseRecoveryPct = Math.max(0, parseFloat(document.getElementById('cfgBaseRecovery').value) || 0);
-      s.feeRate = parseFloat(document.getElementById('cfgFeeRate').value) / 100.0;
+      let feeInput = parseFloat(document.getElementById('cfgFeeRate').value);
+      if (isNaN(feeInput) || feeInput < 0) feeInput = 0.15;
+      s.feeRate = feeInput;
       saveLocalSlots();
     }
 
@@ -3100,7 +3105,10 @@
 
       const normBase = normalizeWeights(s.baseWeights || {});
       const holdings = {};
-      const feeRate = s.feeRate !== undefined ? (s.feeRate > 0.05 ? s.feeRate / 100 : s.feeRate) : 0.0015;
+      let rawFee = parseFloat(s.feeRate);
+      if (isNaN(rawFee) || rawFee < 0) rawFee = 0.15;
+      if (rawFee > 0 && rawFee < 0.05) rawFee = rawFee * 100.0;
+      const feeRate = rawFee / 100.0; // Decimal fee rate e.g. 0.0015
 
       const allTickers = new Set(Object.keys(s.baseWeights || {}));
       (s.dropStages || []).forEach(stg => Object.keys(stg.weights || {}).forEach(t => allTickers.add(t)));
