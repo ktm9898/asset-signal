@@ -1924,6 +1924,7 @@
           {"threshold": -40.0, "weights": {"QQQ": 0.20, "QLD": 0.30, "TQQQ": 0.40, "SCHD": 0.10}, "name": "3차 하락 (-40%)"}
         ],
         gainThresholdPct: 20.0,
+        baseRecoveryPct: 0.0,
         feeRate: 0.15
       },
       {
@@ -1940,6 +1941,7 @@
           {"threshold": -80.0, "weights": {"SCHD": 0.20, "QQQ": 0.00, "QLD": 0.00, "TQQQ": 0.80}, "name": "5차 하락 (-80%)"}
         ],
         gainThresholdPct: 20.0,
+        baseRecoveryPct: 0.0,
         feeRate: 0.15
       },
       {
@@ -1953,6 +1955,7 @@
           {"threshold": -25.0, "weights": {"SPY": 0.20, "UPRO": 0.30, "TQQQ": 0.30, "SCHD": 0.20}, "name": "2차 하락 (-25%)"}
         ],
         gainThresholdPct: 20.0,
+        baseRecoveryPct: 0.0,
         feeRate: 0.15
       }
     ];
@@ -1968,6 +1971,7 @@
           {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-20%)"}
         ],
         gainThresholdPct: 20.0,
+        baseRecoveryPct: 0.0,
         feeRate: 0.15
       });
     }
@@ -2083,6 +2087,16 @@
         }
       } else {
         strategySlots = JSON.parse(JSON.stringify(DEFAULT_PRESETS));
+      }
+
+      if (Array.isArray(strategySlots)) {
+        strategySlots.forEach(s => {
+          if (s.baseRecoveryPct === undefined || s.baseRecoveryPct === null) {
+            s.baseRecoveryPct = 0.0;
+          } else {
+            s.baseRecoveryPct = Number(s.baseRecoveryPct);
+          }
+        });
       }
 
       // Sync activeSlotId from LocalStorage
@@ -2247,9 +2261,9 @@
                   baseWeights: s.baseWeights || {},
                   dropStages: Array.isArray(s.dropStages) ? s.dropStages : [],
                   recoveryStages: Array.isArray(s.recoveryStages) ? s.recoveryStages : [],
-                  gainThresholdPct: s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0,
-                  baseRecoveryPct: s.baseRecoveryPct !== undefined ? s.baseRecoveryPct : 0.0,
-                  feeRate: s.feeRate !== undefined ? s.feeRate : 0.15
+                  gainThresholdPct: s.gainThresholdPct !== undefined && s.gainThresholdPct !== null ? Number(s.gainThresholdPct) : 20.0,
+                  baseRecoveryPct: s.baseRecoveryPct !== undefined && s.baseRecoveryPct !== null ? Number(s.baseRecoveryPct) : 0.0,
+                  feeRate: s.feeRate !== undefined && s.feeRate !== null ? Number(s.feeRate) : 0.15
                 };
               }
             });
@@ -2371,9 +2385,9 @@
         baseWeights: JSON.parse(JSON.stringify(cur.baseWeights || {})),
         dropStages: JSON.parse(JSON.stringify(cur.dropStages || [])),
         recoveryStages: JSON.parse(JSON.stringify(cur.recoveryStages || [])),
-        gainThresholdPct: cur.gainThresholdPct !== undefined ? cur.gainThresholdPct : 20.0,
-        baseRecoveryPct: cur.baseRecoveryPct !== undefined ? cur.baseRecoveryPct : 0.0,
-        feeRate: cur.feeRate !== undefined ? cur.feeRate : 0.15,
+        gainThresholdPct: cur.gainThresholdPct !== undefined && cur.gainThresholdPct !== null ? Number(cur.gainThresholdPct) : 20.0,
+        baseRecoveryPct: cur.baseRecoveryPct !== undefined && cur.baseRecoveryPct !== null ? Number(cur.baseRecoveryPct) : 0.0,
+        feeRate: cur.feeRate !== undefined && cur.feeRate !== null ? Number(cur.feeRate) : 0.15,
         isActive: isActive
       };
 
@@ -2497,6 +2511,7 @@
           dropStages: [],
           recoveryStages: [],
           gainThresholdPct: 20.0,
+          baseRecoveryPct: 0.0,
           feeRate: 0.15,
           isActive: false
         };
@@ -2532,6 +2547,7 @@
           dropStages: [],
           recoveryStages: [],
           gainThresholdPct: 20.0,
+          baseRecoveryPct: 0.0,
           feeRate: 0.15
         };
         const idx = strategySlots.findIndex(s => s.id === currentSlotId);

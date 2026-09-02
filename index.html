@@ -1370,8 +1370,10 @@
               document.getElementById('metaStratDrops').textContent = '설정 없음';
             }
 
-            const gainPct = activeStrat.gainThresholdPct || 20.0;
-            document.getElementById('metaStratRecovery').textContent = `0.0% 전고점 복귀 시 기본 원복 · +${gainPct}% 이익실현`;
+            const gainPct = activeStrat.gainThresholdPct !== undefined && activeStrat.gainThresholdPct !== null ? activeStrat.gainThresholdPct : 20.0;
+            const baseRecPct = activeStrat.baseRecoveryPct !== undefined && activeStrat.baseRecoveryPct !== null ? Number(activeStrat.baseRecoveryPct) : 0.0;
+            const recLabel = baseRecPct > 0 ? `+${baseRecPct.toFixed(0)}% 전고점 돌파` : `0.0% 전고점 복귀`;
+            document.getElementById('metaStratRecovery').textContent = `${recLabel} 시 기본 원복 · +${gainPct}% 이익실현`;
           }
         }
       } catch (e) {

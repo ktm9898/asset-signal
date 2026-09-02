@@ -100,6 +100,7 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
     drop_stages = sorted(strategy_config.get("dropStages", []), key=lambda x: x.get("threshold", 0.0), reverse=True)
     recovery_stages = sorted(strategy_config.get("recoveryStages", []), key=lambda x: x.get("recovery", 0.0))
     gain_threshold_pct = strategy_config.get("gainThresholdPct", 20.0)
+    base_recovery_pct = strategy_config.get("baseRecoveryPct", 0.0)
     tolerance_band_pct = strategy_config.get("toleranceBandPct", 5.0)
 
     print(f"[INFO] Active Strategy: {strat_name}")

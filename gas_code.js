@@ -21,12 +21,12 @@ function setupSheets() {
 
   // 2. Strategy Slots Sheet (1~10번 전략 슬롯 설정 저장)
   let slotsSheet = ss.getSheetByName("Strategy_Slots") || ss.insertSheet("Strategy_Slots");
-  slotsSheet.getRange("A1:M1").setValues([[
+  slotsSheet.getRange("A1:N1").setValues([[
     "SlotID", "Name", "Memo", "Benchmark", "BaseWeights", 
-    "DropStages", "RecoveryStages", "GainThresholdPct", "ToleranceBandPct", 
+    "DropStages", "RecoveryStages", "GainThresholdPct", "BaseRecoveryPct", "ToleranceBandPct", 
     "CooldownDays", "FeeRate", "UpdatedAt", "IsActive"
   ]]);
-  slotsSheet.getRange("A1:M1").setFontWeight("bold").setBackground("#dbeafe");
+  slotsSheet.getRange("A1:N1").setFontWeight("bold").setBackground("#dbeafe");
 
   // 3. Execution Logs Sheet (일일 봇 실행 로그)
   let logSheet = ss.getSheetByName("Execution_Logs") || ss.insertSheet("Execution_Logs");
@@ -159,23 +159,53 @@ function doGet(e) {
     let slotsSheet = ss.getSheetByName("Strategy_Slots");
     let slots = [];
     if (slotsSheet && slotsSheet.getLastRow() > 1) {
+      const header = slotsSheet.getRange(1, 1, 1, slotsSheet.getLastColumn()).getValues()[0];
+      const findCol = (name, fallback) => {
+        const idx = header.findIndex(h => String(h || '').trim().toLowerCase() === name.toLowerCase());
+        return idx >= 0 ? idx : fallback;
+      };
+
       const rows = slotsSheet.getRange(2, 1, slotsSheet.getLastRow() - 1, slotsSheet.getLastColumn()).getValues();
+      const hasBaseRecCol = findCol("baserecoverypct", -1) !== -1;
+
       slots = rows.map((r, idx) => {
+        const slotId = r[findCol("slotid", 0)] || (idx + 1);
+        const nameVal = r[findCol("name", 1)] || `전략 ${idx + 1}`;
+        const memoVal = r[findCol("memo", 2)] || '';
+        const bmVal = r[findCol("benchmark", 3)] || 'QQQ';
+        const bwRaw = r[findCol("baseweights", 4)];
+        const dsRaw = r[findCol("dropstages", 5)];
+        const rsRaw = r[findCol("recoverystages", 6)];
+        const gainVal = r[findCol("gainthresholdpct", 7)];
+        
+        let baseRecVal = 0.0;
+        if (hasBaseRecCol) {
+          const rawRec = r[findCol("baserecoverypct", 8)];
+          baseRecVal = (rawRec !== '' && rawRec !== null && rawRec !== undefined) ? Number(rawRec) : 0.0;
+        }
+
+        const tolVal = r[findCol("tolerancebandpct", hasBaseRecCol ? 9 : 8)];
+        const cdVal = r[findCol("cooldowndays", hasBaseRecCol ? 10 : 9)];
+        const feeVal = r[findCol("feerate", hasBaseRecCol ? 11 : 10)];
+        const updVal = r[findCol("updatedat", hasBaseRecCol ? 12 : 11)] || '-';
+        const actVal = r[findCol("isactive", hasBaseRecCol ? 13 : 12)] || '';
+
         return {
-          id: r[0] || (idx + 1),
-          name: r[1] || `전략 ${idx + 1}`,
-          memo: r[2] || '',
-          benchmark: r[3] || 'QQQ',
-          baseWeights: r[4] ? parseJsonSafe(r[4], {"QQQ": 0.6, "SCHD": 0.4}) : {"QQQ": 0.6, "SCHD": 0.4},
-          dropStages: r[5] ? parseJsonSafe(r[5], []) : [],
-          recoveryStages: r[6] ? parseJsonSafe(r[6], []) : [],
-          gainThresholdPct: r[7] !== '' && r[7] !== null ? Number(r[7]) : 20.0,
-          toleranceBandPct: r[8] !== '' && r[8] !== null ? Number(r[8]) : 5.0,
-          cooldownDays: r[9] !== '' && r[9] !== null ? Number(r[9]) : 5,
-          feeRate: r[10] !== '' && r[10] !== null ? Number(r[10]) : 0.001,
-          updatedAt: r[11] || '-',
-          isActive: String(r[12] || '').includes('적용') || String(r[12] || '').includes('ACTIVE'),
-          isEmpty: (r[1] && String(r[1]).includes('비어있음')) || !r[4]
+          id: slotId,
+          name: nameVal,
+          memo: memoVal,
+          benchmark: bmVal,
+          baseWeights: bwRaw ? parseJsonSafe(bwRaw, {"QQQ": 0.6, "SCHD": 0.4}) : {"QQQ": 0.6, "SCHD": 0.4},
+          dropStages: dsRaw ? parseJsonSafe(dsRaw, []) : [],
+          recoveryStages: rsRaw ? parseJsonSafe(rsRaw, []) : [],
+          gainThresholdPct: gainVal !== '' && gainVal !== null && gainVal !== undefined ? Number(gainVal) : 20.0,
+          baseRecoveryPct: baseRecVal,
+          toleranceBandPct: tolVal !== '' && tolVal !== null && tolVal !== undefined ? Number(tolVal) : 5.0,
+          cooldownDays: cdVal !== '' && cdVal !== null && cdVal !== undefined ? Number(cdVal) : 5,
+          feeRate: feeVal !== '' && feeVal !== null && feeVal !== undefined ? Number(feeVal) : 0.001,
+          updatedAt: updVal,
+          isActive: String(actVal).includes('적용') || String(actVal).includes('ACTIVE'),
+          isEmpty: (nameVal && String(nameVal).includes('비어있음')) || !bwRaw
         };
       });
     }
@@ -290,15 +320,16 @@ function doPost(e) {
             JSON.stringify(s.baseWeights || {}),
             JSON.stringify(s.dropStages || []),
             JSON.stringify(s.recoveryStages || []),
-            s.gainThresholdPct !== undefined ? s.gainThresholdPct : 20.0,
-            s.toleranceBandPct !== undefined ? s.toleranceBandPct : 5.0,
-            s.cooldownDays !== undefined ? s.cooldownDays : 5,
-            s.feeRate !== undefined ? s.feeRate : 0.001,
+            s.gainThresholdPct !== undefined && s.gainThresholdPct !== null ? Number(s.gainThresholdPct) : 20.0,
+            s.baseRecoveryPct !== undefined && s.baseRecoveryPct !== null ? Number(s.baseRecoveryPct) : 0.0,
+            s.toleranceBandPct !== undefined && s.toleranceBandPct !== null ? Number(s.toleranceBandPct) : 5.0,
+            s.cooldownDays !== undefined && s.cooldownDays !== null ? Number(s.cooldownDays) : 5,
+            s.feeRate !== undefined && s.feeRate !== null ? Number(s.feeRate) : 0.001,
             nowStr,
             isActive ? "적용중 (ACTIVE)" : ""
           ];
         });
-        sheet.getRange(2, 1, rows.length, 13).setValues(rows);
+        sheet.getRange(2, 1, rows.length, 14).setValues(rows);
         PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(activeSlotId));
       }
 

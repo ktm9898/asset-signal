@@ -18,6 +18,7 @@ slots = [
             {"threshold": -80.0, "weights": {"SCHD": 0.00, "QQQ": 0.20, "QLD": 0.40, "TQQQ": 0.40}, "name": "5차 하락 (-80%)"}
         ],
         "gainThresholdPct": 20.0,
+        "baseRecoveryPct": 0.0,
         "feeRate": 0.15
     },
     {
@@ -34,6 +35,7 @@ slots = [
             {"threshold": -80.0, "weights": {"SCHD": 0.20, "QQQ": 0.00, "QLD": 0.00, "TQQQ": 0.80}, "name": "5차 하락 (-80%)"}
         ],
         "gainThresholdPct": 20.0,
+        "baseRecoveryPct": 0.0,
         "feeRate": 0.15
     }
 ]
@@ -49,6 +51,7 @@ for i in range(3, 11):
             {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-20%)"}
         ],
         "gainThresholdPct": 20.0,
+        "baseRecoveryPct": 0.0,
         "feeRate": 0.15
     })
 
