@@ -523,6 +523,7 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      scroll-margin-top: 72px;
     }
 
     /* Metric Cards Grid */
@@ -1351,7 +1352,7 @@
         </div>
 
         <!-- Right: Backtest Results & Comparative Analytics -->
-        <div class="backtest-panel">
+        <div class="backtest-panel" id="backtestResultsSection">
 
           <!-- Top Metrics Cards -->
           <div class="metrics-grid">
@@ -3306,6 +3307,13 @@
       };
     }
 
+    function scrollToBacktestResults() {
+      const panel = document.getElementById('backtestResultsSection') || document.querySelector('.backtest-panel');
+      if (panel) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
     function runInteractiveBacktest(showToastMsg = false) {
       const s = getCurrentSlot();
       const res = simulateDynamicAssetStrategy(s, currentBacktestPeriod);
@@ -3317,7 +3325,10 @@
       updateBenchmarkTableUI(res.stratMetrics, res.ndxMetrics, res.gspcMetrics, res.ks11Metrics, res.isEmpty);
       updateRebalanceEventsUI(res.rebalanceEvents, res.isEmpty, s ? s.id : 1);
       renderChart();
-      if (showToastMsg) showToast("백테스트 계산 및 차트 갱신이 완료되었습니다!");
+      if (showToastMsg) {
+        showToast("백테스트 계산 및 차트 갱신이 완료되었습니다!");
+        scrollToBacktestResults();
+      }
     }
 
     function normalizeWeights(wDict) {
@@ -4178,6 +4189,7 @@
       renderCompareTable();
       renderCompareChart();
       showToast("전략 멀티 비교 차트 및 성과표가 생성되었습니다!");
+      scrollToBacktestResults();
     }
 
     function exitCompareMode() {
