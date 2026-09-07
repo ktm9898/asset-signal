@@ -1918,7 +1918,7 @@
     // Configuration & Global State
     // ==========================================
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwnJXm6B3ZrS0jp5dsoKV6n3ghCOOtjxcSzAVtVlZ3nCk6MwZIKgMVV6e7FJcdM0PaZ4A/exec";
-    const LOCAL_SLOTS_KEY = "asset_strategy_slots_v4";
+    const LOCAL_SLOTS_KEY = "asset_strategy_slots_v5";
 
     let etfDataset = null;
     let strategySlots = [];
@@ -2110,15 +2110,6 @@
       }
 
       if (Array.isArray(strategySlots)) {
-        // Fallback: If Slot 2 has no baseWeights, restore from DEFAULT_PRESETS
-        const slot2 = strategySlots.find(s => s.id === 2);
-        if (slot2 && (!slot2.baseWeights || Object.keys(slot2.baseWeights).length === 0)) {
-          const defaultSlot2 = DEFAULT_PRESETS.find(p => p.id === 2);
-          if (defaultSlot2) {
-            Object.assign(slot2, JSON.parse(JSON.stringify(defaultSlot2)));
-          }
-        }
-
         strategySlots.forEach(s => {
           if (s.baseRecoveryPct === undefined || s.baseRecoveryPct === null) {
             s.baseRecoveryPct = 0.0;
