@@ -2110,6 +2110,15 @@
       }
 
       if (Array.isArray(strategySlots)) {
+        // Fallback: If Slot 2 has no baseWeights, restore from DEFAULT_PRESETS
+        const slot2 = strategySlots.find(s => s.id === 2);
+        if (slot2 && (!slot2.baseWeights || Object.keys(slot2.baseWeights).length === 0)) {
+          const defaultSlot2 = DEFAULT_PRESETS.find(p => p.id === 2);
+          if (defaultSlot2) {
+            Object.assign(slot2, JSON.parse(JSON.stringify(defaultSlot2)));
+          }
+        }
+
         strategySlots.forEach(s => {
           if (s.baseRecoveryPct === undefined || s.baseRecoveryPct === null) {
             s.baseRecoveryPct = 0.0;
@@ -2558,7 +2567,7 @@
 
     function resetCurrentStrategyConfig() {
       const cur = getCurrentSlot();
-      if (!confirm(`[전략 #${cur.id}: ${cur.name || '전략'}] 설정을 초기화하시겠습니까?\n(설정된 자산 비중과 하락/복귀 단계가 모두 비워집니다)`)) {
+      if (!confirm(`[전략 #${cur.id}: ${cur.name || '전략'}] 화면의 설정 조건을 초기화하시겠습니까?\n(입력창의 자산 및 하락 단계가 비워지며, [저장] 버튼을 누르기 전까지는 기존 슬롯이 변경되지 않습니다)`)) {
         return;
       }
       cur.benchmark = "^NDX";
@@ -2569,10 +2578,9 @@
       cur.gainThresholdPct = 20.0;
       cur.feeRate = 0.15;
 
-      saveLocalSlots();
       populateCurrentSlotUI();
       runInteractiveBacktest();
-      showToast(`전략 #${cur.id} 설정이 깨끗하게 초기화되었습니다.`);
+      showToast(`화면의 전략 조건이 초기화되었습니다. 조건을 새로 짠 뒤 [저장]을 눌러 반영하세요.`);
     }
 
     async function resetCurrentSlot() {
