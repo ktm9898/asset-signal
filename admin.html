@@ -2573,13 +2573,13 @@
       cur.dropStages = [];
       cur.recoveryStages = [];
       cur.baseRecoveryPct = 0.0;
-      cur.gainThresholdPct = 20.0;
-      cur.feeRate = 0.15;
+      cur.gainThresholdPct = 0.0;
+      // 슬리피지/수수료(cur.feeRate)는 기존 값 유지
 
       document.getElementById('cfgBenchmark').value = "^NDX";
-      document.getElementById('cfgGainThreshold').value = 20;
+      document.getElementById('cfgGainThreshold').value = 0;
       document.getElementById('cfgBaseRecovery').value = 0;
-      document.getElementById('cfgFeeRate').value = "0.15";
+      // document.getElementById('cfgFeeRate')는 기존 설정값 유지
       
       renderBaseWeightsTable({});
       renderDropStages([]);
