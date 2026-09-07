@@ -1256,13 +1256,11 @@
     <!-- VIEW 1: 백테스트 스튜디오 (Studio View) -->
     <div id="viewStudio" style="display: flex; flex-direction: column; gap: 16px;">
 
-      <!-- Strategy Preset Slots & Integrated Control Toolbar -->
+      <!-- Strategy Settings Header & Actions -->
       <div class="slots-wrapper">
         <div class="slots-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
-          <div class="slots-title" style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden;">
-            <i class="fa-solid fa-layer-group text-primary" style="flex-shrink: 0; font-size: 15px;"></i>
-            <span id="overviewSlotNameText" style="font-weight: 800; font-size: 14px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">#1. 나스닥100 동적 계단식</span>
-            <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none; flex-shrink: 0;">ACTIVE</span>
+          <div class="slots-title" style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+            <span style="font-weight: 700; font-size: 15px; color: var(--text-main);">전략 설정</span>
           </div>
           <div class="slot-actions-bar" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
             <button class="nav-btn btn-sm" style="background: #ffffff; color: #475569; border: 1px solid var(--border-color);" onclick="resetCurrentStrategyConfig()" title="초기화">
@@ -2499,16 +2497,25 @@
     }
 
     function loadSlotFromModal(slotId) {
-      if (slotId === currentSlotId) {
+      const targetIdx = strategySlots.findIndex(s => s.id === slotId);
+      if (targetIdx === -1) {
         closeLoadStrategyModal();
         return;
       }
-      if (savedSlotSnapshots[currentSlotId]) {
+
+      // Restore target slot from saved snapshot so unsaved draft changes are discarded
+      if (savedSlotSnapshots[slotId]) {
+        strategySlots[targetIdx] = JSON.parse(savedSlotSnapshots[slotId]);
+      }
+
+      // If switching from another slot, revert previous slot's unsaved draft as well
+      if (currentSlotId !== slotId && savedSlotSnapshots[currentSlotId]) {
         const curIdx = strategySlots.findIndex(s => s.id === currentSlotId);
         if (curIdx !== -1) {
           strategySlots[curIdx] = JSON.parse(savedSlotSnapshots[currentSlotId]);
         }
       }
+
       currentSlotId = slotId;
       saveLocalSlots();
       closeLoadStrategyModal();
