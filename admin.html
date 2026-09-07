@@ -271,6 +271,14 @@
       flex-wrap: wrap;
     }
 
+    .slot-actions-bar .nav-btn i {
+      display: none;
+    }
+
+    .slot-actions-bar .nav-btn span {
+      display: inline;
+    }
+
     .slots-nav {
       display: flex;
       gap: 6px;
@@ -1019,6 +1027,14 @@
         flex-shrink: 0 !important;
       }
 
+      .slot-actions-bar .nav-btn i {
+        display: inline-block !important;
+      }
+
+      .slot-actions-bar .nav-btn span {
+        display: none !important;
+      }
+
       .load-btn-text {
         display: none !important;
       }
@@ -1249,10 +1265,13 @@
             <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none; flex-shrink: 0;">ACTIVE</span>
           </div>
           <div class="slot-actions-bar" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button class="nav-btn btn-sm" style="background: #ffffff; color: #475569; border: 1px solid var(--border-color);" onclick="resetCurrentStrategyConfig()" title="초기화">
+              <i class="fa-solid fa-rotate-left"></i> <span class="nav-text">초기화</span>
+            </button>
             <button class="nav-btn btn-sm btn-primary" onclick="openSaveStrategyModal()" title="저장">
               <i class="fa-solid fa-floppy-disk"></i> <span class="nav-text">저장</span>
             </button>
-            <button class="nav-btn btn-sm" onclick="openLoadStrategyModal()" title="불러오기">
+            <button class="nav-btn btn-sm btn-success" onclick="openLoadStrategyModal()" title="불러오기">
               <i class="fa-solid fa-folder-open"></i> <span class="nav-text">불러오기</span>
             </button>
             <button class="nav-btn btn-sm" style="background: #475569; color: #fff; border: 1px solid #475569;" onclick="openCompareModal()" title="전략비교">
@@ -2535,6 +2554,25 @@
 
     function getCurrentSlot() {
       return strategySlots.find(s => s.id === currentSlotId) || strategySlots[0];
+    }
+
+    function resetCurrentStrategyConfig() {
+      const cur = getCurrentSlot();
+      if (!confirm(`[전략 #${cur.id}: ${cur.name || '전략'}] 설정을 초기화하시겠습니까?\n(설정된 자산 비중과 하락/복귀 단계가 모두 비워집니다)`)) {
+        return;
+      }
+      cur.benchmark = "^NDX";
+      cur.baseWeights = {};
+      cur.dropStages = [];
+      cur.recoveryStages = [];
+      cur.baseRecoveryPct = 0.0;
+      cur.gainThresholdPct = 20.0;
+      cur.feeRate = 0.15;
+
+      saveLocalSlots();
+      populateCurrentSlotUI();
+      runInteractiveBacktest();
+      showToast(`전략 #${cur.id} 설정이 깨끗하게 초기화되었습니다.`);
     }
 
     async function resetCurrentSlot() {
