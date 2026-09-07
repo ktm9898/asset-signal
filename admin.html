@@ -2557,10 +2557,10 @@
     }
 
     function resetCurrentStrategyConfig() {
-      const cur = getCurrentSlot();
-      if (!confirm(`[전략 #${cur.id}: ${cur.name || '전략'}] 화면의 설정 조건을 초기화하시겠습니까?\n(입력창의 자산 및 하락 단계가 비워지며, [저장] 버튼을 누르기 전까지는 기존 슬롯이 변경되지 않습니다)`)) {
+      if (!confirm("화면에 입력된 자산 비중과 하락 단계 조건을 모두 비우시겠습니까?\n\n(💡 저장된 슬롯 데이터는 절대 삭제되지 않으며, 화면의 입력창만 깨끗하게 비워집니다)")) {
         return;
       }
+      const cur = getCurrentSlot();
       cur.benchmark = "^NDX";
       cur.baseWeights = {};
       cur.dropStages = [];
@@ -2571,7 +2571,7 @@
 
       populateCurrentSlotUI();
       runInteractiveBacktest();
-      showToast(`화면의 전략 조건이 초기화되었습니다. 조건을 새로 짠 뒤 [저장]을 눌러 반영하세요.`);
+      showToast("화면의 입력 조건이 비워졌습니다. 설정을 마친 후 [저장]을 눌러 저장하세요.");
     }
 
     async function resetCurrentSlot() {
