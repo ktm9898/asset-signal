@@ -6,16 +6,13 @@ GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwnJXm6B3ZrS0jp5dsoKV6
 slots = [
     {
         "id": 1,
-        "name": "나스닥100 동적 계단식",
-        "memo": "평시 SCHD 60:QQQ 40 유지, 나스닥 -15%/-25%/-40%/-60%/-80% 계단식 대응",
+        "name": "반도체 폭락 스나이퍼 (SOXL Dip-Sniper)",
+        "memo": "평시 SCHD 25:SGOV 75 극안전 유지, 나스닥 -10% 시 SOXL 25% 1차 매수, -35% 폭락 시 SOXL 60% 집중 매수 (2012년 이후 수익률 2,324%, MDD -27.1%)",
         "benchmark": "^NDX",
-        "baseWeights": {"SCHD": 0.60, "QQQ": 0.40},
+        "baseWeights": {"SCHD": 0.25, "SGOV": 0.75},
         "dropStages": [
-            {"threshold": -15.0, "weights": {"SCHD": 0.40, "QQQ": 0.60}, "name": "1차 하락 (-15%)"},
-            {"threshold": -25.0, "weights": {"SCHD": 0.40, "QQQ": 0.40, "QLD": 0.20}, "name": "2차 하락 (-25%)"},
-            {"threshold": -40.0, "weights": {"SCHD": 0.20, "QQQ": 0.40, "QLD": 0.40}, "name": "3차 하락 (-40%)"},
-            {"threshold": -60.0, "weights": {"SCHD": 0.20, "QQQ": 0.20, "QLD": 0.40, "TQQQ": 0.20}, "name": "4차 하락 (-60%)"},
-            {"threshold": -80.0, "weights": {"SCHD": 0.00, "QQQ": 0.20, "QLD": 0.40, "TQQQ": 0.40}, "name": "5차 하락 (-80%)"}
+            {"threshold": -10.0, "weights": {"SCHD": 0.25, "SOXL": 0.25, "SGOV": 0.50}, "name": "1차 하락 (-10%)"},
+            {"threshold": -35.0, "weights": {"SOXL": 0.60, "SGOV": 0.40}, "name": "2차 대폭락 (-35%)"}
         ],
         "gainThresholdPct": 20.0,
         "baseRecoveryPct": 0.0,

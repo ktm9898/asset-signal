@@ -1624,7 +1624,7 @@
 
   <!-- Multi-Strategy Comparison Modal -->
   <div class="modal-overlay" id="compareModal">
-    <div class="modal-content" style="max-width: 580px; max-height: 85vh; overflow-y: auto;">
+    <div class="modal-content" style="max-width: 560px; width: 92vw; max-height: 85vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
         <div style="font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-code-compare text-primary"></i> 전략비교
@@ -1932,14 +1932,13 @@
     const DEFAULT_PRESETS = [
       {
         id: 1,
-        name: "나스닥100 동적 계단식 (QQQ/QLD/TQQQ/SCHD)",
-        memo: "평시 QQQ 60:SCHD 40 유지, 나스닥 -20%/-30%/-40% 하락 시 2X/3X 레버리지 분할 매수 및 반등 시 선을 넘으면 계단식 원복",
+        name: "반도체 폭락 스나이퍼 (SOXL Dip-Sniper)",
+        memo: "평시 SCHD 25:SGOV 75 극안전 유지, 나스닥 -10% 시 SOXL 25% 1차 매수, -35% 폭락 시 SOXL 60% 집중 매수 (2012년 이후 수익률 2,324%, MDD -27.1%)",
         benchmark: "^NDX",
-        baseWeights: {"QQQ": 0.60, "SCHD": 0.40},
+        baseWeights: {"SCHD": 0.25, "SGOV": 0.75},
         dropStages: [
-          {"threshold": -20.0, "weights": {"QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30}, "name": "1차 하락 (-20%)"},
-          {"threshold": -30.0, "weights": {"QQQ": 0.30, "QLD": 0.30, "TQQQ": 0.20, "SCHD": 0.20}, "name": "2차 하락 (-30%)"},
-          {"threshold": -40.0, "weights": {"QQQ": 0.20, "QLD": 0.30, "TQQQ": 0.40, "SCHD": 0.10}, "name": "3차 하락 (-40%)"}
+          {"threshold": -10.0, "weights": {"SCHD": 0.25, "SOXL": 0.25, "SGOV": 0.50}, "name": "1차 하락 (-10%)"},
+          {"threshold": -35.0, "weights": {"SOXL": 0.60, "SGOV": 0.40}, "name": "2차 대폭락 (-35%)"}
         ],
         gainThresholdPct: 20.0,
         baseRecoveryPct: 0.0,
@@ -4177,16 +4176,24 @@
         item.style.alignItems = 'center';
         item.style.justifyContent = 'space-between';
         item.style.padding = '10px 14px';
+        item.style.whiteSpace = 'normal';
+        item.style.width = '100%';
+        item.style.boxSizing = 'border-box';
+        item.style.gap = '8px';
 
         item.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <input type="checkbox" class="slot-compare-check" value="${s.id}" style="width: 16px; height: 16px; cursor: pointer;">
-            <div>
-              <div style="font-weight: 700; color: var(--text-main); font-size: 13px;">#${s.id} ${s.name} ${s.id === activeSlotId ? '<span class="slot-badge-active">ACTIVE</span>' : ''}</div>
-              <div style="font-size: 11px; color: var(--text-dim);">기준: ${formatTickerDisplay(s.benchmark || '^NDX')} | 기본비중: ${baseStr}</div>
+          <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0;">
+            <input type="checkbox" class="slot-compare-check" value="${s.id}" style="width: 17px; height: 17px; cursor: pointer; margin-top: 2px; flex-shrink: 0;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 700; color: var(--text-main); font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                #${s.id} ${s.name} ${s.id === activeSlotId ? '<span class="slot-badge-active">ACTIVE</span>' : ''}
+              </div>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px; word-break: break-word; line-height: 1.4;">
+                기준: ${formatTickerDisplay(s.benchmark || '^NDX')} | 기본비중: ${baseStr}
+              </div>
             </div>
           </div>
-          <div style="font-size: 11px; font-weight: 600; color: var(--primary);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--primary); background: #eff6ff; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; white-space: nowrap;">
             낙폭단계 ${s.dropStages ? s.dropStages.length : 0}개
           </div>
         `;
