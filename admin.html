@@ -3443,7 +3443,7 @@
 
     function updateMetricsUI(m, years, rebalCount, initCap, isEmpty = false) {
       if (isEmpty) {
-        document.getElementById('mTotalReturn').textContent = `0.0% (비중 미설정)`;
+        document.getElementById('mTotalReturn').textContent = `0.0%`;
         document.getElementById('mInitialToFinal').textContent = `${formatKRW(initCap)} → ${formatKRW(initCap)}`;
         document.getElementById('mCAGR').textContent = `0.0%`;
         document.getElementById('mYears').textContent = `${years.toFixed(1)}년 시뮬레이션`;
@@ -3470,7 +3470,7 @@
       tbody.innerHTML = `
         <tr class="row-highlight">
           <td style="white-space: nowrap; text-align: center;"><i class="fa-solid fa-star text-primary"></i> <strong>전략지수</strong></td>
-          <td style="white-space: nowrap; text-align: center;">${isEmpty ? '0.0% (미설정)' : '+' + strat.totalReturnPct + '%'}</td>
+          <td style="white-space: nowrap; text-align: center;">${isEmpty ? '0.0%' : '+' + strat.totalReturnPct + '%'}</td>
           <td style="white-space: nowrap; text-align: center;">${isEmpty ? '0.0%' : strat.cagrPct + '%'}</td>
           <td style="white-space: nowrap; text-align: center; color: var(--rose); font-weight: 700;">${isEmpty ? '0.0%' : strat.mddPct + '%'}</td>
           <td style="white-space: nowrap; text-align: center;">${isEmpty ? '0.00' : strat.sharpe}</td>
