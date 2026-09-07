@@ -2576,7 +2576,16 @@
       cur.gainThresholdPct = 20.0;
       cur.feeRate = 0.15;
 
-      populateCurrentSlotUI();
+      document.getElementById('cfgBenchmark').value = "^NDX";
+      document.getElementById('cfgGainThreshold').value = 20;
+      document.getElementById('cfgBaseRecovery').value = 0;
+      document.getElementById('cfgFeeRate').value = "0.15";
+      
+      renderBaseWeightsTable({});
+      renderDropStages([]);
+      if (document.getElementById('recoveryStagesContainer')) {
+        renderRecoveryStages([]);
+      }
       runInteractiveBacktest();
       showToast("설정된 모든 조건이 초기화되었습니다.");
     }
