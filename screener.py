@@ -47,7 +47,7 @@ def format_ticker_display(ticker):
 
 def fetch_active_strategy_from_gas(gas_url, pin=""):
     if not gas_url:
-        return None, 1
+        return None, None
     req_url = f"{gas_url}?action=get_strategy_slots"
     if pin:
         req_url += f"&pin={pin}"
@@ -57,15 +57,19 @@ def fetch_active_strategy_from_gas(gas_url, pin=""):
             data = resp.json()
             if data.get("success"):
                 slots = data.get("slots", [])
-                active_id = data.get("activeSlotId", 1)
+                active_id = data.get("activeSlotId")
+                # 1. Strictly look for isActive flag in slots (from Google Sheet)
                 for s in slots:
-                    if s.get("id") == active_id or s.get("isActive"):
-                        return s, active_id
-                if slots:
-                    return slots[0], active_id
+                    if s.get("isActive"):
+                        return s, s.get("id")
+                # 2. If active_id provided and matched
+                if active_id is not None:
+                    for s in slots:
+                        if s.get("id") == active_id:
+                            return s, active_id
     except Exception as e:
-        print(f"[WARN] Failed to fetch strategy slots from GAS: {e}")
-    return None, 1
+        print(f"[ERROR] Failed to fetch strategy slots from GAS: {e}")
+    return None, None
 
 def fetch_user_holdings_from_gas(gas_url, pin=""):
     if not gas_url:
@@ -312,6 +316,10 @@ def main():
     pin = GAS_AUTH_PIN.strip()
     
     active_strat, active_id = fetch_active_strategy_from_gas(gas_url, pin)
+    if not active_strat:
+        print("[ERROR] No active strategy designated in Google Sheet (Strategy_Slots). Please activate a strategy in Admin page. Exiting.")
+        sys.exit(1)
+    print(f"[INFO] Active Strategy Loaded: [Slot {active_id}] {active_strat.get('name', 'Unnamed')}")
     evaluate_portfolio_signal(active_strat, gas_url)
 
 if __name__ == "__main__":

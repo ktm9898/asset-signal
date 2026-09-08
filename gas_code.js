@@ -151,7 +151,6 @@ function doGet(e) {
   // 2. Set Active Strategy Slot
   if (action === "set_active_strategy_slot") {
     const slotId = parseInt(e.parameter.slotId || "1", 10);
-    PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(slotId));
     
     setupSheets();
     const sheet = ss.getSheetByName("Strategy_Slots");
@@ -238,12 +237,13 @@ function doGet(e) {
       });
     }
     
-    const activeSlotId = PropertiesService.getScriptProperties().getProperty("ACTIVE_STRATEGY_SLOT_ID") || "1";
+    const activeSlotFromSheet = slots.find(s => s.isActive);
+    const activeSlotId = activeSlotFromSheet ? activeSlotFromSheet.id : null;
     const rebalanceDate = PropertiesService.getScriptProperties().getProperty("REBALANCE_DATE") || "2024-01-02";
     return ContentService.createTextOutput(JSON.stringify({ 
       success: true, 
       slots: slots, 
-      activeSlotId: parseInt(activeSlotId, 10),
+      activeSlotId: activeSlotId,
       rebalanceDate: rebalanceDate 
     })).setMimeType(ContentService.MimeType.JSON);
   }
@@ -262,9 +262,20 @@ function doGet(e) {
     result.executionLogs = getSheetData(ss.getSheetByName("Execution_Logs"));
   }
 
-  const activeSlotId = PropertiesService.getScriptProperties().getProperty("ACTIVE_STRATEGY_SLOT_ID") || "1";
+  let activeSlotId = null;
+  const slotsSheetForActive = ss.getSheetByName("Strategy_Slots");
+  if (slotsSheetForActive && slotsSheetForActive.getLastRow() > 1) {
+    const rows = slotsSheetForActive.getRange(2, 1, slotsSheetForActive.getLastRow() - 1, slotsSheetForActive.getLastColumn()).getValues();
+    for (let i = 0; i < rows.length; i++) {
+      const flag = String(rows[i][rows[i].length - 1] || "");
+      if (flag.includes("적용") || flag.includes("ACTIVE")) {
+        activeSlotId = rows[i][0] || (i + 1);
+        break;
+      }
+    }
+  }
   const rebalanceDate = PropertiesService.getScriptProperties().getProperty("REBALANCE_DATE") || "2024-01-02";
-  result.activeSlotId = parseInt(activeSlotId, 10);
+  result.activeSlotId = activeSlotId;
   result.rebalanceDate = rebalanceDate;
 
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
@@ -290,7 +301,6 @@ function doPost(e) {
     // 1. Set Active Strategy Slot
     if (data.action === "set_active_strategy_slot") {
       const slotId = parseInt(data.slotId || "1", 10);
-      PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(slotId));
       
       setupSheets();
       const sheet = ss.getSheetByName("Strategy_Slots");
@@ -324,7 +334,17 @@ function doPost(e) {
       setupSheets();
       const sheet = ss.getSheetByName("Strategy_Slots");
       const slots = data.slots || [];
-      const activeSlotId = parseInt(data.activeSlotId || PropertiesService.getScriptProperties().getProperty("ACTIVE_STRATEGY_SLOT_ID") || "1", 10);
+      let activeSlotId = data.activeSlotId ? parseInt(data.activeSlotId, 10) : null;
+      if (!activeSlotId && sheet && sheet.getLastRow() > 1) {
+        const existingRows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+        for (let i = 0; i < existingRows.length; i++) {
+          const flag = String(existingRows[i][existingRows[i].length - 1] || "");
+          if (flag.includes("적용") || flag.includes("ACTIVE")) {
+            activeSlotId = existingRows[i][0] || (i + 1);
+            break;
+          }
+        }
+      }
       
       if (slots.length > 0) {
         if (sheet.getLastRow() > 1) {
@@ -333,7 +353,7 @@ function doPost(e) {
         const nowStr = Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd HH:mm:ss");
         const rows = slots.map((s, idx) => {
           const slotId = s.id || (idx + 1);
-          const isActive = (slotId === activeSlotId);
+          const isActive = (activeSlotId !== null && slotId === activeSlotId);
           let fVal = s.feeRate !== undefined && s.feeRate !== null ? Number(s.feeRate) : 0.15;
           if (fVal > 0 && fVal < 0.05) fVal = fVal * 100.0;
 
@@ -353,10 +373,9 @@ function doPost(e) {
           ];
         });
         sheet.getRange(2, 1, rows.length, 12).setValues(rows);
-        PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(activeSlotId));
       }
 
-      return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", count: slots.length }))
+      return ContentService.createTextOutput(JSON.stringify({ success: true, status: "success", count: slots.length, activeSlotId: activeSlotId }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -448,7 +467,19 @@ function doPost(e) {
     // 5. Trigger GitHub Actions (Screener)
     if (data.action === "trigger_screener") {
       if (data.slotId) {
-        PropertiesService.getScriptProperties().setProperty("ACTIVE_STRATEGY_SLOT_ID", String(data.slotId));
+        const slotId = parseInt(data.slotId, 10);
+        setupSheets();
+        const sheet = ss.getSheetByName("Strategy_Slots");
+        if (sheet && sheet.getLastRow() > 1) {
+          const lastRow = sheet.getLastRow();
+          const lastCol = sheet.getLastColumn();
+          const activeFlags = [];
+          for (let i = 2; i <= lastRow; i++) {
+            const rowId = parseInt(sheet.getRange(i, 1).getValue(), 10);
+            activeFlags.push([rowId === slotId ? "적용중 (ACTIVE)" : ""]);
+          }
+          sheet.getRange(2, lastCol, activeFlags.length, 1).setValues(activeFlags);
+        }
       }
       const githubToken = PropertiesService.getScriptProperties().getProperty("GITHUB_TOKEN");
       if (!githubToken) {
