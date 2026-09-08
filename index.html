@@ -2324,6 +2324,13 @@
     }
 
     async function activateStrategyFromDashboard(slotId) {
+      if (isGuest()) {
+        closeStrategySelectModal();
+        showToast("실전 대시보드 전략을 변경하려면 관리자 로그인이 필요합니다.");
+        showPinAuthModal();
+        return;
+      }
+
       // 0. Safety check: ensure target slot is not empty
       const stored = localStorage.getItem("asset_strategy_slots_v4");
       if (stored) {

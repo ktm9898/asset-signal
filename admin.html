@@ -2415,6 +2415,12 @@
     }
 
     async function activateCurrentSlot() {
+      if (isGuest()) {
+        showToast("전략을 실전 적용하려면 관리자 로그인이 필요합니다.");
+        showPinAuthModal();
+        return;
+      }
+
       const cur = getCurrentSlot();
       const hasWeights = cur && cur.baseWeights && Object.keys(cur.baseWeights).length > 0 && Object.values(cur.baseWeights).reduce((a, b) => a + Number(b), 0) > 0;
       if (!hasWeights) {
@@ -2462,6 +2468,13 @@
     }
 
     async function confirmSaveStrategy() {
+      if (isGuest()) {
+        closeSaveStrategyModal();
+        showToast("전략을 구글 시트에 영구 저장하려면 관리자 로그인이 필요합니다.");
+        showPinAuthModal();
+        return;
+      }
+
       const targetId = parseInt(document.getElementById('saveStratTargetSlotSelect').value, 10);
       const newName = document.getElementById('saveStratNameInput').value.trim() || `전략 ${targetId}`;
       let isActive = document.getElementById('saveStratIsActiveCheck').checked;
