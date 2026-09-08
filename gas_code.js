@@ -111,8 +111,9 @@ function doGet(e) {
     }
   }
 
-  // 1. PIN Authorization Check for Protected Endpoints
-  if (authPin && inputPin !== authPin) {
+  // 1. PIN Authorization Check for Protected Endpoints (Write Actions)
+  const isProtectedGetAction = (action === "set_active_strategy_slot");
+  if (isProtectedGetAction && authPin && inputPin !== authPin) {
     return ContentService.createTextOutput(JSON.stringify({ 
       success: false, 
       status: "error", 
@@ -219,12 +220,6 @@ function doGet(e) {
       activeSlotId: parseInt(activeSlotId, 10),
       rebalanceDate: rebalanceDate 
     })).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // 4. PIN Authorization Check for Protected Endpoints
-  if (authPin && inputPin !== authPin && action !== "holdings") {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, status: "error", message: "Unauthorized: Invalid PIN" }))
-      .setMimeType(ContentService.MimeType.JSON);
   }
 
   // 5. Default Query (all, signals, holdings, logs)

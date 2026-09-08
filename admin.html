@@ -1235,8 +1235,11 @@
         </div>
       </a>
 
-      <!-- Main Navigation: 대시보드, 백테스트, 데이터조회 -->
+      <!-- Main Navigation: 관리자, 대시보드, 백테스트, 데이터조회 -->
       <div class="header-actions">
+        <button id="admin-header-login-btn" onclick="showPinAuthModal()" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; font-size: 0.82rem; font-weight: 600; border-radius: 8px; border: 1px solid #bfdbfe; background: #eff6ff; color: #2563eb; cursor: pointer;" title="관리자 로그인">
+          <i class="fa-solid fa-key"></i> <span class="nav-text">관리자</span>
+        </button>
         <a href="index.html" class="nav-btn" title="실전 대시보드">
           <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">대시보드</span>
         </a>
@@ -1841,22 +1844,26 @@
   </div>
 
   <!-- PIN Authentication Modal -->
-  <div class="modal-overlay" id="pinAuthModal" style="z-index: 10000; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px);">
-    <div class="modal-content" style="max-width: 360px; text-align: center; padding: 28px 24px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-      <div style="width: 52px; height: 52px; background: #eff6ff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px; border: 1px solid #bfdbfe;">
-        <i class="fa-solid fa-lock text-primary" style="font-size: 22px;"></i>
+  <div class="modal-overlay" id="pinAuthModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); justify-content: center; align-items: center;">
+    <div class="modal-card" style="background: #fff; border-radius: 14px; width: 90%; max-width: 380px; padding: 28px 24px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative;">
+      <button onclick="hidePinAuthModal()" style="position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 1.25rem; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;" title="닫기">&times;</button>
+      <div style="width: 52px; height: 52px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 16px auto; border: 1px solid #bfdbfe;">
+        <i class="fa-solid fa-lock"></i>
       </div>
-      <h3 style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">보안 인증</h3>
-      <p style="font-size: 12.5px; color: var(--text-dim); margin-bottom: 18px;">스튜디오 접속을 위해 비밀번호(PIN)를 입력해주세요.</p>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 16px 0;">보안 인증 / 로그인</h3>
       
-      <div style="margin-bottom: 16px;">
-        <input type="password" id="pinAuthInput" maxlength="20" placeholder="PIN 번호 입력" style="width: 100%; text-align: center; font-size: 19px; font-weight: 700; letter-spacing: 4px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); outline: none; background: #f8fafc; font-family: 'Outfit', sans-serif;" onkeydown="if(event.key==='Enter') submitPinAuth()">
-        <div id="pinAuthError" style="color: var(--rose); font-size: 12px; font-weight: 600; margin-top: 8px; display: none;">비밀번호가 올바르지 않습니다.</div>
+      <div style="margin-bottom: 14px;">
+        <input type="password" id="pinAuthInput" maxlength="20" placeholder="••••••••" style="width: 100%; box-sizing: border-box; text-align: center; font-size: 1.4rem; letter-spacing: 6px; font-weight: 700; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; background: #f8fafc; font-family: 'Outfit', sans-serif;" onkeydown="if(event.key==='Enter'){ this.value.trim() ? submitPinAuth() : enterGuestModeInAdmin(); }" autofocus>
+        <div id="pinAuthError" style="color: #e11d48; font-size: 12px; font-weight: 600; margin-top: 8px; display: none;">비밀번호가 올바르지 않습니다.</div>
       </div>
-
-      <button type="button" id="pinAuthSubmitBtn" onclick="submitPinAuth()" style="width: 100%; padding: 12px; border-radius: 10px; background: var(--primary); color: #fff; font-size: 14px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
-        <i class="fa-solid fa-key"></i> 인증하기
-      </button>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button type="button" id="pinAuthSubmitBtn" onclick="submitPinAuth()" style="width: 100%; padding: 12px; border-radius: 10px; background: #2563eb; color: #fff; font-size: 14px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+          <i class="fa-solid fa-key"></i> 관리자 로그인
+        </button>
+        <button type="button" id="pinAuthGuestBtn" onclick="enterGuestModeInAdmin()" style="width: 100%; padding: 10px; border-radius: 10px; background: #f1f5f9; color: #475569; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-regular fa-compass"></i> 게스트로 둘러보기
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2003,10 +2010,16 @@
       loadLocalSlots();
       renderSlotsNav();
       populateCurrentSlotUI(); // Unfold left sidebar immediately on load with active slot data
+      updateAdminHeaderAuthUI();
 
       // Instant 0ms view switch before any network fetch
       if (isDataView) {
         switchMainView('data');
+      }
+
+      const currentPin = getStoredPin();
+      if (!currentPin) {
+        showPinAuthModal();
       }
       
       await fetchEtfDataset();
@@ -2149,6 +2162,36 @@
       return localStorage.getItem("asset_auth_pin") || "";
     }
 
+    function saveStoredPin(pin) {
+      localStorage.setItem("asset_auth_pin", pin);
+    }
+
+    function clearStoredPin() {
+      localStorage.removeItem("asset_auth_pin");
+    }
+
+    function isGuest() {
+      return !getStoredPin();
+    }
+
+    function updateAdminHeaderAuthUI() {
+      const btn = document.getElementById('admin-header-login-btn');
+      if (!btn) return;
+      if (isGuest()) {
+        btn.innerHTML = `<i class="fa-solid fa-key"></i> <span class="nav-text">관리자</span>`;
+        btn.title = "관리자 로그인";
+        btn.style.background = "#eff6ff";
+        btn.style.color = "#2563eb";
+        btn.style.borderColor = "#bfdbfe";
+      } else {
+        btn.innerHTML = `<i class="fa-solid fa-shield"></i> <span class="nav-text">관리자</span>`;
+        btn.title = "관리자 인증됨";
+        btn.style.background = "#dcfce7";
+        btn.style.color = "#15803d";
+        btn.style.borderColor = "#bbf7d0";
+      }
+    }
+
     function buildGasUrl(action, extraParams = "") {
       const pin = getStoredPin();
       let url = `${GAS_WEBAPP_URL}?action=${encodeURIComponent(action)}`;
@@ -2176,6 +2219,14 @@
       if (modal) modal.style.display = 'none';
     }
 
+    async function enterGuestModeInAdmin() {
+      clearStoredPin();
+      hidePinAuthModal();
+      updateAdminHeaderAuthUI();
+      showToast("게스트(체험) 모드로 접속했습니다.");
+      await fetchGoogleSheetSlots();
+    }
+
     async function submitPinAuth() {
       const input = document.getElementById('pinAuthInput');
       const errEl = document.getElementById('pinAuthError');
@@ -2183,35 +2234,48 @@
       const pinVal = input ? input.value.trim() : '';
 
       if (!pinVal) {
-        errEl.textContent = '비밀번호를 입력해주세요.';
-        errEl.style.display = 'block';
+        enterGuestModeInAdmin();
         return;
       }
 
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 확인 중...';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 확인 중...';
+      }
+      if (errEl) errEl.style.display = 'none';
 
       try {
         const resp = await fetch(`${GAS_WEBAPP_URL}?action=verify_pin&pin=${encodeURIComponent(pinVal)}`);
         const res = await resp.json();
 
         if (res.success && (res.valid !== false)) {
-          localStorage.setItem("asset_auth_pin", pinVal);
+          saveStoredPin(pinVal);
           hidePinAuthModal();
-          showToast("보안 인증이 완료되었습니다.");
+          updateAdminHeaderAuthUI();
+          showToast("관리자로 로그인되었습니다.");
           await fetchGoogleSheetSlots();
         } else {
-          errEl.textContent = '비밀번호가 올바르지 않습니다.';
-          errEl.style.display = 'block';
-          input.value = '';
-          input.focus();
+          clearStoredPin();
+          updateAdminHeaderAuthUI();
+          if (errEl) {
+            errEl.textContent = (res && res.message) ? res.message : '비밀번호가 올바르지 않습니다.';
+            errEl.style.display = 'block';
+          }
+          if (input) {
+            input.value = '';
+            input.focus();
+          }
         }
       } catch (err) {
-        errEl.textContent = '서버 연결 실패. 다시 시도해주세요.';
-        errEl.style.display = 'block';
+        if (errEl) {
+          errEl.textContent = '확인 중 오류가 발생했습니다: ' + err.message;
+          errEl.style.display = 'block';
+        }
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-key"></i> 인증하기';
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-key"></i> 관리자 로그인';
+        }
       }
     }
 
@@ -2248,8 +2312,12 @@
     window.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', (e) => {
-          if (e.target === modal && modal.id !== 'pinAuthModal') {
-            closeModalWithHistory(modal);
+          if (e.target === modal) {
+            if (modal.id === 'pinAuthModal') {
+              hidePinAuthModal();
+            } else {
+              closeModalWithHistory(modal);
+            }
           }
         });
       });
@@ -2262,8 +2330,11 @@
         if (resp.ok) {
           const data = await resp.json();
           if (data.pinRequired && data.status === "error") {
-            localStorage.removeItem("asset_auth_pin");
-            showPinAuthModal();
+            if (!isGuest()) {
+              clearStoredPin();
+              updateAdminHeaderAuthUI();
+              showPinAuthModal();
+            }
             return;
           }
           if (data.success && Array.isArray(data.slots) && data.slots.length > 0) {
@@ -4849,6 +4920,11 @@
     // Cloud & GAS Actions (CORS-Safe Payload)
     // ==========================================
     async function saveSlotsToGAS() {
+      if (isGuest()) {
+        showToast("전략을 구글 시트에 영구 저장하려면 관리자 로그인이 필요합니다.");
+        showPinAuthModal();
+        return;
+      }
       showToast("전략 슬롯을 저장하는 중...");
       try {
         await fetch(GAS_WEBAPP_URL, {
