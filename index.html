@@ -844,6 +844,14 @@
         font-size: 14.5px;
       }
     }
+
+    .auth-locked {
+      filter: blur(14px) !important;
+      opacity: 0.15 !important;
+      pointer-events: none !important;
+      user-select: none !important;
+      transition: filter 0.3s ease, opacity 0.3s ease;
+    }
   </style>
 </head>
 <body>
@@ -1139,10 +1147,11 @@
     let liveSignalData = null;
 
     window.addEventListener('DOMContentLoaded', async () => {
+      updateAuthLockUI();
       loadInitialData();
       updateHeaderAuthButton();
       if (!isLoggedIn()) {
-        showPinAuthModal();
+        showPinAuthModal("보안 인증 / 로그인", "관리자 또는 게스트 비밀번호를 입력해주세요.", true);
       } else {
         await fetchLiveDashboardData();
       }
@@ -1217,6 +1226,17 @@
       return Boolean(getStoredPin());
     }
 
+    function updateAuthLockUI() {
+      const container = document.querySelector('.container');
+      if (container) {
+        if (!isLoggedIn()) {
+          container.classList.add('auth-locked');
+        } else {
+          container.classList.remove('auth-locked');
+        }
+      }
+    }
+
     function updateHeaderAuthButton() {
       const btn = document.getElementById('headerAuthBtn');
       if (!btn) return;
@@ -1226,7 +1246,7 @@
         btn.style.background = "#eff6ff";
         btn.style.color = "#2563eb";
         btn.style.borderColor = "#bfdbfe";
-        btn.onclick = () => showPinAuthModal();
+        btn.onclick = () => showPinAuthModal("보안 인증 / 로그인", "관리자 또는 게스트 비밀번호를 입력해주세요.", true);
       } else if (isGuest()) {
         btn.innerHTML = `<i class="fa-solid fa-user-check"></i> <span class="nav-text">게스트</span>`;
         btn.title = "게스트 모드 (클릭 시 관리자 로그인 또는 로그아웃)";
@@ -1246,12 +1266,13 @@
 
     function handleGuestHeaderClick() {
       if (confirm("관리자 계정으로 로그인하시겠습니까?\n(취소를 누르면 로그아웃 여부를 확인합니다)")) {
-        showPinAuthModal("관리자 인증", "관리자 비밀번호를 입력해주세요.");
+        showPinAuthModal("관리자 인증", "관리자 비밀번호를 입력해주세요.", false);
       } else {
         if (confirm("게스트 모드에서 로그아웃하시겠습니까?")) {
           clearStoredAuth();
+          updateAuthLockUI();
           updateHeaderAuthButton();
-          showPinAuthModal();
+          showPinAuthModal("보안 인증 / 로그인", "관리자 또는 게스트 비밀번호를 입력해주세요.", true);
         }
       }
     }
@@ -1259,8 +1280,9 @@
     function handleAdminLogout() {
       if (confirm("관리자 인증을 해제(로그아웃)하시겠습니까?")) {
         clearStoredAuth();
+        updateAuthLockUI();
         updateHeaderAuthButton();
-        showPinAuthModal();
+        showPinAuthModal("보안 인증 / 로그인", "관리자 또는 게스트 비밀번호를 입력해주세요.", true);
       }
     }
 
@@ -1272,7 +1294,7 @@
       return url;
     }
 
-    function showPinAuthModal(customTitle = "보안 인증 / 로그인", customSubtitle = "") {
+    function showPinAuthModal(customTitle = "보안 인증 / 로그인", customSubtitle = "", isMandatory = !isLoggedIn()) {
       const modal = document.getElementById('pinAuthModal');
       if (modal) {
         modal.style.display = 'flex';
@@ -1282,6 +1304,10 @@
         if (subEl) {
           subEl.textContent = customSubtitle || "관리자 또는 게스트 비밀번호를 입력해주세요.";
           subEl.style.display = 'block';
+        }
+        const closeBtn = modal.querySelector('button[title="닫기"]') || modal.querySelector('.modal-close-btn');
+        if (closeBtn) {
+          closeBtn.style.display = isMandatory ? 'none' : 'block';
         }
         const input = document.getElementById('pinAuthInput');
         if (input) {
@@ -1294,6 +1320,9 @@
     }
 
     function hidePinAuthModal() {
+      if (!isLoggedIn()) {
+        return; // Unauthenticated visitors cannot dismiss the login modal
+      }
       const modal = document.getElementById('pinAuthModal');
       if (modal) modal.style.display = 'none';
     }
@@ -1302,7 +1331,7 @@
       const pinModal = document.getElementById('pinAuthModal');
       if (pinModal) {
         pinModal.addEventListener('click', (e) => {
-          if (e.target === pinModal) {
+          if (e.target === pinModal && isLoggedIn()) {
             hidePinAuthModal();
           }
         });
@@ -1336,6 +1365,7 @@
         if (res.success && (res.valid !== false)) {
           const role = res.role || "admin";
           saveStoredAuth(pinVal, role);
+          updateAuthLockUI();
           hidePinAuthModal();
           updateHeaderAuthButton();
           if (role === "admin") {
@@ -1346,6 +1376,7 @@
           await fetchLiveDashboardData();
         } else {
           clearStoredAuth();
+          updateAuthLockUI();
           updateHeaderAuthButton();
           if (errEl) {
             errEl.textContent = (res && res.message) ? res.message : '비밀번호가 올바르지 않습니다.';
