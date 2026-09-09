@@ -46,12 +46,14 @@ def format_ticker_display(ticker):
         return f"{code} ({code})"
     return t_clean
 
+import urllib.parse
+
 def fetch_active_strategy_from_gas(gas_url, pin=""):
     if not gas_url:
         return None, None
     req_url = f"{gas_url}?action=get_strategy_slots"
     if pin:
-        req_url += f"&pin={pin}"
+        req_url += f"&pin={urllib.parse.quote(pin)}"
     try:
         resp = requests.get(req_url, timeout=15)
         if resp.status_code == 200:
@@ -320,6 +322,10 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
 def main():
     gas_url = GAS_WEBAPP_URL.strip()
     pin = AUTH_PIN.strip()
+    if pin:
+        print(f"[INFO] PIN configured in environment: {len(pin)} chars")
+    else:
+        print("[WARN] AUTH_PIN is EMPTY! (No PIN passed to script)")
     
     active_strat, active_id = fetch_active_strategy_from_gas(gas_url, pin)
     if not active_strat:
