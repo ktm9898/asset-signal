@@ -410,8 +410,9 @@ function doPost(e) {
         nowStr
       ]]);
 
-      // Only append to Execution_Logs when an actual signal/rebalance occurs (state change or drop stage entered)
-      if (isStateChanged || isSpecialState || hasDelta) {
+      // Only append to Execution_Logs when an actual signal/rebalance occurs (state change to special state or rebalance delta)
+      const isRebalanceTriggered = hasDelta || (isStateChanged && isSpecialState);
+      if (isRebalanceTriggered) {
         const logSheet = ss.getSheetByName("Execution_Logs");
         logSheet.appendRow([
           nowStr,

@@ -50,7 +50,7 @@ import urllib.parse
 
 def fetch_active_strategy_from_gas(gas_url, pin=""):
     if not gas_url:
-        return None, None
+        return None, None, None
     req_url = f"{gas_url}?action=get_strategy_slots"
     if pin:
         req_url += f"&pin={urllib.parse.quote(pin)}"
@@ -61,15 +61,16 @@ def fetch_active_strategy_from_gas(gas_url, pin=""):
             if data.get("success"):
                 slots = data.get("slots", [])
                 active_id = data.get("activeSlotId")
+                rebalance_date = data.get("rebalanceDate")
                 # 1. Strictly look for isActive flag in slots (from Google Sheet)
                 for s in slots:
                     if s.get("isActive"):
-                        return s, s.get("id")
+                        return s, s.get("id"), rebalance_date
                 # 2. If active_id provided and matched
                 if active_id is not None:
                     for s in slots:
                         if s.get("id") == active_id:
-                            return s, active_id
+                            return s, active_id, rebalance_date
             else:
                 msg = data.get("message", "Unknown error from GAS")
                 print(f"[ERROR] GAS returned failure response: {msg}")
@@ -77,7 +78,7 @@ def fetch_active_strategy_from_gas(gas_url, pin=""):
             print(f"[ERROR] GAS request failed with HTTP status {resp.status_code}: {resp.text[:120]}")
     except Exception as e:
         print(f"[ERROR] Failed to fetch strategy slots from GAS: {e}")
-    return None, None
+    return None, None, None
 
 def fetch_user_holdings_from_gas(gas_url, pin=""):
     if not gas_url:
@@ -95,7 +96,7 @@ def fetch_user_holdings_from_gas(gas_url, pin=""):
         print(f"[WARN] Failed to fetch holdings: {e}")
     return []
 
-def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
+def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=None):
     print("=" * 60)
     print("[INFO] Running Daily Dynamic Asset Allocation Signal Engine")
     print(f"Timestamp: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -169,21 +170,36 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
     if tot_b > 0:
         norm_base = {k: v / tot_b for k, v in norm_base.items()}
 
+    all_eval_dates = list(bm_series.index)
+    eval_dates = all_eval_dates
+    if rebalance_date:
+        try:
+            start_ts = pd.to_datetime(rebalance_date).tz_localize(None)
+            filtered = [d for d in all_eval_dates if pd.to_datetime(d).tz_localize(None) >= start_ts]
+            if filtered:
+                eval_dates = filtered
+                print(f"[INFO] Evaluating state transitions strictly starting from investment date: {rebalance_date} ({len(eval_dates)} trading days)")
+        except Exception as e:
+            print(f"[WARN] Failed to parse rebalance_date '{rebalance_date}': {e}")
+
+    # Track ATH up to the first eval date
+    first_dt = eval_dates[0]
+    hist_before = bm_series.loc[:first_dt]
+    current_bm_peak = float(hist_before.max()) if len(hist_before) > 0 else float(bm_series.loc[first_dt])
+
     current_stage_idx = -1
     drop_entry_peak = 0.0
-    current_bm_peak = 0.0
     last_rebalance_nav = 100000000.0
     current_nav = 100000000.0
     holdings = {t: 0.0 for t in all_tickers}
     fee_rate = 0.0015
 
-    # Initialize holdings at day 0
-    day0_prices = {t: float(adj_close[t].dropna().iloc[0]) if t in adj_close and len(adj_close[t].dropna()) > 0 else 1.0 for t in all_tickers}
+    # Initialize holdings at investment start date (Day 0)
+    day0_prices = {t: float(adj_close[t].loc[first_dt]) if t in adj_close and first_dt in adj_close[t].index and not pd.isna(adj_close[t].loc[first_dt]) else 1.0 for t in all_tickers}
     for t, w in norm_base.items():
         p0 = day0_prices.get(t, 1.0)
         holdings[t] = (current_nav * w * (1.0 - fee_rate)) / p0 if p0 > 0 else 0.0
 
-    eval_dates = list(bm_series.index)
     for d_idx, dt in enumerate(eval_dates):
         current_p = float(bm_series.loc[dt])
         if current_p > current_bm_peak:
@@ -327,12 +343,14 @@ def main():
     else:
         print("[WARN] AUTH_PIN is EMPTY! (No PIN passed to script)")
     
-    active_strat, active_id = fetch_active_strategy_from_gas(gas_url, pin)
+    active_strat, active_id, rebalance_date = fetch_active_strategy_from_gas(gas_url, pin)
     if not active_strat:
         print("[ERROR] No active strategy designated in Google Sheet (Strategy_Slots). Please activate a strategy in Admin page. Exiting.")
         sys.exit(1)
     print(f"[INFO] Active Strategy Loaded: [Slot {active_id}] {active_strat.get('name', 'Unnamed')}")
-    evaluate_portfolio_signal(active_strat, gas_url)
+    if rebalance_date:
+        print(f"[INFO] Investment Start Date: {rebalance_date}")
+    evaluate_portfolio_signal(active_strat, gas_url, rebalance_date=rebalance_date)
 
 if __name__ == "__main__":
     main()
