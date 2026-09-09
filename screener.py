@@ -5,6 +5,7 @@ and sends actionable rebalancing weights (%) and weight deltas (%p) to Google Ap
 """
 
 import os
+import sys
 import json
 import datetime
 import requests
@@ -12,7 +13,7 @@ import yfinance as yf
 import pandas as pd
 
 GAS_WEBAPP_URL = os.environ.get("GAS_WEBAPP_URL", "")
-GAS_AUTH_PIN = os.environ.get("GAS_AUTH_PIN", "")
+AUTH_PIN = os.environ.get("AUTH_PIN", "") or os.environ.get("GAS_AUTH_PIN", "")
 ACTIVE_SLOT_ID = os.environ.get("ACTIVE_SLOT_ID", "1")
 
 KOREAN_ETF_NAMES = {
@@ -67,6 +68,11 @@ def fetch_active_strategy_from_gas(gas_url, pin=""):
                     for s in slots:
                         if s.get("id") == active_id:
                             return s, active_id
+            else:
+                msg = data.get("message", "Unknown error from GAS")
+                print(f"[ERROR] GAS returned failure response: {msg}")
+        else:
+            print(f"[ERROR] GAS request failed with HTTP status {resp.status_code}: {resp.text[:120]}")
     except Exception as e:
         print(f"[ERROR] Failed to fetch strategy slots from GAS: {e}")
     return None, None
@@ -300,7 +306,7 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
                 gas_url,
                 json={
                     "action": "update_portfolio_signal",
-                    "pin": GAS_AUTH_PIN,
+                    "pin": AUTH_PIN,
                     "signal": signal_payload
                 },
                 timeout=15
@@ -313,7 +319,7 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url=""):
 
 def main():
     gas_url = GAS_WEBAPP_URL.strip()
-    pin = GAS_AUTH_PIN.strip()
+    pin = AUTH_PIN.strip()
     
     active_strat, active_id = fetch_active_strategy_from_gas(gas_url, pin)
     if not active_strat:
