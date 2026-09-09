@@ -13,7 +13,7 @@ import yfinance as yf
 import pandas as pd
 
 GAS_WEBAPP_URL = os.environ.get("GAS_WEBAPP_URL", "")
-AUTH_PIN = os.environ.get("AUTH_PIN", "") or os.environ.get("GAS_AUTH_PIN", "")
+AUTH_PIN = os.environ.get("AUTH_PIN", "")
 ACTIVE_SLOT_ID = os.environ.get("ACTIVE_SLOT_ID", "1")
 
 KOREAN_ETF_NAMES = {

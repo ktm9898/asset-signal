@@ -26,6 +26,6 @@ jobs:
       - name: Run Dynamic Asset Allocation Signal Engine
         env:
           GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
-          AUTH_PIN: ${{ secrets.AUTH_PIN || secrets.GAS_AUTH_PIN }}
+          AUTH_PIN: ${{ secrets.AUTH_PIN }}
         run: |
           python screener.py
