@@ -605,25 +605,65 @@ function parseJsonSafe(str, fallback) {
 }
 
 /**
- * Automatically triggered by Google Apps Script UI Triggers (⏰ 트리거)
+ * Google Apps Script 시간 기반 트리거(⏰)에서 실행할 함수
+ * - 요일 상관없이 매일 실행
+ * - GitHub Actions의 screener.yml을 즉시 원격 호출(workflow_dispatch)
  */
 function triggerGitHubScreener() {
   const githubToken = PropertiesService.getScriptProperties().getProperty("GITHUB_TOKEN");
+  if (!githubToken) {
+    const msg = "GITHUB_TOKEN이 스크립트 속성(Script Properties)에 설정되지 않았습니다.";
+    Logger.log("[triggerGitHubScreener] " + msg);
+    logTriggerResult("FAILED", msg);
+    return;
+  }
+
   const url = "https://api.github.com/repos/ktm9898/asset-signal/actions/workflows/screener.yml/dispatches";
   const options = {
     method: "post",
     contentType: "application/json",
     headers: {
       "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer " + githubToken,
       "User-Agent": "GoogleAppsScript"
     },
     payload: JSON.stringify({ ref: "main" }),
     muteHttpExceptions: true
   };
-  if (githubToken) {
-    options.headers["Authorization"] = "Bearer " + githubToken;
-  }
+
   try {
-    UrlFetchApp.fetch(url, options);
-  } catch (err) {}
+    const response = UrlFetchApp.fetch(url, options);
+    const code = response.getResponseCode();
+    if (code === 204) {
+      Logger.log("[triggerGitHubScreener] GitHub Actions screener.yml 원격 트리거 성공 (HTTP 204)");
+      logTriggerResult("SUCCESS", "GitHub Actions screener.yml 원격 트리거 완료 (정상 204)");
+    } else {
+      const errBody = response.getContentText();
+      Logger.log(`[triggerGitHubScreener] 트리거 실패 (HTTP ${code}): ${errBody}`);
+      logTriggerResult("FAILED", `HTTP ${code}: ${errBody}`);
+    }
+  } catch (err) {
+    Logger.log("[triggerGitHubScreener] 예외 발생: " + err.toString());
+    logTriggerResult("ERROR", err.toString());
+  }
 }
+
+/**
+ * 트리거 실행 결과를 Execution_Logs 시트에 기록
+ */
+function logTriggerResult(status, message) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return;
+    let logSheet = ss.getSheetByName("Execution_Logs");
+    if (!logSheet) {
+      logSheet = ss.insertSheet("Execution_Logs");
+      logSheet.getRange("A1:E1").setValues([["Timestamp", "Status", "BenchmarkMDD", "CurrentState", "Message"]]);
+    }
+    const timestamp = Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd HH:mm:ss");
+    logSheet.appendRow([timestamp, status, "-", "GAS_TRIGGER", message]);
+  } catch (e) {
+    Logger.log("logTriggerResult error: " + e.toString());
+  }
+}
+

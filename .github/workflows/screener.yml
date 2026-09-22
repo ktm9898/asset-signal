@@ -2,9 +2,11 @@ name: Dynamic Asset Allocation & Portfolio Signal Engine
 
 on:
   workflow_dispatch:
-  schedule:
-    # Every Tuesday to Saturday at 06:30 KST (21:30 UTC Mon-Fri, after US Market Close)
-    - cron: '30 21 * * 1-5'
+  # schedule:
+  #   # Every Tuesday to Saturday at 06:30 KST (21:30 UTC Mon-Fri, after US Market Close)
+  #   # Note: Disabled in favor of Google Apps Script time-driven trigger for punctual execution.
+  #   - cron: '30 21 * * 1-5'
+
 
 jobs:
   screen:

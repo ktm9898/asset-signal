@@ -23,8 +23,9 @@
    - 사용자 총 투자금액 입력 시 ETF별 목표 매매 금액 자동 산출
 
 4. **클라우드 자동화 파이프라인**:
-   - **GitHub Actions**: 미국 장 마감 후 매일 06:30 KST 자동 실행 (`screener.yml`)
-   - **Google Apps Script & Sheets**: 일일 리밸런싱 신호, 사용자 보유 자산, 전략 슬롯 DB 연동
+   - **Google Apps Script 시간 기반 트리거**: 매일 정시(예: 06:30 KST)에 GitHub Actions 원격 호출 (`triggerGitHubScreener`)
+   - **GitHub Actions**: GAS 트리거를 받아 동적 자산배분 및 시그널 엔진 즉시 실행 (`screener.yml`)
+   - **Google Apps Script & Sheets**: 일일 리밸런싱 신호, 사용자 보유 자산, 전략 슬롯 DB 연동 및 실행 로그 관리
 
 ---
 
