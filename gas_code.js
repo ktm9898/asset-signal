@@ -33,10 +33,15 @@ function setupSheets() {
   ]]);
   slotsSheet.getRange("A1:L1").setFontWeight("bold").setBackground("#dbeafe");
 
-  // 3. Execution Logs Sheet (일일 봇 실행 로그)
+  // 3. Execution Logs Sheet (포트폴리오 리밸런싱 및 국면 전환 신호 이력 로그)
   let logSheet = ss.getSheetByName("Execution_Logs") || ss.insertSheet("Execution_Logs");
   logSheet.getRange("A1:E1").setValues([["Timestamp", "Status", "BenchmarkMDD", "CurrentState", "Message"]]);
   logSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#dcfce7");
+
+  // 4. Trigger Logs Sheet (GAS 스케줄러 GitHub Actions 원격 호출 시스템 로그)
+  let trigSheet = ss.getSheetByName("Trigger_Logs") || ss.insertSheet("Trigger_Logs");
+  trigSheet.getRange("A1:C1").setValues([["Timestamp", "Status", "Message"]]);
+  trigSheet.getRange("A1:C1").setFontWeight("bold").setBackground("#fef3c7");
 }
 
 function doGet(e) {
@@ -260,6 +265,9 @@ function doGet(e) {
   }
   if (action === "all" || action === "logs") {
     result.executionLogs = getSheetData(ss.getSheetByName("Execution_Logs"));
+  }
+  if (action === "trigger_logs") {
+    result.triggerLogs = getSheetData(ss.getSheetByName("Trigger_Logs"));
   }
 
   let activeSlotId = null;
@@ -649,19 +657,20 @@ function triggerGitHubScreener() {
 }
 
 /**
- * 트리거 실행 결과를 Execution_Logs 시트에 기록
+ * 트리거 실행 결과를 별도의 Trigger_Logs 시트에 기록 (포트폴리오 리밸런싱 신호 이력과 분리)
  */
 function logTriggerResult(status, message) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     if (!ss) return;
-    let logSheet = ss.getSheetByName("Execution_Logs");
-    if (!logSheet) {
-      logSheet = ss.insertSheet("Execution_Logs");
-      logSheet.getRange("A1:E1").setValues([["Timestamp", "Status", "BenchmarkMDD", "CurrentState", "Message"]]);
+    let trigSheet = ss.getSheetByName("Trigger_Logs");
+    if (!trigSheet) {
+      trigSheet = ss.insertSheet("Trigger_Logs");
+      trigSheet.getRange("A1:C1").setValues([["Timestamp", "Status", "Message"]]);
+      trigSheet.getRange("A1:C1").setFontWeight("bold").setBackground("#fef3c7");
     }
     const timestamp = Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd HH:mm:ss");
-    logSheet.appendRow([timestamp, status, "-", "GAS_TRIGGER", message]);
+    trigSheet.appendRow([timestamp, status, message]);
   } catch (e) {
     Logger.log("logTriggerResult error: " + e.toString());
   }

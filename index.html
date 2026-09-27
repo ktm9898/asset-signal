@@ -1785,6 +1785,11 @@
         const msg = String(l.Message || l.Advice || '').trim();
         const status = String(l.Status || '').trim();
         
+        // Exclude system heartbeat / webhook trigger logs
+        if (state === 'GAS_TRIGGER' || status === 'GAS_TRIGGER' || msg.includes('원격 트리거') || msg.includes('screener.yml')) {
+          return false;
+        }
+
         const isSpecialState = state && !state.includes('평시') && !state.includes('기본 (정상');
         const isSignalStatus = status === '신호발생' || status === 'REBALANCE';
         const hasWeightAction = msg.includes('매수') || msg.includes('매도') || msg.includes('리밸런싱');
