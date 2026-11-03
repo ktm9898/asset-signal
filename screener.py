@@ -197,6 +197,8 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
     holdings = {t: 0.0 for t in all_tickers}
     fee_rate = 0.0015
     pending_rebalance = None
+    triggered_today = False
+    today_target_stage_idx = -1
 
     # Initialize holdings at investment start date (Day 0 Open)
     day0_prices = {t: float(adj_open[t].loc[first_dt]) if t in adj_open and first_dt in adj_open[t].index and not pd.isna(adj_open[t].loc[first_dt]) else 1.0 for t in all_tickers}
@@ -287,19 +289,41 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
                 }
             else:
                 # Signal triggered on the final (latest) day's close -> report immediately for tomorrow's Open trade
-                current_stage_idx = next_stage_idx
+                triggered_today = True
+                today_target_stage_idx = next_stage_idx
+
+    # Current actual holding weights before tomorrow's open rebalance
+    final_day_prices = {t: float(adj_close[t].loc[eval_dates[-1]]) if t in adj_close and eval_dates[-1] in adj_close[t].index and not pd.isna(adj_close[t].loc[eval_dates[-1]]) else 1.0 for t in all_tickers}
+    cur_nav = sum(holdings[t] * final_day_prices.get(t, 1.0) for t in all_tickers)
+    cur_actual_weights = {}
+    for t in all_tickers:
+        val = holdings[t] * final_day_prices.get(t, 1.0)
+        cur_actual_weights[t] = round((val / cur_nav) * 100.0, 1) if cur_nav > 0 else 0.0
+
+    bm_display_name = format_ticker_display(benchmark_ticker)
+    # Remove ticker code in parentheses if present, e.g. "나스닥 100 지수 (^NDX)" -> "나스닥 100"
+    if " (" in bm_display_name:
+        bm_display_name = bm_display_name.split(" (")[0].replace(" 지수", "")
+
+    effective_stage_idx = today_target_stage_idx if triggered_today else current_stage_idx
 
     # Determine final active state name and target weights for today
-    if current_stage_idx >= 0 and current_stage_idx < len(sorted_drops):
-        st = sorted_drops[current_stage_idx]
+    if effective_stage_idx >= 0 and effective_stage_idx < len(sorted_drops):
+        st = sorted_drops[effective_stage_idx]
         current_state = st.get("name", f"하락 {st.get('threshold', 0.0)}%")
         raw_tw = st.get("weights", {})
         rec_str = f"전고점 +{base_recovery_pct:.0f}% 돌파" if base_recovery_pct > 0 else "전고점(0.0%) 복귀"
-        advice_msg = f"[낙폭 국면 유지] {benchmark_ticker} 고점 대비 {bm_mdd_pct:.1f}% 수준. {current_state} 비중 유지하며 {rec_str} 대기."
+        if triggered_today:
+            advice_msg = f"[{current_state} 리밸런싱 신호] {bm_display_name} 고점 대비 {bm_mdd_pct:.1f}% 도달. 익일 시가 목표 비중으로 리밸런싱을 실행하세요."
+        else:
+            advice_msg = f"[{current_state} 국면 유지] {bm_display_name} 고점 대비 {bm_mdd_pct:.1f}%. {current_state} 비중 유지하며 {rec_str} 대기."
     else:
         current_state = "기본 (정상 운용)"
         raw_tw = norm_base
-        advice_msg = f"[정상 운용] {benchmark_ticker} 정상 범위 (MDD {bm_mdd_pct:.1f}%). 기본 포트폴리오 비중 유지."
+        if triggered_today:
+            advice_msg = f"[기본 비중 복귀 신호] {bm_display_name} 정상 범위 회복 (MDD {bm_mdd_pct:.1f}%). 익일 시가 기본 비중으로 리밸런싱을 실행하세요."
+        else:
+            advice_msg = f"[정상 운용] {bm_display_name} 정상 범위 (MDD {bm_mdd_pct:.1f}%). 기본 포트폴리오 비중 유지."
 
     # Normalize target weights to 100%
     tot_w = sum(raw_tw.values())
@@ -311,9 +335,9 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
     delta_weights = {}
     for t in all_tickers:
         tgt = target_weights.get(t, 0.0)
-        base = norm_base.get(t, 0.0) * 100.0
-        delta = tgt - base
-        if abs(delta) > 0.01:
+        cur = cur_actual_weights.get(t, 0.0)
+        delta = tgt - cur
+        if abs(delta) >= 0.5:
             delta_weights[t] = round(delta, 1)
 
     print(f"\n[최종 산출 신호]")

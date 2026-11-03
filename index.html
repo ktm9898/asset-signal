@@ -892,44 +892,43 @@
   <!-- Main Container -->
   <div class="container">
 
-    <!-- Hero Banner -->
-    <div class="hero-banner">
-      <div class="hero-left" style="max-width: 100%; width: 100%; display: flex; flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <!-- Strategy Bar: button + name + benchmark tag -->
-        <div class="strategy-bar" onclick="openStrategySelectModal()" title="클릭하여 전략 선택 및 조건 확인" style="margin-bottom: 0;">
-          <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
-          <span class="strategy-bar-name" id="currentStrategyNameDisplay">#1. 전략 로딩중...</span>
-          <span id="heroBenchmarkTag" style="font-size: 13px; color: var(--text-dim); font-weight: 500; padding-left: 6px; white-space: nowrap;">(기준지표 : 나스닥100)</span>
-        </div>
+    <!-- Hero Banner (Unified 3-Section Balanced Row) -->
+    <div class="hero-banner" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 16px 20px;">
+      <!-- 1. Left: Strategy Selector -->
+      <div class="strategy-bar" onclick="openStrategySelectModal()" title="클릭하여 전략 선택 및 조건 확인" style="margin-bottom: 0; flex-shrink: 0;">
+        <button type="button" class="btn-strategy-pill"><i class="fa-solid fa-sliders"></i> 전략선택</button>
+        <span class="strategy-bar-name" id="currentStrategyNameDisplay">#1. 전략 로딩중...</span>
+        <span id="heroBenchmarkTag" style="font-size: 12.5px; color: var(--text-dim); font-weight: 500; padding-left: 4px; white-space: nowrap;">(나스닥 100)</span>
+      </div>
 
-        <!-- Investment Start Date & Cumulative Return Pill -->
-        <div class="strategy-tracker-pill" style="display: inline-flex; align-items: center; gap: 14px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 14px; flex-wrap: wrap;">
-          <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-dim);">
-            <i class="fa-regular fa-calendar-check text-primary"></i>
-            <span style="font-weight: 600;">투자시작일</span>
-            <input type="date" class="calc-input" id="userStartDate" style="width: 125px; padding: 3px 6px; font-size: 11.5px; font-weight: 700; color: var(--text-main); background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
-          </div>
-          <div style="width: 1px; height: 16px; background: #cbd5e1;"></div>
-          <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px;">
-            <span style="color: var(--text-dim); font-weight: 600;">누적수익률</span>
-            <span id="trackerReturnVal" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 16px; color: var(--emerald);">+0.0%</span>
-            <span id="trackerTargetBadge" style="display: none;"></span>
-          </div>
+      <!-- 2. Center: Investment Start Date & Return -->
+      <div class="strategy-tracker-pill" style="display: inline-flex; align-items: center; gap: 12px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 5px 12px; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim);">
+          <i class="fa-regular fa-calendar-check text-primary"></i>
+          <span style="font-weight: 600;">투자시작일</span>
+          <input type="date" class="calc-input" id="userStartDate" style="width: 120px; padding: 2px 4px; font-size: 11px; font-weight: 700; color: var(--text-main); background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
+        </div>
+        <div style="width: 1px; height: 16px; background: #cbd5e1;"></div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+          <span style="color: var(--text-dim); font-weight: 600;">누적수익률</span>
+          <span id="trackerReturnVal" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 15px; color: var(--emerald);">+0.0%</span>
+          <span id="trackerTargetBadge" style="display: none;"></span>
         </div>
       </div>
 
-      <div class="hero-stats" style="width: 100%; justify-content: flex-start; margin-top: 4px;">
-        <div class="hero-stat-box">
-          <div class="stat-label" id="heroPriceLabel">현재 지수</div>
-          <div class="stat-value" id="heroPrice">29,641.56</div>
+      <!-- 3. Right: Benchmark Index Metrics (3 Compact Cards) -->
+      <div class="hero-stats" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin: 0;">
+        <div class="hero-stat-box" style="padding: 6px 12px; min-width: 95px; border-radius: 8px;">
+          <div class="stat-label" id="heroPriceLabel" style="font-size: 10.5px;">현재 지수</div>
+          <div class="stat-value" id="heroPrice" style="font-size: 15px;">27,989.82</div>
         </div>
-        <div class="hero-stat-box">
-          <div class="stat-label">고점대비 낙폭</div>
-          <div class="stat-value" id="heroMDD" style="color: var(--emerald);">-3.25%</div>
+        <div class="hero-stat-box" style="padding: 6px 12px; min-width: 95px; border-radius: 8px;">
+          <div class="stat-label" style="font-size: 10.5px;">고점대비 낙폭</div>
+          <div class="stat-value" id="heroMDD" style="font-size: 15px; color: var(--rose);">-10.36%</div>
         </div>
-        <div class="hero-stat-box">
-          <div class="stat-label" id="heroATHLabel">역대 최고치</div>
-          <div class="stat-value" id="heroATH">30,634.20</div>
+        <div class="hero-stat-box" style="padding: 6px 12px; min-width: 95px; border-radius: 8px;">
+          <div class="stat-label" id="heroATHLabel" style="font-size: 10.5px;">역대 최고치</div>
+          <div class="stat-value" id="heroATH" style="font-size: 15px;">31,224.47</div>
         </div>
       </div>
     </div>
@@ -1576,18 +1575,27 @@
 
         const card = document.createElement('div');
         card.className = 'weight-item-card';
+        const isHeld = currPct > 0.1;
+        const retBadgeHtml = isHeld ? `
+          <span style="font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 800; color: ${isRetPlus ? 'var(--emerald)' : 'var(--rose)'}; background: ${isRetPlus ? '#ecfdf5' : '#fff1f2'}; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isRetPlus ? '#a7f3d0' : '#fecdd3'}; margin-left: 2px;">
+            ${isRetPlus ? '+' : ''}${ret.toFixed(1)}%
+          </span>
+        ` : `
+          <span style="font-size: 11px; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe; margin-left: 2px;">
+            신규 진입 대기
+          </span>
+        `;
+
         card.innerHTML = `
           <div class="asset-info">
             <div class="asset-color-dot" style="background: ${colors[idx]}; width: 10px; height: 10px;"></div>
-            <span class="asset-ticker" style="font-size: 14.5px; font-weight: 800;">${formatTickerDisplay(ticker)}</span>
-            <span style="font-family: 'Outfit', sans-serif; font-size: 12.5px; font-weight: 800; color: ${isRetPlus ? 'var(--emerald)' : 'var(--rose)'}; background: ${isRetPlus ? '#ecfdf5' : '#fff1f2'}; padding: 2px 7px; border-radius: 4px; border: 1px solid ${isRetPlus ? '#a7f3d0' : '#fecdd3'}; margin-left: 2px;">
-              ${isRetPlus ? '+' : ''}${ret.toFixed(1)}%
-            </span>
+            <span class="asset-ticker" style="font-size: 14px; font-weight: 800;">${formatTickerDisplay(ticker)}</span>
+            ${retBadgeHtml}
           </div>
           <div style="display: flex; align-items: center; gap: 5px; font-family: 'Outfit', sans-serif;">
-            <span style="font-size: 12px; color: var(--text-muted);"><span class="weight-lbl-hide-mobile">기준 </span><strong style="color: var(--text-main); font-size: 13.5px;">${targetPct.toFixed(1)}%</strong></span>
+            <span style="font-size: 12px; color: var(--text-muted);"><span class="weight-lbl-hide-mobile">현재 </span><strong style="color: var(--text-main); font-size: 13.5px;">${currPct.toFixed(1)}%</strong></span>
             <span style="font-size: 11px; color: var(--text-dim);"><i class="fa-solid fa-arrow-right-long"></i></span>
-            <span style="font-size: 12px; color: var(--primary);"><span class="weight-lbl-hide-mobile">현재 </span><strong style="color: var(--primary); font-size: 14.5px;">${currPct.toFixed(1)}%</strong></span>
+            <span style="font-size: 12px; color: var(--primary);"><span class="weight-lbl-hide-mobile">목표 </span><strong style="color: var(--primary); font-size: 14.5px;">${targetPct.toFixed(1)}%</strong></span>
           </div>
         `;
         container.appendChild(card);
@@ -1781,17 +1789,22 @@
         if (stateStr.includes("평시")) stateStr = "기본 (정상 운용)";
         const isDrop = stateStr.includes('하락');
         const isRec = stateStr.includes('복귀') || stateStr.includes('반등');
-        const badgeBg = isDrop ? '#fee2e2' : (isRec ? '#dbeafe' : '#dcfce7');
-        const badgeColor = isDrop ? '#dc2626' : (isRec ? '#2563eb' : '#059669');
-        const badgeBorder = isDrop ? '#fca5a5' : (isRec ? '#93c5fd' : '#bbf7d0');
+        const textColor = isDrop ? 'var(--rose)' : (isRec ? 'var(--primary)' : 'var(--emerald)');
+
+        let cleanAdvice = String(l.Message || l.Advice || '');
+        cleanAdvice = cleanAdvice.replace(/\^NDX/g, '나스닥 100').replace(/\^GSPC/g, 'S&P 500').replace(/\^KS11/g, '코스피');
+        cleanAdvice = cleanAdvice.replace(/\*\*|\*|_/g, ''); // Remove markdown bold/italics
+        if (cleanAdvice.includes('[낙폭 국면 유지]')) {
+          cleanAdvice = cleanAdvice.replace('[낙폭 국면 유지]', '[리밸런싱 신호]').trim() + ' (익일 시가 리밸런싱 실행)';
+        }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${l.Timestamp || '-'}</td>
-          <td><span class="brand-badge" style="font-size: 11px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder};">${stateStr}</span></td>
-          <td style="color: var(--rose); font-family: 'Outfit', sans-serif; font-weight: 700;">${l.BenchmarkMDD || 0}%</td>
-          <td style="font-size: 12px; color: var(--primary); font-weight: 700;">${l.TargetWeights ? JSON.stringify(l.TargetWeights).replace(/"/g, '').replace(/\{|\}/g, '') : '-'}</td>
-          <td style="font-size: 12px; color: var(--text-muted); text-align: left;">${l.Message || l.Advice || ''}</td>
+          <td style="white-space: nowrap; text-align: center;">${l.Timestamp || '-'}</td>
+          <td style="white-space: nowrap; text-align: center; font-weight: 700; color: ${textColor};">${stateStr}</td>
+          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-family: 'Outfit', sans-serif; font-weight: 700;">${l.BenchmarkMDD || 0}%</td>
+          <td style="white-space: nowrap; text-align: center; font-size: 12px; color: var(--primary); font-weight: 700;">${l.TargetWeights ? JSON.stringify(l.TargetWeights).replace(/"/g, '').replace(/\{|\}/g, '') : '-'}</td>
+          <td style="font-size: 12px; color: var(--text-main); text-align: left;">${cleanAdvice}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -1907,7 +1920,48 @@
       let finalNAV = initialCapital;
       let rebalanceEvents = [];
 
+      let pendingRebalance = null;
+      let hasRebalanceToday = false;
+      let todayTrigger = null;
+
       for (let day = 0; day < numDays; day++) {
+        // 1. T+1 Open Rebalancing Execution from previous day's signal
+        if (pendingRebalance) {
+          let openNAV = 0;
+          allTickers.forEach(t => {
+            const p = prices[t][day];
+            openNAV += holdings[t] * p;
+          });
+          const pWeights = pendingRebalance.targetWeights;
+          allTickers.forEach(t => {
+            const tw = pWeights[t] || 0;
+            const targetVal = openNAV * tw;
+            const p = prices[t][day];
+            if (p > 0) {
+              const curVal = holdings[t] * p;
+              const tradeVal = Math.abs(targetVal - curVal);
+              const fee = tradeVal * feeRate;
+              holdings[t] = (targetVal - fee) / p;
+            } else {
+              holdings[t] = 0;
+            }
+          });
+          let postNAV = 0;
+          allTickers.forEach(t => { postNAV += holdings[t] * prices[t][day]; });
+          rebalanceEvents.push({
+            date: dates[day],
+            reason: pendingRebalance.triggerReason,
+            state: pendingRebalance.stateName,
+            benchmarkDD: pendingRebalance.benchmarkDD,
+            nav: Math.round(postNAV),
+            weights: pWeights
+          });
+          currentStageIdx = pendingRebalance.nextStageIdx;
+          lastRebalanceNAV = postNAV;
+          pendingRebalance = null;
+        }
+
+        // 2. Day T Close Portfolio Evaluation
         let currentNAV = 0;
         allTickers.forEach(t => { currentNAV += holdings[t] * prices[t][day]; });
 
@@ -1981,36 +2035,29 @@
         }
 
         if (targetWeights) {
-          const totalVal = currentNAV;
-          allTickers.forEach(t => {
-            const tw = targetWeights[t] || 0;
-            const targetVal = totalVal * tw;
-            const p = prices[t][day];
-            if (p > 0) {
-              const curVal = holdings[t] * p;
-              const tradeVal = Math.abs(targetVal - curVal);
-              const fee = tradeVal * feeRate;
-              holdings[t] = (targetVal - fee) / p;
-            } else {
-              holdings[t] = 0;
-            }
-          });
-          let postNAV = 0;
-          allTickers.forEach(t => { postNAV += holdings[t] * prices[t][day]; });
-          currentNAV = postNAV;
-          let stateName = nextStageIdx >= 0 && stages[nextStageIdx]
+          const sName = nextStageIdx >= 0 && stages[nextStageIdx]
             ? (stages[nextStageIdx].name || `${nextStageIdx + 1}차 하락`)
             : (triggerReason.includes('이익 실현') ? '기본 (이익실현)' : '기본 (정상 운용)');
-          rebalanceEvents.push({
-            date: dates[day],
-            reason: triggerReason,
-            state: stateName,
-            benchmarkDD: currentBM_DD.toFixed(2),
-            nav: Math.round(postNAV),
-            weights: targetWeights
-          });
-          currentStageIdx = nextStageIdx;
-          lastRebalanceNAV = postNAV;
+
+          if (day < numDays - 1) {
+            pendingRebalance = {
+              targetWeights,
+              nextStageIdx,
+              triggerReason,
+              stateName: sName,
+              benchmarkDD: currentBM_DD.toFixed(2)
+            };
+          } else {
+            // Signal triggered on the final day (today) -> execute rebalance tomorrow (T+1 Open)
+            hasRebalanceToday = true;
+            todayTrigger = {
+              targetWeights,
+              nextStageIdx,
+              triggerReason,
+              stateName: sName,
+              benchmarkDD: currentBM_DD.toFixed(2)
+            };
+          }
         }
 
         finalNAV = currentNAV;
@@ -2031,10 +2078,12 @@
         assetReturns[t] = startP > 0 ? ((endP - startP) / startP) * 100.0 : 0.0;
       });
 
-      // Target weights for today's active stage
+      // Target weights for today: if today triggered a new rebalance, target is the new stage!
       let activeTargetWeights = {};
-      if (currentStageIdx >= 0 && stages[currentStageIdx]) {
-        const stW = stages[currentStageIdx].weights || {};
+      let effectiveStageIdx = todayTrigger ? todayTrigger.nextStageIdx : currentStageIdx;
+
+      if (effectiveStageIdx >= 0 && stages[effectiveStageIdx]) {
+        const stW = stages[effectiveStageIdx].weights || {};
         Object.entries(stW).forEach(([t, w]) => {
           activeTargetWeights[t] = Math.round(w * 1000) / 10.0;
         });
@@ -2062,17 +2111,17 @@
       const bmMDD = bmATH > 0 ? ((latestBM - bmATH) / bmATH) * 100.0 : 0.0;
 
       let stateName = "기본 (정상 운용)";
-      let advice = `현재 기준 지표가 안정적인 범위 내에 있으며, 사전 정의된 기본 비중을 유지하며 복리 성장 및 배당을 수취합니다.`;
+      let advice = `현재 기준 지표가 안정적인 범위 내에 있으며, 기본 비중을 유지합니다.`;
 
-      if (currentStageIdx >= 0 && stages[currentStageIdx]) {
-        stateName = stages[currentStageIdx].name || `${currentStageIdx + 1}차 하락`;
+      if (effectiveStageIdx >= 0 && stages[effectiveStageIdx]) {
+        stateName = stages[effectiveStageIdx].name || `${effectiveStageIdx + 1}차 하락`;
         const recStr = baseRecPct > 0 ? `전고점 +${baseRecPct.toFixed(0)}% 돌파` : `전고점(0.0%) 복귀`;
-        advice = `현재 ${stateName} 국면이 적용 중입니다 (고점 대비 ${bmMDD.toFixed(1)}%). ${recStr} 시점까지 하락 대응 비중을 유지합니다.`;
+        if (todayTrigger) {
+          advice = `[${stateName} 리밸런싱 신호] 고점 대비 ${bmMDD.toFixed(1)}% 도달. 익일 시가 목표 비중으로 리밸런싱을 실행하세요.`;
+        } else {
+          advice = `현재 ${stateName} 국면 유지 중 (고점 대비 ${bmMDD.toFixed(1)}%). ${recStr} 시점까지 비중을 유지합니다.`;
+        }
       }
-
-      // Check if a rebalance event occurred on the latest day (today)
-      const latestDateStr = dates[numDays - 1];
-      const hasRebalanceToday = rebalanceEvents.some(ev => ev.date === latestDateStr);
 
       return {
         totalReturn,
