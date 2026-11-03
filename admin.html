@@ -1335,7 +1335,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label"><span>기본비중 복귀 (전고점 +%)</span></label>
+              <label class="form-label"><span>기본비중 복귀</span></label>
               <div style="display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; height: 35px; box-sizing: border-box;">
                 <span style="font-size: 11.5px; color: var(--text-dim); white-space: nowrap;">전고점 +</span>
                 <input type="number" id="cfgBaseRecovery" value="0" min="0" max="100" step="1" style="border: none; outline: none; width: 100%; font-size: 13px; font-weight: 700; text-align: right; color: var(--text-main); background: transparent;" onchange="onConfigChange()">
@@ -1344,12 +1344,12 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label"><span>목표수익률 이익실현 (%)</span></label>
+              <label class="form-label"><span>목표수익률</span></label>
               <input type="number" class="form-input" id="cfgGainThreshold" value="20" step="5" onchange="onConfigChange()">
             </div>
 
             <div class="form-group">
-              <label class="form-label"><span>수수료+슬리피지 (%)</span></label>
+              <label class="form-label"><span>수수료 등</span></label>
               <input type="number" class="form-input" id="cfgFeeRate" value="0.15" step="0.05" onchange="onConfigChange()">
             </div>
           </div>
@@ -1365,9 +1365,9 @@
                 <i class="fa-solid fa-plus"></i> 자산 추가
               </button>
             </div>
-            <table class="weight-table" id="baseWeightsTable" style="margin-bottom: 2px;">
-              <!-- Dynamic Base Weight rows -->
-            </table>
+            <div id="baseWeightsContainer" class="stage-weights-grid" style="margin-top: 2px;">
+              <!-- Dynamic Base Weight chips -->
+            </div>
           </div>
 
           <!-- Row 3: Unified Drawdown / Recovery Adjustment Stages -->
@@ -1375,7 +1375,6 @@
             <div class="form-label" style="align-items: center; margin-bottom: 0;">
               <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">
                 <i class="fa-solid fa-stairs text-primary" style="margin-right: 4px;"></i>하락 / 복귀 조정 단계
-                <span style="font-size: 11px; font-weight: 500; color: var(--text-dim); margin-left: 4px;">(종가 신호 판정 → 익일 시가 리밸런싱)</span>
               </span>
               <button class="nav-btn btn-sm" style="padding: 4px 10px; font-size: 11.5px; border-radius: var(--radius-sm);" onclick="addDropStage()">
                 <i class="fa-solid fa-plus"></i> 단계 추가
@@ -1533,10 +1532,10 @@
           <!-- Rebalance Events Table -->
           <div class="benchmarks-table-panel" id="singleRebalanceTablePanel">
             <div style="font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;">
-              <span><i class="fa-solid fa-list-check text-primary"></i> 최근 리밸런싱 이력</span>
+              <span><i class="fa-solid fa-list-check text-primary"></i> 리밸런싱 이력</span>
               <span class="text-dim" style="font-size: 12px;" id="rebalanceCountText">총 0건</span>
             </div>
-            <div style="max-height: 720px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+            <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
               <table class="bm-table table-center">
                 <thead>
                   <tr>
@@ -2821,41 +2820,43 @@
     // Base Weights UI (Pure Manual Control & Sum Indicator)
     // ==========================================
     function renderBaseWeightsTable(weights) {
-      const tbody = document.getElementById('baseWeightsTable');
-      tbody.innerHTML = '';
+      const container = document.getElementById('baseWeightsContainer') || document.getElementById('baseWeightsTable');
+      if (!container) return;
+      container.innerHTML = '';
 
       let totalPct = 0;
-      Object.entries(weights).forEach(([ticker, w]) => {
-        const pct = Math.round(w * 100);
-        totalPct += pct;
+      const entries = Object.entries(weights || {});
 
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>
-            <div style="font-weight: 700; font-size: 13.5px;">${formatTickerDisplay(ticker)}</div>
-          </td>
-          <td>
-            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
-              <input type="number" class="weight-input" value="${pct}" min="0" max="100" step="1" 
-                onchange="onBaseWeightChange('${ticker}', this.value)">
-              <span style="font-size: 12px; font-weight: 600;">%</span>
-            </div>
-          </td>
-          <td style="text-align: right;">
-            <button class="btn-icon-del" onclick="deleteBaseWeightRow('${ticker}')" title="삭제">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </td>
+      if (entries.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; font-size: 11.5px; color: var(--text-dim); text-align: center; padding: 10px; background: #ffffff; border-radius: 6px; border: 1px dashed #cbd5e1;">
+            설정된 기본 자산이 없습니다. 우측 상단 <strong>'+ 자산 추가'</strong> 버튼을 눌러 비중을 설정하세요.
+          </div>
         `;
-        tbody.appendChild(row);
-      });
+      } else {
+        entries.forEach(([ticker, w]) => {
+          const pct = Math.round(w * 100);
+          totalPct += pct;
+
+          const item = document.createElement('div');
+          item.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0;";
+          item.innerHTML = `
+            <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${formatTickerDisplay(ticker)}</span>
+            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+              <input type="number" class="weight-input" style="width: 52px; padding: 3px 6px; font-size: 12px; text-align: right;" value="${pct}" min="0" max="100" step="1" 
+                onchange="onBaseWeightChange('${ticker}', this.value)">
+              <span style="font-size: 11.5px; font-weight: 600;">%</span>
+              <button class="btn-icon-del" style="font-size: 11px; padding: 2px 4px;" onclick="deleteBaseWeightRow('${ticker}')" title="자산 제거"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      }
 
       const badge = document.getElementById('baseWeightSumBadge');
-      badge.textContent = `합계 ${totalPct}%`;
-      if (totalPct === 100) {
-        badge.className = 'weight-sum-badge weight-sum-ok';
-      } else {
-        badge.className = 'weight-sum-badge weight-sum-err';
+      if (badge) {
+        badge.textContent = `합계 ${totalPct}%`;
+        badge.className = totalPct === 100 ? 'weight-sum-badge weight-sum-ok' : 'weight-sum-badge weight-sum-err';
       }
     }
 
@@ -3757,7 +3758,7 @@
         return;
       }
 
-      // 1. 백테스트 종료일 기준 [기간종료] 최종 평가액 행 표시 (리밸런싱 횟수에는 미포함)
+      // 1. 백테스트 종료일 기준 [기간종료] 최종 평가액 행 표시 (다른 행과 동일 스타일, 리밸런싱 횟수 미포함)
       if (res && res.dates && res.dates.length > 0 && res.stratMetrics) {
         const endDate = res.dates[res.dates.length - 1];
         const endDD = (res.bmDrawdowns && res.bmDrawdowns.length > 0)
@@ -3766,17 +3767,32 @@
         const endNAV = res.stratMetrics.finalNAV;
         const endState = res.finalStateName || '기본 (정상 운용)';
 
+        let badgeBg = '#f1f5f9';
+        let badgeColor = '#475569';
+        let badgeBorder = '#cbd5e1';
+        if (endState.includes('하락')) {
+          badgeBg = '#fee2e2';
+          badgeColor = 'var(--rose)';
+          badgeBorder = '#fca5a5';
+        } else if (endState.includes('반등')) {
+          badgeBg = '#e0f2fe';
+          badgeColor = 'var(--primary)';
+          badgeBorder = '#bae6fd';
+        } else if (endState.includes('기본')) {
+          badgeBg = '#dcfce7';
+          badgeColor = 'var(--emerald)';
+          badgeBorder = '#bbf7d0';
+        }
+
         const endTr = document.createElement('tr');
-        endTr.style.background = '#f8fafc';
-        endTr.style.borderBottom = '2px solid #e2e8f0';
         endTr.innerHTML = `
-          <td style="white-space: nowrap; text-align: center; font-weight: 700; color: var(--primary);">${endDate}</td>
-          <td style="white-space: nowrap; text-align: center; font-weight: 700; color: var(--primary);">[기간종료] 백테스트 종료일 최종 평가</td>
+          <td style="white-space: nowrap; text-align: center;">${endDate}</td>
+          <td style="white-space: nowrap; text-align: center; font-weight: 600;">[기간종료] 최종 평가</td>
           <td style="white-space: nowrap; text-align: center;">
-            <span class="brand-badge" style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 11.5px; padding: 2px 8px; border-radius: 4px; font-weight: 700;">기간종료 · ${endState}</span>
+            <span class="brand-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; font-size: 11.5px; padding: 2px 8px; border-radius: 4px;">${endState}</span>
           </td>
           <td style="white-space: nowrap; text-align: center; color: var(--rose); font-family: 'Outfit', sans-serif; font-weight: 700;">${endDD}%</td>
-          <td style="white-space: nowrap; text-align: center; color: var(--primary); font-family: 'Outfit', sans-serif; font-weight: 800;">${formatKRW(endNAV)}</td>
+          <td style="white-space: nowrap; text-align: center; font-family: 'Outfit', sans-serif; font-weight: 700;">${formatKRW(endNAV)}</td>
         `;
         tbody.appendChild(endTr);
       }
