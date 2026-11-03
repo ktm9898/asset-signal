@@ -146,6 +146,9 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
 
     adj_close = raw_df['Adj Close'] if 'Adj Close' in raw_df else raw_df['Close']
     close_df = raw_df['Close']
+    open_df = raw_df['Open'] if 'Open' in raw_df else close_df
+    adj_open = open_df * (adj_close / close_df)
+    adj_open = adj_open.fillna(adj_close)
 
     # Get Benchmark Price Series & Calculate Drawdown
     if benchmark_ticker not in adj_close.columns:
@@ -193,20 +196,43 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
     current_nav = 100000000.0
     holdings = {t: 0.0 for t in all_tickers}
     fee_rate = 0.0015
+    pending_rebalance = None
 
-    # Initialize holdings at investment start date (Day 0)
-    day0_prices = {t: float(adj_close[t].loc[first_dt]) if t in adj_close and first_dt in adj_close[t].index and not pd.isna(adj_close[t].loc[first_dt]) else 1.0 for t in all_tickers}
+    # Initialize holdings at investment start date (Day 0 Open)
+    day0_prices = {t: float(adj_open[t].loc[first_dt]) if t in adj_open and first_dt in adj_open[t].index and not pd.isna(adj_open[t].loc[first_dt]) else 1.0 for t in all_tickers}
     for t, w in norm_base.items():
         p0 = day0_prices.get(t, 1.0)
         holdings[t] = (current_nav * w * (1.0 - fee_rate)) / p0 if p0 > 0 else 0.0
 
     for d_idx, dt in enumerate(eval_dates):
+        # 1. Execute pending rebalance from previous day's close signal at today's Open (T+1 Open)
+        if pending_rebalance is not None:
+            open_prices = {t: float(adj_open[t].loc[dt]) if t in adj_open and dt in adj_open[t].index and not pd.isna(adj_open[t].loc[dt]) else 1.0 for t in all_tickers}
+            open_nav = sum(holdings[t] * open_prices.get(t, 1.0) for t in all_tickers)
+            p_tw = pending_rebalance["target_w"]
+            tot = sum(p_tw.values())
+            norm_tw = {k: v / tot for k, v in p_tw.items()} if tot > 0 else norm_base
+            for t in all_tickers:
+                tw = norm_tw.get(t, 0.0)
+                p = open_prices.get(t, 1.0)
+                if p > 0:
+                    t_val = open_nav * tw
+                    cur_val = holdings[t] * p
+                    fee = abs(t_val - cur_val) * fee_rate
+                    holdings[t] = (t_val - fee) / p
+                else:
+                    holdings[t] = 0.0
+            current_nav = sum(holdings[t] * open_prices.get(t, 1.0) for t in all_tickers)
+            current_stage_idx = pending_rebalance["next_stage_idx"]
+            last_rebalance_nav = current_nav
+            pending_rebalance = None
+
+        # 2. Evaluate signals at today's Close (Day T Close)
         current_p = float(bm_series.loc[dt])
         if current_p > current_bm_peak:
             current_bm_peak = current_p
         current_bm_dd = ((current_p - current_bm_peak) / current_bm_peak) * 100.0 if current_bm_peak > 0 else 0.0
 
-        # Calculate current NAV
         day_prices = {t: float(adj_close[t].loc[dt]) if t in adj_close and dt in adj_close[t].index and not pd.isna(adj_close[t].loc[dt]) else 1.0 for t in all_tickers}
         current_nav = sum(holdings[t] * day_prices.get(t, 1.0) for t in all_tickers)
 
@@ -254,22 +280,14 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
                 next_stage_idx = -1
 
         if target_w is not None:
-            # Rebalance
-            tot = sum(target_w.values())
-            norm_tw = {k: v / tot for k, v in target_w.items()} if tot > 0 else norm_base
-            for t in all_tickers:
-                tw = norm_tw.get(t, 0.0)
-                p = day_prices.get(t, 1.0)
-                if p > 0:
-                    t_val = current_nav * tw
-                    cur_val = holdings[t] * p
-                    fee = abs(t_val - cur_val) * fee_rate
-                    holdings[t] = (t_val - fee) / p
-                else:
-                    holdings[t] = 0.0
-            current_nav = sum(holdings[t] * day_prices.get(t, 1.0) for t in all_tickers)
-            current_stage_idx = next_stage_idx
-            last_rebalance_nav = current_nav
+            if d_idx < len(eval_dates) - 1:
+                pending_rebalance = {
+                    "target_w": target_w,
+                    "next_stage_idx": next_stage_idx
+                }
+            else:
+                # Signal triggered on the final (latest) day's close -> report immediately for tomorrow's Open trade
+                current_stage_idx = next_stage_idx
 
     # Determine final active state name and target weights for today
     if current_stage_idx >= 0 and current_stage_idx < len(sorted_drops):

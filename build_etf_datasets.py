@@ -84,6 +84,7 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
 
     adj_close_df = data['Adj Close'] if 'Adj Close' in data else data['Close']
     close_df = data['Close']
+    open_df = data['Open'] if 'Open' in data else close_df
     high_df = data['High'] if 'High' in data else close_df
     low_df = data['Low'] if 'Low' in data else close_df
     volume_df = data['Volume'] if 'Volume' in data else pd.DataFrame(0, index=close_df.index, columns=close_df.columns)
@@ -97,6 +98,7 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
         valid_dates_mask = close_df[avail_us].notna().any(axis=1)
         adj_close_df = adj_close_df.loc[valid_dates_mask]
         close_df = close_df.loc[valid_dates_mask]
+        open_df = open_df.loc[valid_dates_mask]
         high_df = high_df.loc[valid_dates_mask]
         low_df = low_df.loc[valid_dates_mask]
         volume_df = volume_df.loc[valid_dates_mask]
@@ -104,6 +106,7 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
     # Clean date index
     adj_close_df = adj_close_df.ffill().bfill()
     close_df = close_df.ffill().bfill()
+    open_df = open_df.ffill().bfill()
     date_strs = [d.strftime("%Y-%m-%d") for d in close_df.index]
 
     universe_dict = {}
@@ -123,6 +126,9 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
         # Align series to global date index
         aligned_adj = adj_close_df[ticker].values
         aligned_close = close_df[ticker].values
+        aligned_open = open_df[ticker].values if ticker in open_df.columns else aligned_close
+        adj_factor = np.where(aligned_close > 0, aligned_adj / aligned_close, 1.0)
+        aligned_adj_open = np.where(aligned_open > 0, aligned_open * adj_factor, aligned_adj)
         
         # Technical indicators on latest data
         rsi_series = calculate_rsi(c_series, 14)
@@ -172,6 +178,8 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
             "macdSignal": round(float(macd_sig.iloc[-1]), 2) if not pd.isna(macd_sig.iloc[-1]) else 0.0,
             "bbUpper": round(float(bb_upper.iloc[-1]), 2) if not pd.isna(bb_upper.iloc[-1]) else latest_close,
             "bbLower": round(float(bb_lower.iloc[-1]), 2) if not pd.isna(bb_lower.iloc[-1]) else latest_close,
+            "adjOpen": [round(float(v), 4) for v in aligned_adj_open],
+            "open": [round(float(v), 4) for v in aligned_open],
             "adjClose": [round(float(v), 4) for v in aligned_adj],
             "close": [round(float(v), 4) for v in aligned_close]
         }

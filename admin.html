@@ -324,20 +324,15 @@
       font-weight: 700;
     }
 
-    /* Main Studio Grid */
+    /* Main Studio Grid (1-Column Stock-Signal Style) */
     .studio-grid {
-      display: grid;
-      grid-template-columns: 440px 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 16px;
+      width: 100%;
     }
 
-    @media (max-width: 1200px) {
-      .studio-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Config Sidebar Panel */
+    /* Config Top Panel */
     .config-panel {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
@@ -347,7 +342,28 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
-      height: fit-content;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .config-params-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .stage-weights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 900px) {
+      .config-params-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
     }
 
     .panel-section-title {
@@ -1271,7 +1287,9 @@
       <div class="slots-wrapper">
         <div class="slots-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
           <div class="slots-title" style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
-            <span style="font-weight: 700; font-size: 15px; color: var(--text-main);">전략 설정</span>
+            <span style="font-weight: 700; font-size: 15px; color: var(--text-main); flex-shrink: 0;">전략 설정</span>
+            <span id="overviewSlotNameText" style="font-size: 12.5px; font-weight: 700; color: var(--primary); background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 8px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">#1. 전략 1</span>
+            <span id="overviewSlotActiveBadge" class="slot-badge-active" style="display: none; flex-shrink: 0;">운용중</span>
           </div>
           <div class="slot-actions-bar" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
             <button class="nav-btn btn-sm" style="background: #ffffff; color: #475569; border: 1px solid var(--border-color);" onclick="resetCurrentStrategyConfig()" title="초기화">
@@ -1300,81 +1318,76 @@
         </button>
       </div>
 
-      <!-- Studio Grid -->
+      <!-- Studio 1-Column Stack -->
       <div class="studio-grid">
 
-        <!-- Left: Strategy Configuration Panel -->
+        <!-- Top: Strategy Configuration Panel (1-Column Stock-Signal Style) -->
         <div class="config-panel">
-          <!-- Benchmark Index Selection (3 Major Indices Only) -->
-          <div class="form-group">
-            <label class="form-label">
-              <span>기준 지표</span>
-            </label>
-            <select class="form-select" id="cfgBenchmark" onchange="onConfigChange()">
-              <option value="^NDX">나스닥 100</option>
-              <option value="^GSPC">S&P 500</option>
-              <option value="^KS11">코스피</option>
-            </select>
+          <!-- Row 1: Core Parameters Grid -->
+          <div class="config-params-grid">
+            <div class="form-group">
+              <label class="form-label"><span>기준 지표</span></label>
+              <select class="form-select" id="cfgBenchmark" onchange="onConfigChange()">
+                <option value="^NDX">나스닥 100</option>
+                <option value="^GSPC">S&P 500</option>
+                <option value="^KS11">코스피</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><span>기본비중 복귀 (전고점 +%)</span></label>
+              <div style="display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; height: 35px; box-sizing: border-box;">
+                <span style="font-size: 11.5px; color: var(--text-dim); white-space: nowrap;">전고점 +</span>
+                <input type="number" id="cfgBaseRecovery" value="0" min="0" max="100" step="1" style="border: none; outline: none; width: 100%; font-size: 13px; font-weight: 700; text-align: right; color: var(--text-main); background: transparent;" onchange="onConfigChange()">
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">%</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><span>목표수익률 이익실현 (%)</span></label>
+              <input type="number" class="form-input" id="cfgGainThreshold" value="20" step="5" onchange="onConfigChange()">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><span>수수료+슬리피지 (%)</span></label>
+              <input type="number" class="form-input" id="cfgFeeRate" value="0.15" step="0.05" onchange="onConfigChange()">
+            </div>
           </div>
 
-          <!-- Baseline Allocation -->
-          <div class="form-group" style="gap: 6px;">
-            <div class="form-label" style="margin-bottom: 0;">
-              <span>기본 자산 비중</span>
-              <span id="baseWeightSumBadge" class="weight-sum-badge weight-sum-ok">합계 100%</span>
+          <!-- Row 2: Baseline Asset Allocation -->
+          <div class="form-group" style="gap: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color);">
+            <div class="form-label" style="margin-bottom: 0; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 13px; font-weight: 700; color: var(--text-main);"><i class="fa-solid fa-chart-pie text-primary" style="margin-right: 4px;"></i>기본 자산 비중</span>
+                <span id="baseWeightSumBadge" class="weight-sum-badge weight-sum-ok">합계 100%</span>
+              </div>
+              <button class="nav-btn btn-sm" style="font-size: 11.5px; padding: 4px 10px; border-radius: var(--radius-sm);" onclick="addBaseWeightRow()">
+                <i class="fa-solid fa-plus"></i> 자산 추가
+              </button>
             </div>
             <table class="weight-table" id="baseWeightsTable" style="margin-bottom: 2px;">
               <!-- Dynamic Base Weight rows -->
             </table>
-            <button class="nav-btn" style="align-self: flex-start; font-size: 11.5px; padding: 5px 12px; border-radius: var(--radius-sm);" onclick="addBaseWeightRow()">
-              <i class="fa-solid fa-plus"></i> 자산 추가
-            </button>
           </div>
 
-          <!-- Unified Drawdown Adjustment Stages -->
-          <div class="form-group">
-            <div class="form-label">
-              <span>하락 / 복귀 조정 단계</span>
-              <button class="nav-btn" style="padding: 2px 8px; font-size: 11px;" onclick="addDropStage()">
+          <!-- Row 3: Unified Drawdown / Recovery Adjustment Stages -->
+          <div class="form-group" style="gap: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color);">
+            <div class="form-label" style="align-items: center; margin-bottom: 0;">
+              <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">
+                <i class="fa-solid fa-stairs text-primary" style="margin-right: 4px;"></i>하락 / 복귀 조정 단계
+                <span style="font-size: 11px; font-weight: 500; color: var(--text-dim); margin-left: 4px;">(종가 신호 판정 → 익일 시가 리밸런싱)</span>
+              </span>
+              <button class="nav-btn btn-sm" style="padding: 4px 10px; font-size: 11.5px; border-radius: var(--radius-sm);" onclick="addDropStage()">
                 <i class="fa-solid fa-plus"></i> 단계 추가
               </button>
             </div>
 
-            <!-- 기본비중 복귀 기준 설정 필드 -->
-            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-size: 12px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-arrow-rotate-left text-primary"></i> 기본비중 복귀
-              </span>
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <span style="font-size: 11px; color: var(--text-dim);">전고점 +</span>
-                <input type="number" class="weight-input" id="cfgBaseRecovery" value="0" min="0" max="100" step="1" style="width: 50px; text-align: center;" onchange="onConfigChange()">
-                <span style="font-size: 12px; font-weight: 600;">%</span>
-              </div>
-            </div>
-
-            <div id="dropStagesContainer">
+            <div id="dropStagesContainer" style="display: flex; flex-direction: column; gap: 8px;">
               <!-- Rendered dynamically -->
             </div>
           </div>
 
-          <!-- Fee & Gain Threshold Parameters -->
-          <div class="form-group">
-            <div class="panel-section-title" style="margin-top: 6px;">
-              <i class="fa-solid fa-scale-balanced text-primary"></i> 거래비용 & 이익실현 모델
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
-              <div class="form-group">
-                <label class="form-label" style="font-size: 12px;"><span>수수료+슬리피지 (%)</span></label>
-                <input type="number" class="form-input" id="cfgFeeRate" value="0.15" step="0.05" onchange="onConfigChange()">
-              </div>
-              <div class="form-group">
-                <label class="form-label" style="font-size: 12px;"><span>목표수익률 (%)</span></label>
-                <input type="number" class="form-input" id="cfgGainThreshold" value="20" step="5" onchange="onConfigChange()">
-              </div>
-            </div>
-          </div>
-
-          <button class="nav-btn btn-primary" style="padding: 12px; font-size: 14px; justify-content: center;" onclick="runInteractiveBacktest(true)">
+          <button class="nav-btn btn-primary" style="padding: 12px; font-size: 14px; justify-content: center; width: 100%;" onclick="runInteractiveBacktest(true)">
             <i class="fa-solid fa-play"></i> 백테스트 실행
           </button>
         </div>
@@ -2945,45 +2958,66 @@
       const container = document.getElementById('dropStagesContainer');
       container.innerHTML = '';
 
+      if (!stages || stages.length === 0) {
+        container.innerHTML = `
+          <div style="font-size: 12px; color: var(--text-dim); text-align: center; padding: 14px; background: #f8fafc; border: 1px dashed var(--border-color); border-radius: var(--radius-sm);">
+            설정된 하락/복귀 단계가 없습니다. 우측 상단 <strong>'+ 단계 추가'</strong> 버튼을 눌러 조건을 추가하세요.
+          </div>
+        `;
+        return;
+      }
+
       stages.forEach((stg, idx) => {
         const card = document.createElement('div');
         card.className = 'stage-card';
+        card.style.marginBottom = '0';
 
         let weightInputs = '';
+        let stageTotalPct = 0;
         const tickers = Object.keys(stg.weights || {});
 
         tickers.forEach(t => {
           const pct = Math.round((stg.weights[t] || 0) * 100);
+          stageTotalPct += pct;
           weightInputs += `
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; background: #ffffff; padding: 4px 6px; border-radius: 4px; border: 1px solid #f1f5f9;">
-              <span style="font-weight: 600;">${formatTickerDisplay(t)}</span>
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <input type="number" class="weight-input" style="width: 45px; padding: 2px 4px; font-size: 11px; text-align: center;" value="${pct}" 
-                  onchange="updateDropStageWeight(${idx}, '${t}', this.value)"> %
-                <button class="btn-icon-del" style="font-size: 10px; padding: 2px 4px;" onclick="deleteDropStageTicker(${idx}, '${t}')"><i class="fa-solid fa-xmark"></i></button>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+              <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${formatTickerDisplay(t)}</span>
+              <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <input type="number" class="weight-input" style="width: 52px; padding: 3px 6px; font-size: 12px; text-align: right;" value="${pct}" 
+                  onchange="updateDropStageWeight(${idx}, '${t}', this.value)">
+                <span style="font-size: 11.5px; font-weight: 600;">%</span>
+                <button class="btn-icon-del" style="font-size: 11px; padding: 2px 4px;" onclick="deleteDropStageTicker(${idx}, '${t}')" title="자산 제거"><i class="fa-solid fa-xmark"></i></button>
               </div>
             </div>
           `;
         });
 
+        const sumBadgeClass = stageTotalPct === 100 ? 'weight-sum-badge weight-sum-ok' : 'weight-sum-badge weight-sum-err';
+
         card.innerHTML = `
-          <div class="stage-card-header">
-            <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="stage-card-header" style="flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <span class="stage-badge-drop">${idx + 1}차 하락</span>
-              <div style="display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700;">
-                <input type="number" class="weight-input" style="width: 55px; padding: 2px 4px; font-size: 11px; text-align: center;" 
+              <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700;">
+                <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">기준 MDD</span>
+                <input type="number" class="weight-input" style="width: 60px; padding: 3px 6px; font-size: 12px; text-align: center;" 
                   value="${stg.threshold}" step="1" max="0" 
-                  onchange="updateDropStageThreshold(${idx}, this.value)"> %
+                  onchange="updateDropStageThreshold(${idx}, this.value)">
+                <span>% 이하</span>
               </div>
+              <span id="stageSumBadge_${idx}" class="${sumBadgeClass}">합계 ${stageTotalPct}%</span>
             </div>
-            <button class="btn-icon-del" onclick="deleteDropStage(${idx})"><i class="fa-solid fa-trash-can"></i></button>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button class="nav-btn btn-sm" style="font-size: 11px; padding: 3px 8px;" onclick="openEtfSelectModal('drop', ${idx})">
+                <i class="fa-solid fa-plus"></i> 자산 추가
+              </button>
+              <button class="btn-icon-del" onclick="deleteDropStage(${idx})" title="단계 삭제"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
-            ${weightInputs || '<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 4px;">설정된 자산이 없습니다.</div>'}
-          </div>
-          <button class="nav-btn btn-sm" style="margin-top: 6px; font-size: 11px; padding: 2px 8px; width: 100%; justify-content: center;" onclick="openEtfSelectModal('drop', ${idx})">
-            <i class="fa-solid fa-plus"></i> 자산 추가
-          </button>
+          ${tickers.length > 0 
+            ? `<div class="stage-weights-grid">${weightInputs}</div>`
+            : `<div style="font-size: 11.5px; color: var(--text-dim); text-align: center; padding: 8px; background: #ffffff; border-radius: 6px; border: 1px dashed #cbd5e1; margin-top: 4px;">설정된 자산이 없습니다. '+ 자산 추가' 버튼을 눌러 비중을 설정하세요.</div>`
+          }
         `;
         container.appendChild(card);
       });
@@ -2993,7 +3027,7 @@
       const s = getCurrentSlot();
       if (s.dropStages && s.dropStages[idx]) {
         let num = parseFloat(val);
-        if (isNaN(num)) num = -20;
+        if (isNaN(num)) num = -10 * (idx + 1);
         if (num > 0) num = -num;
         s.dropStages[idx].threshold = num;
         s.dropStages.sort((a, b) => b.threshold - a.threshold);
@@ -3006,21 +3040,22 @@
     function addDropStage() {
       const s = getCurrentSlot();
       if (!s.dropStages) s.dropStages = [];
-      const nextIdx = s.dropStages.length + 1;
-      const threshold = prompt(`하락 ${nextIdx}차 기준 낙폭을 입력하세요 (예: -15, -25, -35):`, `-${nextIdx * 10}`);
-      if (threshold !== null) {
-        const thNum = -Math.abs(parseFloat(threshold));
-        const initWeights = Object.keys(s.baseWeights || {}).length > 0 ? { ...s.baseWeights } : { "QQQ": 0.40, "QLD": 0.30, "SCHD": 0.30 };
-        s.dropStages.push({
-          threshold: thNum,
-          name: `${nextIdx}차 하락 (${thNum}%)`,
-          weights: initWeights
-        });
-        s.dropStages.sort((a, b) => b.threshold - a.threshold);
-        s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락 (${stg.threshold}%)`);
-        saveLocalSlots();
-        renderDropStages(s.dropStages);
+      let nextThreshold = -10;
+      if (s.dropStages.length > 0) {
+        const minTh = Math.min(...s.dropStages.map(st => parseFloat(st.threshold) || 0));
+        nextThreshold = Math.max(-95, minTh - 10);
       }
+      const nextIdx = s.dropStages.length + 1;
+      const initWeights = Object.keys(s.baseWeights || {}).length > 0 ? { ...s.baseWeights } : { "QQQ": 0.60, "SCHD": 0.40 };
+      s.dropStages.push({
+        threshold: nextThreshold,
+        name: `${nextIdx}차 하락 (${nextThreshold}%)`,
+        weights: initWeights
+      });
+      s.dropStages.sort((a, b) => b.threshold - a.threshold);
+      s.dropStages.forEach((stg, i) => stg.name = `${i + 1}차 하락 (${stg.threshold}%)`);
+      saveLocalSlots();
+      renderDropStages(s.dropStages);
     }
 
     function deleteDropStage(idx) {
@@ -3045,6 +3080,15 @@
       if (!s.dropStages[stgIdx].weights) s.dropStages[stgIdx].weights = {};
       s.dropStages[stgIdx].weights[ticker] = (parseFloat(val) || 0) / 100.0;
       saveLocalSlots();
+      const badge = document.getElementById(`stageSumBadge_${stgIdx}`);
+      if (badge) {
+        let totalPct = 0;
+        Object.values(s.dropStages[stgIdx].weights).forEach(w => {
+          totalPct += Math.round((w || 0) * 100);
+        });
+        badge.textContent = `합계 ${totalPct}%`;
+        badge.className = totalPct === 100 ? 'weight-sum-badge weight-sum-ok' : 'weight-sum-badge weight-sum-err';
+      }
     }
 
     function renderRecoveryStages(stages) {
@@ -3334,10 +3378,15 @@
       ["^NDX", "^GSPC", "^KS11"].forEach(t => { if (etfDataset.universe[t]) allTickers.add(t); });
 
       const prices = {};
+      const openPrices = {};
       allTickers.forEach(t => {
-        prices[t] = etfDataset.universe[t] && etfDataset.universe[t].adjClose 
-          ? etfDataset.universe[t].adjClose.slice(startIndex, endIndex + 1) 
+        const u = etfDataset.universe[t];
+        prices[t] = u && u.adjClose 
+          ? u.adjClose.slice(startIndex, endIndex + 1) 
           : new Array(numDays).fill(1.0);
+        openPrices[t] = u && u.adjOpen
+          ? u.adjOpen.slice(startIndex, endIndex + 1)
+          : prices[t];
       });
 
       const bmPrices = prices[s.benchmark || "^NDX"] || prices["^NDX"] || prices["QQQ"] || new Array(numDays).fill(1.0);
@@ -3348,9 +3397,11 @@
         bmDrawdowns[i] = bmMax > 0 ? ((bmPrices[i] - bmMax) / bmMax) * 100.0 : 0;
       }
 
+      // Day 0 initial entry at Day 0 Open
       allTickers.forEach(t => {
         const w = normBase[t] || 0;
-        holdings[t] = prices[t][0] > 0 ? (initialCapital * w * (1.0 - feeRate)) / prices[t][0] : 0;
+        const p0 = openPrices[t][0] > 0 ? openPrices[t][0] : prices[t][0];
+        holdings[t] = p0 > 0 ? (initialCapital * w * (1.0 - feeRate)) / p0 : 0;
       });
 
       const stratNAV = new Float64Array(numDays);
@@ -3360,11 +3411,55 @@
       let lastRebalanceNAV = initialCapital;
       let dropEntryPeak = 0.0;
       let currentBMPeak = 0.0;
+      let pendingRebalance = null;
 
       // Sort descending (e.g. -10%, -25%, -40%, -60%, -80%)
       const stages = [...(s.dropStages || [])].sort((a, b) => b.threshold - a.threshold);
 
       for (let day = 0; day < numDays; day++) {
+        // 1. 전일 종가(Day T Close) 신호 발생 시 당일 시가(Day T+1 Open)로 리밸런싱 체결
+        if (pendingRebalance) {
+          let openNAV = 0;
+          allTickers.forEach(t => {
+            const pOpen = openPrices[t][day] > 0 ? openPrices[t][day] : prices[t][day];
+            openNAV += holdings[t] * pOpen;
+          });
+          const pWeights = pendingRebalance.targetWeights;
+          allTickers.forEach(t => {
+            const tw = pWeights[t] || 0;
+            const targetVal = openNAV * tw;
+            const pOpen = openPrices[t][day] > 0 ? openPrices[t][day] : prices[t][day];
+            if (pOpen > 0) {
+              const curVal = holdings[t] * pOpen;
+              const tradeVal = Math.abs(targetVal - curVal);
+              const fee = tradeVal * feeRate;
+              holdings[t] = (targetVal - fee) / pOpen;
+            } else {
+              holdings[t] = 0;
+            }
+          });
+          let postOpenNAV = 0;
+          allTickers.forEach(t => {
+            const pOpen = openPrices[t][day] > 0 ? openPrices[t][day] : prices[t][day];
+            postOpenNAV += holdings[t] * pOpen;
+          });
+          rebalanceEvents.push({
+            date: dates[day],
+            signalDate: pendingRebalance.signalDate,
+            dayIndex: day,
+            reason: pendingRebalance.triggerReason,
+            state: pendingRebalance.stateName,
+            benchmarkDD: pendingRebalance.signalBM_DD.toFixed(2),
+            nav: Math.round(postOpenNAV),
+            weights: pWeights
+          });
+          currentStageIdx = pendingRebalance.nextStageIdx;
+          lastRebalanceDay = day;
+          lastRebalanceNAV = postOpenNAV;
+          pendingRebalance = null;
+        }
+
+        // 2. 당일 종가(Day T Close) 기준 포트폴리오 평가 및 신호 판정
         let currentNAV = 0;
         allTickers.forEach(t => { currentNAV += holdings[t] * prices[t][day]; });
         stratNAV[day] = currentNAV;
@@ -3459,40 +3554,23 @@
         }
 
         if (targetWeights) {
-          const totalVal = currentNAV;
-          allTickers.forEach(t => {
-            const tw = targetWeights[t] || 0;
-            const targetVal = totalVal * tw;
-            const p = prices[t][day];
-            if (p > 0) {
-              const curVal = holdings[t] * p;
-              const tradeVal = Math.abs(targetVal - curVal);
-              const fee = tradeVal * feeRate;
-              holdings[t] = (targetVal - fee) / p;
-            } else {
-              holdings[t] = 0;
-            }
-          });
-          let postNAV = 0;
-          allTickers.forEach(t => { postNAV += holdings[t] * prices[t][day]; });
-          stratNAV[day] = postNAV;
-          let stateName = nextStageIdx >= 0 && stages[nextStageIdx] 
+          const stateName = nextStageIdx >= 0 && stages[nextStageIdx] 
             ? (stages[nextStageIdx].name || `${nextStageIdx + 1}차 하락`) 
             : (triggerReason.includes('이익 실현') ? '기본 (이익실현)' : '기본 (정상 운용)');
-          rebalanceEvents.push({ 
-            date: dates[day], 
-            dayIndex: day, 
-            reason: triggerReason, 
-            state: stateName, 
-            benchmarkDD: currentBM_DD.toFixed(2), 
-            nav: Math.round(postNAV), 
-            weights: targetWeights 
-          });
-          currentStageIdx = nextStageIdx;
-          lastRebalanceDay = day;
-          lastRebalanceNAV = postNAV;
+          pendingRebalance = {
+            targetWeights,
+            triggerReason,
+            nextStageIdx,
+            stateName,
+            signalDate: dates[day],
+            signalBM_DD: currentBM_DD
+          };
         }
       }
+
+      const finalStateName = (currentStageIdx >= 0 && stages[currentStageIdx])
+        ? (stages[currentStageIdx].name || `${currentStageIdx + 1}차 하락`)
+        : '기본 (정상 운용)';
 
       const pNDX = prices["^NDX"] || prices["QQQ"] || new Array(numDays).fill(1.0);
       const pGSPC = prices["^GSPC"] || prices["SPY"] || new Array(numDays).fill(1.0);
@@ -3521,6 +3599,7 @@
         dates,
         years,
         rebalanceEvents,
+        finalStateName,
         initialCapital
       };
     }
@@ -3541,7 +3620,7 @@
 
       updateMetricsUI(res.stratMetrics, res.years, res.rebalanceEvents.length, res.initialCapital, res.isEmpty);
       updateBenchmarkTableUI(res.stratMetrics, res.ndxMetrics, res.gspcMetrics, res.ks11Metrics, res.isEmpty);
-      updateRebalanceEventsUI(res.rebalanceEvents, res.isEmpty, s ? s.id : 1);
+      updateRebalanceEventsUI(res.rebalanceEvents, res.isEmpty, s ? s.id : 1, res);
       renderChart();
       if (showToastMsg) {
         showToast("백테스트 계산 및 차트 갱신이 완료되었습니다!");
@@ -3668,18 +3747,44 @@
       `;
     }
 
-    function updateRebalanceEventsUI(events, isEmpty = false, slotId = 1) {
+    function updateRebalanceEventsUI(events, isEmpty = false, slotId = 1, res = null) {
       document.getElementById('rebalanceCountText').textContent = `총 ${events.length}건 (기간 전체)`;
       const tbody = document.getElementById('rebalanceTableBody');
       tbody.innerHTML = '';
 
       if (isEmpty) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 16px;">전략 #${slotId}에 설정된 기본 자산 비중이 없습니다. 왼쪽 패널에서 '기본 자산 비중'을 추가해주세요.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 16px;">전략 #${slotId}에 설정된 기본 자산 비중이 없습니다. 상단 설정 패널에서 '기본 자산 비중'을 추가해주세요.</td></tr>`;
         return;
       }
 
+      // 1. 백테스트 종료일 기준 [기간종료] 최종 평가액 행 표시 (리밸런싱 횟수에는 미포함)
+      if (res && res.dates && res.dates.length > 0 && res.stratMetrics) {
+        const endDate = res.dates[res.dates.length - 1];
+        const endDD = (res.bmDrawdowns && res.bmDrawdowns.length > 0)
+          ? res.bmDrawdowns[res.bmDrawdowns.length - 1].toFixed(2)
+          : '0.00';
+        const endNAV = res.stratMetrics.finalNAV;
+        const endState = res.finalStateName || '기본 (정상 운용)';
+
+        const endTr = document.createElement('tr');
+        endTr.style.background = '#f8fafc';
+        endTr.style.borderBottom = '2px solid #e2e8f0';
+        endTr.innerHTML = `
+          <td style="white-space: nowrap; text-align: center; font-weight: 700; color: var(--primary);">${endDate}</td>
+          <td style="white-space: nowrap; text-align: center; font-weight: 700; color: var(--primary);">[기간종료] 백테스트 종료일 최종 평가</td>
+          <td style="white-space: nowrap; text-align: center;">
+            <span class="brand-badge" style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 11.5px; padding: 2px 8px; border-radius: 4px; font-weight: 700;">기간종료 · ${endState}</span>
+          </td>
+          <td style="white-space: nowrap; text-align: center; color: var(--rose); font-family: 'Outfit', sans-serif; font-weight: 700;">${endDD}%</td>
+          <td style="white-space: nowrap; text-align: center; color: var(--primary); font-family: 'Outfit', sans-serif; font-weight: 800;">${formatKRW(endNAV)}</td>
+        `;
+        tbody.appendChild(endTr);
+      }
+
       if (events.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 16px;">해당 기간 내 리밸런싱 이력이 없습니다.</td></tr>';
+        const emptyTr = document.createElement('tr');
+        emptyTr.innerHTML = '<td colspan="5" style="text-align: center; color: var(--text-dim); padding: 14px;">해당 기간 내 리밸런싱 발동 이력이 없습니다 (초기 진입 비중 유지).</td>';
+        tbody.appendChild(emptyTr);
         return;
       }
 

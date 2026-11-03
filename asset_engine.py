@@ -3,6 +3,7 @@ Dynamic Asset Allocation & Portfolio Backtesting Engine
 Supports:
 - Benchmark Peak & MDD Tracking
 - Dynamic State Machine (Escalation Drops, Staircase Hysteresis Recovery, Gain/Drift Rebalancing)
+- Signal on Day T Close -> Execution on Day T+1 Open (Next-Day Open Rebalancing)
 - Multi-benchmark Comparison (Strategy vs Benchmark B&H vs Leveraged B&H vs Static Base B&H)
 - Detailed Performance Metrics, After-Tax Modeling, and Daily Weights Timeline
 """
@@ -56,7 +57,7 @@ def run_portfolio_backtest(
     dataset=None
 ):
     """
-    Simulates dynamic asset allocation strategy with conditional rebalancing and tax/fee modeling.
+    Simulates dynamic asset allocation strategy with Next-Day Open (Day T+1 Open) rebalancing.
     """
     if dataset is None:
         dataset = load_etf_data()
@@ -118,14 +119,21 @@ def run_portfolio_backtest(
             all_needed_tickers.add(bm)
 
     prices = {}
+    open_prices = {}
     for t in all_needed_tickers:
         if t in universe and "adjClose" in universe[t]:
             raw_series = universe[t]["adjClose"][start_idx:end_idx+1]
             prices[t] = np.array(raw_series, dtype=np.float64)
+            if "adjOpen" in universe[t] and len(universe[t]["adjOpen"]) >= end_idx + 1:
+                open_series = universe[t]["adjOpen"][start_idx:end_idx+1]
+                open_prices[t] = np.array(open_series, dtype=np.float64)
+            else:
+                open_prices[t] = prices[t].copy()
         else:
             prices[t] = np.ones(num_days, dtype=np.float64)
+            open_prices[t] = np.ones(num_days, dtype=np.float64)
 
-    # Benchmark Drawdown Series
+    # Benchmark Drawdown Series (Evaluated on Daily Close)
     bm_prices = prices[benchmark_ticker]
     bm_peaks = np.maximum.accumulate(bm_prices)
     bm_drawdowns = np.where(bm_peaks > 0, (bm_prices - bm_peaks) / bm_peaks * 100.0, 0.0)
@@ -134,11 +142,12 @@ def run_portfolio_backtest(
     curr_weights = normalize_weights(base_weights)
     holdings = {t: 0.0 for t in all_needed_tickers}
     
-    # Initial purchase
+    # Initial purchase on Day 0 Open
     for t, w in curr_weights.items():
-        if prices[t][0] > 0 and w > 0:
+        p0 = open_prices[t][0] if open_prices[t][0] > 0 else prices[t][0]
+        if p0 > 0 and w > 0:
             alloc_val = initial_capital * w * (1.0 - fee_rate)
-            holdings[t] = alloc_val / prices[t][0]
+            holdings[t] = alloc_val / p0
 
     strategy_nav = np.zeros(num_days, dtype=np.float64)
     daily_weights_history = []
@@ -148,12 +157,50 @@ def run_portfolio_backtest(
     deepest_drop_level = 0.0
     last_rebalance_day = 0
     last_rebalance_nav = initial_capital
+    pending_rebalance = None
     
     for day in range(num_days):
         current_date = eval_dates[day]
         current_bm_dd = bm_drawdowns[day]
 
-        # 1. Calculate current portfolio NAV
+        # 0. Execute Pending Rebalance at Day T+1 Open (Next-Day Open Execution)
+        if pending_rebalance is not None:
+            tw_map = pending_rebalance["weights"]
+            open_nav = sum(holdings[t] * (open_prices[t][day] if open_prices[t][day] > 0 else prices[t][day]) for t in all_needed_tickers)
+            trade_volume = 0.0
+            for t in all_needed_tickers:
+                op = open_prices[t][day] if open_prices[t][day] > 0 else prices[t][day]
+                old_val = holdings[t] * op
+                new_val = open_nav * tw_map.get(t, 0.0)
+                trade_volume += abs(new_val - old_val)
+                
+            fee_cost = (trade_volume / 2.0) * fee_rate
+            net_nav = open_nav - fee_cost
+            
+            for t in all_needed_tickers:
+                op = open_prices[t][day] if open_prices[t][day] > 0 else prices[t][day]
+                target_val = net_nav * tw_map.get(t, 0.0)
+                holdings[t] = target_val / op if op > 0 else 0.0
+                
+            curr_weights = tw_map
+            current_state_name = pending_rebalance["state"]
+            last_rebalance_day = day
+            last_rebalance_nav = net_nav
+            
+            rebalance_events.append({
+                "date": current_date,
+                "signalDate": pending_rebalance["signalDate"],
+                "dayIndex": day,
+                "reason": pending_rebalance["reason"],
+                "state": current_state_name,
+                "benchmarkDD": round(float(pending_rebalance["signalBM_DD"]), 2),
+                "nav": round(float(net_nav), 0),
+                "weights": {format_ticker_display(t): round(tw_map.get(t, 0.0) * 100.0, 1) for t in tw_map.keys()},
+                "feeCost": round(float(fee_cost), 0)
+            })
+            pending_rebalance = None
+
+        # 1. Calculate current portfolio NAV at Day T Close
         current_nav = sum(holdings[t] * prices[t][day] for t in all_needed_tickers)
         strategy_nav[day] = current_nav
         
@@ -174,7 +221,7 @@ def run_portfolio_backtest(
         trigger_reason = None
         new_state_name = current_state_name
         
-        # A) Check Drawdown Drop Stages
+        # A) Check Drawdown Drop Stages (on Day T Close)
         matched_drop_stage = None
         for stage in sorted(drop_stages, key=lambda x: x["threshold"]):
             if current_bm_dd <= stage["threshold"]:
@@ -188,7 +235,7 @@ def run_portfolio_backtest(
                 trigger_reason = f"[낙폭 트리거 도달] {current_bm_dd:.1f}% (기준 {matched_drop_stage['threshold']}%)"
                 new_state_name = candidate_state
                 
-        # B) Check Staircase Recovery Stages
+        # B) Check Staircase Recovery Stages (on Day T Close)
         elif deepest_drop_level <= -15.0 and current_state_name != "평시 (Normal)":
             for rec_stage in recovery_stages:
                 if current_bm_dd >= rec_stage["recovery"] and deepest_drop_level <= rec_stage.get("fromDrop", -20.0):
@@ -205,7 +252,7 @@ def run_portfolio_backtest(
                 new_state_name = "평시 (Normal)"
                 deepest_drop_level = 0.0
 
-        # C) Check Gain / Tolerance-Drift Rebalancing
+        # C) Check Gain / Tolerance-Drift Rebalancing (on Day T Close)
         if target_weights is None and current_state_name == "평시 (Normal)" and days_since_rebalance >= 20:
             nav_gain_pct = (current_nav - last_rebalance_nav) / last_rebalance_nav * 100.0 if last_rebalance_nav > 0 else 0.0
             
@@ -225,36 +272,15 @@ def run_portfolio_backtest(
                 trigger_reason = f"[비중 이탈 보정] 최대 괴리율 {max_drift_pct:.1f}%p -> 기본 비중 환원"
                 new_state_name = "평시 (비중보정 리밸런싱)"
 
-        # Execute Rebalance
+        # Queue Rebalance for Next Trading Day Open (Day T+1 Open)
         if target_weights is not None:
-            trade_volume = 0.0
-            for t in all_needed_tickers:
-                old_val = holdings[t] * prices[t][day]
-                new_val = current_nav * target_weights.get(t, 0.0)
-                trade_volume += abs(new_val - old_val)
-                
-            fee_cost = (trade_volume / 2.0) * fee_rate
-            net_nav = current_nav - fee_cost
-            
-            for t in all_needed_tickers:
-                target_val = net_nav * target_weights.get(t, 0.0)
-                holdings[t] = target_val / prices[t][day] if prices[t][day] > 0 else 0.0
-                
-            curr_weights = target_weights
-            current_state_name = new_state_name
-            last_rebalance_day = day
-            last_rebalance_nav = net_nav
-            
-            rebalance_events.append({
-                "date": current_date,
-                "dayIndex": day,
+            pending_rebalance = {
+                "weights": target_weights,
                 "reason": trigger_reason,
                 "state": new_state_name,
-                "benchmarkDD": round(float(current_bm_dd), 2),
-                "nav": round(float(net_nav), 0),
-                "weights": {format_ticker_display(t): round(target_weights.get(t, 0.0) * 100.0, 1) for t in target_weights.keys()},
-                "feeCost": round(float(fee_cost), 0)
-            })
+                "signalBM_DD": current_bm_dd,
+                "signalDate": current_date
+            }
 
     # Benchmark Series Calculation (3 Major Market Indices: NASDAQ 100, S&P 500, KOSPI)
     benchmarks = {}
