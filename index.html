@@ -1011,7 +1011,7 @@
             <div class="card-title">
               <i class="fa-solid fa-chart-pie text-primary"></i> 자산 배분 현황
             </div>
-            <span class="text-dim" style="font-size: 12px;" id="signalUpdatedTime">현재 vs 목표</span>
+            <span class="text-dim" style="font-size: 12px;" id="signalUpdatedTime">보유 비중</span>
           </div>
 
           <div class="allocation-wrapper">
@@ -1663,12 +1663,8 @@
               ${isRetPlus ? '+' : ''}${ret.toFixed(1)}%
             </span>
           </div>
-          <div style="display: flex; align-items: center; gap: 5px; font-family: 'Outfit', sans-serif;">
-            <span style="font-size: 12px; color: var(--text-muted);"><span class="weight-lbl-hide-mobile">현재 </span><strong style="color: var(--text-main); font-size: 13.5px;">${currPct.toFixed(1)}%</strong></span>
-            ${targetPct > 0 && Math.abs(targetPct - currPct) >= 0.5 ? `
-              <span style="font-size: 11px; color: var(--text-dim);"><i class="fa-solid fa-arrow-right-long"></i></span>
-              <span style="font-size: 12px; color: var(--primary);"><span class="weight-lbl-hide-mobile">목표 </span><strong style="color: var(--primary); font-size: 14.5px;">${targetPct.toFixed(1)}%</strong></span>
-            ` : ''}
+          <div style="font-family: 'Outfit', sans-serif;">
+            <strong style="color: var(--text-main); font-size: 15px; font-weight: 800;">${currPct.toFixed(1)}%</strong>
           </div>
         `;
         container.appendChild(card);
