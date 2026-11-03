@@ -902,33 +902,33 @@
       </div>
 
       <!-- 2. Center: Investment Start Date & Return -->
-      <div class="strategy-tracker-pill" style="display: inline-flex; align-items: center; gap: 12px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 5px 12px; flex-shrink: 0;">
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim);">
-          <i class="fa-regular fa-calendar-check text-primary"></i>
+      <div class="strategy-tracker-pill" style="display: inline-flex; align-items: center; gap: 14px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 7px 15px; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim);">
+          <i class="fa-regular fa-calendar-check text-primary" style="font-size: 14px;"></i>
           <span style="font-weight: 600;">투자시작일</span>
-          <input type="date" class="calc-input" id="userStartDate" style="width: 120px; padding: 2px 4px; font-size: 11px; font-weight: 700; color: var(--text-main); background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
+          <input type="date" class="calc-input" id="userStartDate" style="width: 130px; padding: 4px 6px; font-size: 12.5px; font-weight: 700; color: var(--text-main); background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-family:'Pretendard', sans-serif;" onchange="onStartDateChange()">
         </div>
-        <div style="width: 1px; height: 16px; background: #cbd5e1;"></div>
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+        <div style="width: 1px; height: 18px; background: #cbd5e1;"></div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
           <span style="color: var(--text-dim); font-weight: 600;">누적수익률</span>
-          <span id="trackerReturnVal" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 15px; color: var(--emerald);">+0.0%</span>
+          <span id="trackerReturnVal" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 17px; color: var(--emerald);">+0.0%</span>
           <span id="trackerTargetBadge" style="display: none;"></span>
         </div>
       </div>
 
       <!-- 3. Right: Benchmark Index Metrics (3 Compact Cards) -->
-      <div class="hero-stats" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin: 0;">
-        <div class="hero-stat-box" style="padding: 6px 12px; min-width: 95px; border-radius: 8px;">
-          <div class="stat-label" id="heroPriceLabel" style="font-size: 10.5px;">현재 지수</div>
-          <div class="stat-value" id="heroPrice" style="font-size: 15px;">27,989.82</div>
+      <div class="hero-stats" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin: 0;">
+        <div class="hero-stat-box" style="padding: 8px 14px; min-width: 105px; border-radius: 8px;">
+          <div class="stat-label" id="heroPriceLabel" style="font-size: 12px; font-weight: 600; margin-bottom: 2px;">현재 지수</div>
+          <div class="stat-value" id="heroPrice" style="font-size: 17.5px; font-weight: 800;">27,989.82</div>
         </div>
-        <div class="hero-stat-box" style="padding: 6px 12px; min-width: 95px; border-radius: 8px;">
-          <div class="stat-label" style="font-size: 10.5px;">고점대비 낙폭</div>
-          <div class="stat-value" id="heroMDD" style="font-size: 15px; color: var(--rose);">-10.36%</div>
+        <div class="hero-stat-box" style="padding: 8px 14px; min-width: 105px; border-radius: 8px;">
+          <div class="stat-label" style="font-size: 12px; font-weight: 600; margin-bottom: 2px;">고점대비 낙폭</div>
+          <div class="stat-value" id="heroMDD" style="font-size: 17.5px; font-weight: 800; color: var(--rose);">-10.36%</div>
         </div>
-        <div class="hero-stat-box" style="padding: 6px 12px; min-width: 95px; border-radius: 8px;">
-          <div class="stat-label" id="heroATHLabel" style="font-size: 10.5px;">역대 최고치</div>
-          <div class="stat-value" id="heroATH" style="font-size: 15px;">31,224.47</div>
+        <div class="hero-stat-box" style="padding: 8px 14px; min-width: 105px; border-radius: 8px;">
+          <div class="stat-label" id="heroATHLabel" style="font-size: 12px; font-weight: 600; margin-bottom: 2px;">역대 최고치</div>
+          <div class="stat-value" id="heroATH" style="font-size: 17.5px; font-weight: 800;">31,224.47</div>
         </div>
       </div>
     </div>
@@ -967,7 +967,7 @@
         <div style="display: flex; flex-direction: column; gap: 14px;">
           <div class="card-header">
             <div class="card-title">
-              <i class="fa-solid fa-list-check text-primary"></i> 리밸런싱 지시서
+              <i class="fa-solid fa-list-check text-primary"></i> 리밸런싱 지시서<span id="ordersTitleState" style="font-size: 14.5px; font-weight: 700; color: var(--primary); margin-left: 2px;"></span>
             </div>
           </div>
 
@@ -1104,6 +1104,16 @@
         return `${code} (${code})`;
       }
       return clean;
+    }
+
+    function formatWeightsSummary(weightsObj) {
+      if (!weightsObj) return '';
+      return Object.entries(weightsObj)
+        .filter(([_, w]) => w > 0.001)
+        .map(([t, w]) => {
+          const pct = w > 1.0 ? Math.round(w) : Math.round(w * 100);
+          return `${formatTickerDisplay(t)} ${pct}%`;
+        }).join(', ');
     }
 
     function formatKRW(val) {
@@ -1649,7 +1659,16 @@
 
     function renderOrdersList(targetWeights, deltaWeights, hasRebalanceToday = false, stateName = "기본 (정상 운용)") {
       const container = document.getElementById('ordersListContainer');
+      const titleStateEl = document.getElementById('ordersTitleState');
       container.innerHTML = '';
+
+      if (titleStateEl) {
+        if (hasRebalanceToday && stateName) {
+          titleStateEl.textContent = ` : ${stateName}`;
+        } else {
+          titleStateEl.textContent = '';
+        }
+      }
 
       const actions = [];
       if (hasRebalanceToday && deltaWeights) {
@@ -1674,17 +1693,15 @@
         const actionsText = textParts.join(', ');
 
         container.innerHTML = `
-          <div class="order-card" style="border-left-color: var(--primary); padding: 15px 18px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; flex-wrap: wrap; min-height: 56px;">
-            <span style="font-size: 13.5px; font-weight: 700; color: var(--primary); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
-              <i class="fa-solid fa-arrows-rotate"></i> 리밸런싱 : ${stateName}
-            </span>
-            <span style="color: #cbd5e1; font-weight: 300;">|</span>
-            <span style="font-size: 13.5px; line-height: 1.4;">${actionsText}</span>
+          <div class="order-card" style="border-left-color: var(--primary); justify-content: center; text-align: center; padding: 18px 16px; min-height: 58px;">
+            <div style="font-size: 14.5px; font-weight: 700; line-height: 1.5;">
+              ${actionsText}
+            </div>
           </div>
         `;
       } else {
         container.innerHTML = `
-          <div class="order-card" style="border-left-color: var(--emerald); justify-content: center; text-align: center; padding: 18px 16px;">
+          <div class="order-card" style="border-left-color: var(--emerald); justify-content: center; text-align: center; padding: 18px 16px; min-height: 58px;">
             <div style="font-size: 14px; font-weight: 700; color: var(--emerald); display: flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-solid fa-circle-check"></i> 오늘 추가 매매 / 리밸런싱 없음
             </div>
@@ -1795,19 +1812,49 @@
 
         // Format concise "기존 비율 -> 바뀐 비율"
         let ratioDesc = '';
-        if (l.TargetWeights && typeof l.TargetWeights === 'object') {
-          const newWStr = Object.entries(l.TargetWeights).map(([t, w]) => `${formatTickerDisplay(t)} ${w}%`).join(', ');
-          // Try to extract previous ratio from message or defaults
-          const msg = String(l.Message || l.Advice || '');
-          if (msg.includes('→') || msg.includes('->')) {
-            ratioDesc = msg;
-          } else {
-            ratioDesc = `SCHD 60%, QQQ 40% → ${newWStr}`;
-          }
-        } else if (cleanAdvice.includes('SCHD') || cleanAdvice.includes('QQQ')) {
+        if (cleanAdvice.includes('→') || cleanAdvice.includes('->')) {
           ratioDesc = cleanAdvice;
         } else {
-          ratioDesc = cleanAdvice || '기본 비중 정상 유지';
+          // Resolve from active strategy
+          let activeStrat = null;
+          try {
+            const storedSlots = localStorage.getItem("asset_strategy_slots_v4");
+            const activeId = parseInt(localStorage.getItem("asset_active_slot_id") || "2", 10);
+            if (storedSlots) {
+              const slots = JSON.parse(storedSlots);
+              activeStrat = slots.find(s => s.id === activeId) || slots[0];
+            }
+          } catch (e) {}
+
+          const baseWStr = activeStrat && activeStrat.baseWeights ? formatWeightsSummary(activeStrat.baseWeights) : 'SCHD 60%, QQQ 40%';
+          const dropStages = (activeStrat && activeStrat.dropStages) || [];
+
+          if (stateStr.includes('1차')) {
+            const stage0Str = dropStages[0] ? formatWeightsSummary(dropStages[0].weights) : 'SCHD 40%, QQQ 40%, QLD 20%';
+            ratioDesc = `${baseWStr} → ${stage0Str}`;
+          } else if (stateStr.includes('2차')) {
+            const stage0Str = dropStages[0] ? formatWeightsSummary(dropStages[0].weights) : 'SCHD 40%, QQQ 40%, QLD 20%';
+            const stage1Str = dropStages[1] ? formatWeightsSummary(dropStages[1].weights) : 'SCHD 20%, QQQ 40%, QLD 40%';
+            ratioDesc = `${stage0Str} → ${stage1Str}`;
+          } else if (stateStr.includes('3차')) {
+            const stage1Str = dropStages[1] ? formatWeightsSummary(dropStages[1].weights) : 'SCHD 20%, QQQ 40%, QLD 40%';
+            const stage2Str = dropStages[2] ? formatWeightsSummary(dropStages[2].weights) : 'QQQ 40%, QLD 60%';
+            ratioDesc = `${stage1Str} → ${stage2Str}`;
+          } else if (stateStr.includes('복귀') || stateStr.includes('회복') || stateStr.includes('원복') || stateStr.includes('이익실현')) {
+            ratioDesc = `하락 대응 비중 → ${baseWStr}`;
+          } else if (l.TargetWeights) {
+            let tw = l.TargetWeights;
+            if (typeof tw === 'string') {
+              try { tw = JSON.parse(tw); } catch (e) {}
+            }
+            if (typeof tw === 'object') {
+              const targetStr = formatWeightsSummary(tw);
+              ratioDesc = `${baseWStr} → ${targetStr}`;
+            }
+          }
+          if (!ratioDesc) {
+            ratioDesc = isDrop ? `${baseWStr} → SCHD 40%, QQQ 40%, QLD 20%` : `${baseWStr} 유지`;
+          }
         }
 
         const tr = document.createElement('tr');
