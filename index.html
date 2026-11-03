@@ -1014,11 +1014,10 @@
         <table class="history-table">
           <thead>
             <tr>
-              <th>발생 일자</th>
-              <th>상태</th>
-              <th>기준 MDD</th>
-              <th>목표 비중</th>
-              <th>운용 지시 내용</th>
+              <th style="white-space: nowrap; text-align: center;">발생 일자</th>
+              <th style="white-space: nowrap; text-align: center;">상태</th>
+              <th style="white-space: nowrap; text-align: center;">기준 MDD</th>
+              <th style="text-align: left; padding-left: 14px;">운용 지시 내용</th>
             </tr>
           </thead>
           <tbody id="historyTableBody">
@@ -1561,41 +1560,37 @@
       const container = document.getElementById('weightsListContainer');
       container.innerHTML = '';
 
-      const rawLabels = Object.keys(targetWeights || {});
-      const displayLabels = rawLabels.map(t => formatTickerDisplay(t));
-      const curW = currentWeights || targetWeights || {};
-      const values = rawLabels.map(t => curW[t] !== undefined ? curW[t] : targetWeights[t]);
-      const colors = rawLabels.map((_, i) => COLOR_PALETTE[i % COLOR_PALETTE.length]);
+      const curW = currentWeights || {};
+      // Only display assets that are currently held (weight > 0.1%). If none, fall back to targetWeights.
+      const heldTickers = Object.keys(curW).filter(t => (curW[t] || 0) > 0.1);
+      const displayTickers = heldTickers.length > 0 ? heldTickers : Object.keys(targetWeights || {});
+      const displayLabels = displayTickers.map(t => formatTickerDisplay(t));
+      const values = displayTickers.map(t => curW[t] !== undefined ? curW[t] : (targetWeights[t] || 0));
+      const colors = displayTickers.map((_, i) => COLOR_PALETTE[i % COLOR_PALETTE.length]);
 
-      rawLabels.forEach((ticker, idx) => {
+      displayTickers.forEach((ticker, idx) => {
+        const currPct = curW[ticker] !== undefined ? curW[ticker] : 0;
         const targetPct = targetWeights[ticker] || 0;
-        const currPct = curW[ticker] !== undefined ? curW[ticker] : targetPct;
         const ret = assetReturns ? (assetReturns[ticker] || 0) : 0;
         const isRetPlus = ret >= 0;
 
         const card = document.createElement('div');
         card.className = 'weight-item-card';
-        const isHeld = currPct > 0.1;
-        const retBadgeHtml = isHeld ? `
-          <span style="font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 800; color: ${isRetPlus ? 'var(--emerald)' : 'var(--rose)'}; background: ${isRetPlus ? '#ecfdf5' : '#fff1f2'}; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isRetPlus ? '#a7f3d0' : '#fecdd3'}; margin-left: 2px;">
-            ${isRetPlus ? '+' : ''}${ret.toFixed(1)}%
-          </span>
-        ` : `
-          <span style="font-size: 11px; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe; margin-left: 2px;">
-            신규 진입 대기
-          </span>
-        `;
 
         card.innerHTML = `
           <div class="asset-info">
             <div class="asset-color-dot" style="background: ${colors[idx]}; width: 10px; height: 10px;"></div>
             <span class="asset-ticker" style="font-size: 14px; font-weight: 800;">${formatTickerDisplay(ticker)}</span>
-            ${retBadgeHtml}
+            <span style="font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 800; color: ${isRetPlus ? 'var(--emerald)' : 'var(--rose)'}; background: ${isRetPlus ? '#ecfdf5' : '#fff1f2'}; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isRetPlus ? '#a7f3d0' : '#fecdd3'}; margin-left: 2px;">
+              ${isRetPlus ? '+' : ''}${ret.toFixed(1)}%
+            </span>
           </div>
           <div style="display: flex; align-items: center; gap: 5px; font-family: 'Outfit', sans-serif;">
             <span style="font-size: 12px; color: var(--text-muted);"><span class="weight-lbl-hide-mobile">현재 </span><strong style="color: var(--text-main); font-size: 13.5px;">${currPct.toFixed(1)}%</strong></span>
-            <span style="font-size: 11px; color: var(--text-dim);"><i class="fa-solid fa-arrow-right-long"></i></span>
-            <span style="font-size: 12px; color: var(--primary);"><span class="weight-lbl-hide-mobile">목표 </span><strong style="color: var(--primary); font-size: 14.5px;">${targetPct.toFixed(1)}%</strong></span>
+            ${targetPct > 0 && Math.abs(targetPct - currPct) >= 0.5 ? `
+              <span style="font-size: 11px; color: var(--text-dim);"><i class="fa-solid fa-arrow-right-long"></i></span>
+              <span style="font-size: 12px; color: var(--primary);"><span class="weight-lbl-hide-mobile">목표 </span><strong style="color: var(--primary); font-size: 14.5px;">${targetPct.toFixed(1)}%</strong></span>
+            ` : ''}
           </div>
         `;
         container.appendChild(card);
@@ -1656,41 +1651,56 @@
       const container = document.getElementById('ordersListContainer');
       container.innerHTML = '';
 
-      let hasAction = false;
-      if (hasRebalanceToday) {
-        Object.entries(targetWeights || {}).forEach(([ticker, tgtPct]) => {
-          const delta = deltaWeights ? (deltaWeights[ticker] || 0) : 0;
-
+      const actions = [];
+      if (hasRebalanceToday && deltaWeights) {
+        Object.entries(deltaWeights).forEach(([ticker, delta]) => {
           if (Math.abs(delta) >= 1.0) {
-            hasAction = true;
-            const isBuy = delta > 0;
-            const orderCard = document.createElement('div');
-            orderCard.className = 'order-card';
-            orderCard.style.borderLeftColor = isBuy ? 'var(--emerald)' : 'var(--rose)';
-            orderCard.innerHTML = `
-              <div>
-                <div class="order-action-title">
-                  <i class="fa-solid fa-${isBuy ? 'circle-plus text-emerald' : 'circle-minus text-rose'}"></i>
-                  <span>${formatTickerDisplay(ticker)} ${isBuy ? '매수 (비중 확대)' : '매도 (비중 축소)'}</span>
-                  <span class="delta-badge ${isBuy ? 'delta-plus' : 'delta-minus'}">${isBuy ? '+' : ''}${delta.toFixed(1)}%p</span>
-                </div>
-                <div class="order-action-sub">
-                  목표 비중 <strong>${tgtPct.toFixed(1)}%</strong> 설정
-                </div>
-              </div>
-              <div style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800; color: ${isBuy ? 'var(--emerald)' : 'var(--rose)'};">
-                ${isBuy ? 'BUY' : 'SELL'}
-              </div>
-            `;
-            container.appendChild(orderCard);
+            actions.push({ ticker, delta, target: targetWeights[ticker] || 0 });
           }
         });
       }
 
-      if (!hasAction) {
+      // Sort: Sells first, then Buys
+      actions.sort((a, b) => a.delta - b.delta);
+
+      if (actions.length > 0) {
+        let itemsHtml = '';
+        actions.forEach(a => {
+          const isBuy = a.delta > 0;
+          const color = isBuy ? 'var(--emerald)' : 'var(--rose)';
+          const actionText = isBuy ? '매수' : '매도';
+          const sign = isBuy ? '+' : '';
+          itemsHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+              <span style="font-weight: 700; color: ${color};">
+                ${formatTickerDisplay(a.ticker)} ${actionText} ${sign}${a.delta.toFixed(1)}%p
+              </span>
+              <span style="font-size: 12px; color: var(--text-dim); font-family: 'Outfit', sans-serif;">
+                목표 <strong style="color: var(--text-main);">${a.target.toFixed(1)}%</strong>
+              </span>
+            </div>
+          `;
+        });
+
+        container.innerHTML = `
+          <div class="order-card" style="border-left: 4px solid var(--primary); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-arrows-rotate text-primary"></i> 익일 시가 리밸런싱 지시
+              </span>
+              <span style="font-size: 11.5px; font-weight: 700; color: var(--primary); background: #eff6ff; padding: 2px 7px; border-radius: 4px; border: 1px solid #bfdbfe;">
+                ${stateName}
+              </span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              ${itemsHtml}
+            </div>
+          </div>
+        `;
+      } else {
         container.innerHTML = `
           <div class="order-card" style="border-left-color: var(--emerald); justify-content: center; text-align: center; padding: 18px 16px;">
-            <div style="font-size: 14.5px; font-weight: 700; color: var(--emerald); display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <div style="font-size: 14px; font-weight: 700; color: var(--emerald); display: flex; align-items: center; justify-content: center; gap: 8px;">
               <i class="fa-solid fa-circle-check"></i> 오늘 추가 매매 / 리밸런싱 없음
             </div>
           </div>
@@ -1798,13 +1808,29 @@
           cleanAdvice = cleanAdvice.replace('[낙폭 국면 유지]', '[리밸런싱 신호]').trim() + ' (익일 시가 리밸런싱 실행)';
         }
 
+        // Format concise "기존 비율 -> 바뀐 비율"
+        let ratioDesc = '';
+        if (l.TargetWeights && typeof l.TargetWeights === 'object') {
+          const newWStr = Object.entries(l.TargetWeights).map(([t, w]) => `${formatTickerDisplay(t)} ${w}%`).join(', ');
+          // Try to extract previous ratio from message or defaults
+          const msg = String(l.Message || l.Advice || '');
+          if (msg.includes('→') || msg.includes('->')) {
+            ratioDesc = msg;
+          } else {
+            ratioDesc = `SCHD 60%, QQQ 40% → ${newWStr}`;
+          }
+        } else if (cleanAdvice.includes('SCHD') || cleanAdvice.includes('QQQ')) {
+          ratioDesc = cleanAdvice;
+        } else {
+          ratioDesc = cleanAdvice || '기본 비중 정상 유지';
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="white-space: nowrap; text-align: center;">${l.Timestamp || '-'}</td>
           <td style="white-space: nowrap; text-align: center; font-weight: 700; color: ${textColor};">${stateStr}</td>
           <td style="white-space: nowrap; text-align: center; color: var(--rose); font-family: 'Outfit', sans-serif; font-weight: 700;">${l.BenchmarkMDD || 0}%</td>
-          <td style="white-space: nowrap; text-align: center; font-size: 12px; color: var(--primary); font-weight: 700;">${l.TargetWeights ? JSON.stringify(l.TargetWeights).replace(/"/g, '').replace(/\{|\}/g, '') : '-'}</td>
-          <td style="font-size: 12px; color: var(--text-main); text-align: left;">${cleanAdvice}</td>
+          <td style="font-size: 12.5px; font-weight: 600; color: var(--text-main); text-align: left; padding-left: 14px;">${ratioDesc}</td>
         `;
         tbody.appendChild(tr);
       });

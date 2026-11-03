@@ -312,18 +312,9 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
         st = sorted_drops[effective_stage_idx]
         current_state = st.get("name", f"하락 {st.get('threshold', 0.0)}%")
         raw_tw = st.get("weights", {})
-        rec_str = f"전고점 +{base_recovery_pct:.0f}% 돌파" if base_recovery_pct > 0 else "전고점(0.0%) 복귀"
-        if triggered_today:
-            advice_msg = f"[{current_state} 리밸런싱 신호] {bm_display_name} 고점 대비 {bm_mdd_pct:.1f}% 도달. 익일 시가 목표 비중으로 리밸런싱을 실행하세요."
-        else:
-            advice_msg = f"[{current_state} 국면 유지] {bm_display_name} 고점 대비 {bm_mdd_pct:.1f}%. {current_state} 비중 유지하며 {rec_str} 대기."
     else:
         current_state = "기본 (정상 운용)"
         raw_tw = norm_base
-        if triggered_today:
-            advice_msg = f"[기본 비중 복귀 신호] {bm_display_name} 정상 범위 회복 (MDD {bm_mdd_pct:.1f}%). 익일 시가 기본 비중으로 리밸런싱을 실행하세요."
-        else:
-            advice_msg = f"[정상 운용] {bm_display_name} 정상 범위 (MDD {bm_mdd_pct:.1f}%). 기본 포트폴리오 비중 유지."
 
     # Normalize target weights to 100%
     tot_w = sum(raw_tw.values())
@@ -331,6 +322,14 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
         target_weights = {k: round((v / tot_w) * 100.0, 1) for k, v in raw_tw.items()}
     else:
         target_weights = {k: round(v * 100.0, 1) for k, v in norm_base.items()}
+
+    # Format concise "기존 비율 -> 바뀐 비율"
+    base_str = ", ".join([f"{format_ticker_display(k).split(' (')[0]} {round(v*100)}%" for k, v in norm_base.items()])
+    target_str = ", ".join([f"{format_ticker_display(k).split(' (')[0]} {round(v)}%" for k, v in target_weights.items()])
+    if triggered_today:
+        advice_msg = f"{base_str} → {target_str}"
+    else:
+        advice_msg = f"{target_str} 유지" 
 
     delta_weights = {}
     for t in all_tickers:
