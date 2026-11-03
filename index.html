@@ -1934,9 +1934,13 @@
       }
 
       const holdings = {};
+      const costBasis = {}; // Average entry cost basis per ticker
       allTickers.forEach(t => {
         const w = normBase[t] || 0;
         holdings[t] = prices[t][0] > 0 ? (initialCapital * w * (1.0 - feeRate)) / prices[t][0] : 0;
+        if (holdings[t] > 0) {
+          costBasis[t] = prices[t][0];
+        }
       });
 
       let currentStageIdx = -1; // -1: Base Normal, 0: 1차 하락, 1: 2차 하락...
@@ -1967,9 +1971,19 @@
               const curVal = holdings[t] * p;
               const tradeVal = Math.abs(targetVal - curVal);
               const fee = tradeVal * feeRate;
-              holdings[t] = (targetVal - fee) / p;
+              const newHolding = (targetVal - fee) / p;
+              // If new purchase or position addition, update cost basis to entry price!
+              if ((holdings[t] || 0) <= 0.0001 && newHolding > 0) {
+                costBasis[t] = p; // New asset entry price starts at this rebalance day
+              } else if (newHolding > (holdings[t] || 0)) {
+                const prevH = holdings[t] || 0;
+                const prevCost = costBasis[t] || p;
+                costBasis[t] = (prevH * prevCost + (newHolding - prevH) * p) / newHolding;
+              }
+              holdings[t] = newHolding;
             } else {
               holdings[t] = 0;
+              delete costBasis[t];
             }
           });
           let postNAV = 0;
@@ -2099,9 +2113,9 @@
         if (wPct > 0.1 || (normBase[t] && normBase[t] > 0)) {
           currentWeights[t] = Math.round(wPct * 10) / 10.0;
         }
-        const startP = prices[t][0];
+        const costP = costBasis[t] || prices[t][0];
         const endP = prices[t][lastDay];
-        assetReturns[t] = startP > 0 ? ((endP - startP) / startP) * 100.0 : 0.0;
+        assetReturns[t] = costP > 0 ? ((endP - costP) / costP) * 100.0 : 0.0;
       });
 
       // Target weights for today: if today triggered a new rebalance, target is the new stage!
