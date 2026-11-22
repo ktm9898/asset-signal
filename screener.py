@@ -138,6 +138,7 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
             tickers=list(all_tickers),
             start=start_date,
             auto_adjust=False,
+            threads=False,
             progress=False
         )
     except Exception as e:

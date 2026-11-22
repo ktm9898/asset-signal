@@ -7,6 +7,7 @@ and bundles data into data/etf_history.json.
 
 import os
 import json
+import time
 import datetime
 import yfinance as yf
 import pandas as pd
@@ -66,12 +67,15 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
     
     ticker_list = [item["ticker"] for item in MARKET_UNIVERSE]
     
+    end_date = datetime.date.today() + datetime.timedelta(days=1)
+
     try:
         data = yf.download(
             tickers=ticker_list,
             start=start_date,
-            end=datetime.date.today() + datetime.timedelta(days=1),
+            end=end_date,
             auto_adjust=False,
+            threads=False,
             progress=True
         )
     except Exception as e:
@@ -82,12 +86,59 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
         print("[ERROR] Downloaded data is empty.")
         return None
 
-    adj_close_df = data['Adj Close'] if 'Adj Close' in data else data['Close']
-    close_df = data['Close']
-    open_df = data['Open'] if 'Open' in data else close_df
-    high_df = data['High'] if 'High' in data else close_df
-    low_df = data['Low'] if 'Low' in data else close_df
-    volume_df = data['Volume'] if 'Volume' in data else pd.DataFrame(0, index=close_df.index, columns=close_df.columns)
+    adj_close_df = data['Adj Close'].copy() if 'Adj Close' in data else data['Close'].copy()
+    close_df = data['Close'].copy()
+    open_df = data['Open'].copy() if 'Open' in data else close_df.copy()
+    high_df = data['High'].copy() if 'High' in data else close_df.copy()
+    low_df = data['Low'].copy() if 'Low' in data else close_df.copy()
+    volume_df = data['Volume'].copy() if 'Volume' in data else pd.DataFrame(0, index=close_df.index, columns=close_df.columns)
+
+    # Retry any tickers that failed or returned empty due to transient yfinance errors
+    missing_tickers = [
+        t for t in ticker_list
+        if t not in close_df.columns or close_df[t].dropna().empty
+    ]
+    for t in missing_tickers:
+        for attempt in range(2):
+            time.sleep(1)
+            print(f"[WARN] Retrying download for {t} (attempt {attempt + 1}/2)...")
+            try:
+                single = yf.download(
+                    tickers=t,
+                    start=start_date,
+                    end=end_date,
+                    auto_adjust=False,
+                    threads=False,
+                    progress=False
+                )
+                if single.empty:
+                    continue
+                if isinstance(single.columns, pd.MultiIndex):
+                    s_close = single['Close'][t] if t in single['Close'].columns else pd.Series(dtype=float)
+                    s_adj = single['Adj Close'][t] if 'Adj Close' in single and t in single['Adj Close'].columns else s_close
+                    s_open = single['Open'][t] if 'Open' in single and t in single['Open'].columns else s_close
+                    s_high = single['High'][t] if 'High' in single and t in single['High'].columns else s_close
+                    s_low = single['Low'][t] if 'Low' in single and t in single['Low'].columns else s_close
+                    s_vol = single['Volume'][t] if 'Volume' in single and t in single['Volume'].columns else pd.Series(0, index=s_close.index)
+                else:
+                    s_close = single['Close']
+                    s_adj = single['Adj Close'] if 'Adj Close' in single else s_close
+                    s_open = single['Open'] if 'Open' in single else s_close
+                    s_high = single['High'] if 'High' in single else s_close
+                    s_low = single['Low'] if 'Low' in single else s_close
+                    s_vol = single['Volume'] if 'Volume' in single else pd.Series(0, index=s_close.index)
+
+                if not s_close.dropna().empty:
+                    close_df[t] = s_close.reindex(close_df.index)
+                    adj_close_df[t] = s_adj.reindex(close_df.index)
+                    open_df[t] = s_open.reindex(close_df.index)
+                    high_df[t] = s_high.reindex(close_df.index)
+                    low_df[t] = s_low.reindex(close_df.index)
+                    volume_df[t] = s_vol.reindex(close_df.index)
+                    print(f"[INFO] Successfully recovered {t} on retry.")
+                    break
+            except Exception as retry_err:
+                print(f"[WARN] Retry failed for {t}: {retry_err}")
 
     # Filter out unclosed / incomplete US trading dates (e.g. today's date during KST daytime before US market opens)
     # Ensure that major US benchmark indices and ETFs have actual non-null traded prices before ffill
@@ -113,8 +164,8 @@ def build_etf_dataset(start_date="2012-01-01", output_file="data/etf_history.jso
     
     for item in MARKET_UNIVERSE:
         ticker = item["ticker"]
-        if ticker not in close_df.columns:
-            print(f"[WARN] Ticker {ticker} missing in download, skipping.")
+        if ticker not in close_df.columns or close_df[ticker].dropna().empty:
+            print(f"[WARN] Ticker {ticker} missing or empty in download, skipping.")
             continue
             
         c_series = close_df[ticker].dropna()
