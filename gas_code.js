@@ -401,9 +401,8 @@ function doPost(e) {
       }
       
       const curState = String(sig.currentState || "기본 (정상 운용)").trim();
-      const hasDelta = sig.deltaWeights && Object.keys(sig.deltaWeights).length > 0;
-      const isStateChanged = prevState && prevState !== curState;
-      const isSpecialState = !curState.includes("평시") && !curState.includes("정상");
+      const isStateChanged = Boolean(prevState && prevState !== curState);
+      const isTriggeredToday = sig.triggeredToday === true;
 
       sheet.getRange(2, 1, 1, 10).setValues([[
         sig.date || Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd"),
@@ -418,8 +417,8 @@ function doPost(e) {
         nowStr
       ]]);
 
-      // Only append to Execution_Logs when an actual signal/rebalance occurs (state change to special state or rebalance delta)
-      const isRebalanceTriggered = hasDelta || (isStateChanged && isSpecialState);
+      // Only append to Execution_Logs when an actual signal/rebalance occurs (explicit trigger or regime transition)
+      const isRebalanceTriggered = isTriggeredToday || isStateChanged;
       if (isRebalanceTriggered) {
         const logSheet = ss.getSheetByName("Execution_Logs");
         logSheet.appendRow([

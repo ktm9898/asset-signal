@@ -1648,23 +1648,26 @@
         }
       } catch (e) {}
 
-      const rawBase = (activeStrat && activeStrat.baseWeights) || {};
-      const baseW = {};
-      Object.entries(rawBase).forEach(([t, w]) => {
-        baseW[t] = w > 1.0 ? w : Math.round(w * 1000) / 10.0;
+      const rawTarget = targetWeights || {};
+      const targetSum = Object.values(rawTarget).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      const isDecimalTarget = targetSum > 0 && targetSum <= 1.05;
+      const targetW = {};
+      Object.entries(rawTarget).forEach(([t, w]) => {
+        const num = Number(w) || 0;
+        targetW[t] = isDecimalTarget ? Math.round(num * 1000) / 10.0 : num;
       });
 
       const curW = currentWeights || {};
       // Only display assets that are currently held (weight > 0.1%). If none, fall back to targetWeights.
       const heldTickers = Object.keys(curW).filter(t => (curW[t] || 0) > 0.1);
-      const displayTickers = heldTickers.length > 0 ? heldTickers : Object.keys(targetWeights || {});
+      const displayTickers = heldTickers.length > 0 ? heldTickers : Object.keys(targetW);
       const displayLabels = displayTickers.map(t => formatTickerDisplay(t));
-      const values = displayTickers.map(t => curW[t] !== undefined ? curW[t] : (targetWeights[t] || 0));
+      const values = displayTickers.map(t => curW[t] !== undefined ? curW[t] : (targetW[t] || 0));
       const colors = displayTickers.map((_, i) => COLOR_PALETTE[i % COLOR_PALETTE.length]);
 
       displayTickers.forEach((ticker, idx) => {
         const currPct = curW[ticker] !== undefined ? curW[ticker] : 0;
-        const basePct = baseW[ticker] !== undefined ? baseW[ticker] : 0;
+        const targetPct = targetW[ticker] !== undefined ? targetW[ticker] : 0;
         const ret = assetReturns ? (assetReturns[ticker] || 0) : 0;
         const isRetPlus = ret >= 0;
 
@@ -1672,10 +1675,10 @@
         card.className = 'weight-item-card';
 
         let weightValueHtml = '';
-        if (basePct > 0) {
+        if (targetPct > 0) {
           weightValueHtml = `
             <div style="display: flex; align-items: center; gap: 5px; font-family: 'Outfit', sans-serif;">
-              <span style="font-size: 12px; color: var(--text-muted);"><span class="weight-lbl-hide-mobile">기준 </span><strong style="color: var(--text-dim); font-size: 13.5px;">${basePct.toFixed(1)}%</strong></span>
+              <span style="font-size: 12px; color: var(--text-muted);"><span class="weight-lbl-hide-mobile">기준 </span><strong style="color: var(--text-dim); font-size: 13.5px;">${targetPct.toFixed(1)}%</strong></span>
               <span style="font-size: 11px; color: var(--text-dim);"><i class="fa-solid fa-arrow-right-long"></i></span>
               <span style="font-size: 12px; color: var(--primary);"><span class="weight-lbl-hide-mobile">현재 </span><strong style="color: var(--primary); font-size: 14.5px;">${currPct.toFixed(1)}%</strong></span>
             </div>
@@ -1891,7 +1894,24 @@
         return;
       }
 
-      signalLogs.slice(0, 10).forEach(l => {
+      // Deduplicate consecutive entries with the same regime state (keep only the first transition day)
+      const sortedSignals = [...signalLogs].sort((a, b) =>
+        String(a.Timestamp || '').localeCompare(String(b.Timestamp || ''))
+      );
+      const dedupedSignals = [];
+      let prevNormState = null;
+      sortedSignals.forEach(l => {
+        let normState = String(l.CurrentState || '기본').trim();
+        if (normState.includes('평시')) normState = '기본 (정상 운용)';
+        const msg = String(l.Message || l.Advice || '');
+        const isExplicitProfitTake = msg.includes('이익실현');
+        if (normState !== prevNormState || isExplicitProfitTake) {
+          dedupedSignals.push(l);
+          prevNormState = normState;
+        }
+      });
+
+      dedupedSignals.slice(-10).reverse().forEach(l => {
         let stateStr = l.CurrentState || '기본';
         if (stateStr.includes("평시")) stateStr = "기본 (정상 운용)";
         const isDrop = stateStr.includes('하락');

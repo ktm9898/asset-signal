@@ -333,15 +333,17 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
         advice_msg = f"{target_str} 유지" 
 
     delta_weights = {}
-    for t in all_tickers:
-        tgt = target_weights.get(t, 0.0)
-        cur = cur_actual_weights.get(t, 0.0)
-        delta = tgt - cur
-        if abs(delta) >= 0.5:
-            delta_weights[t] = round(delta, 1)
+    if triggered_today:
+        for t in all_tickers:
+            tgt = target_weights.get(t, 0.0)
+            cur = cur_actual_weights.get(t, 0.0)
+            delta = tgt - cur
+            if abs(delta) >= 0.5:
+                delta_weights[t] = round(delta, 1)
 
     print(f"\n[최종 산출 신호]")
     print(f" - 현재 국면 상태: {current_state}")
+    print(f" - 오늘 리밸런싱 신호 발생 여부: {triggered_today}")
     print(f" - 목표 비중 (%): {target_weights}")
     print(f" - 비중 변동 (%p): {delta_weights}")
     print(f" - 운용 가이드: {advice_msg}")
@@ -355,6 +357,7 @@ def evaluate_portfolio_signal(strategy_config=None, gas_url="", rebalance_date=N
         "currentState": current_state,
         "targetWeights": target_weights,
         "deltaWeights": delta_weights,
+        "triggeredToday": triggered_today,
         "advice": advice_msg
     }
 
