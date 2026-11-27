@@ -1,6 +1,16 @@
 /**
  * Google Apps Script - Dynamic Asset Allocation & Portfolio Signals Engine
  * Repository: ktm9898/asset-signal
+ * 
+ * [배포 및 자동화 설정 가이드]
+ * 1. 스프레드시트 [확장 프로그램] -> [Apps Script]에서 본 코드로 덮어쓰기
+ * 2. 좌측 톱니바퀴 [프로젝트 설정] -> 하단 [스크립트 속성(Script Properties)]
+ *    - 속성: GITHUB_TOKEN
+ *    - 값: 본인의 GitHub Personal Access Token (repo, workflow 권한 포함)
+ * 3. 상단 함수 선택에서 `setupDailyTrigger` 선택 후 [실행]
+ *    -> 매일 아침 06:45 KST에 자동으로:
+ *       ① 백테스트 데이터셋 갱신(update_backtest.yml)
+ *       ② 포트폴리오 리밸런싱 신호 산출(screener.yml)을 원격 호출하여 정밀 실행합니다!
  */
 
 function getAuthPin() {
@@ -612,26 +622,25 @@ function parseJsonSafe(str, fallback) {
 }
 
 /**
- * Google Apps Script 시간 기반 트리거(⏰)에서 실행할 함수
- * - 요일 상관없이 매일 실행
- * - GitHub Actions의 screener.yml을 즉시 원격 호출(workflow_dispatch)
+ * 🚀 1. GitHub Actions 'update_backtest.yml' 원격 트리거
+ * - ETF 5년 치 백테스트 데이터셋(etf_history.json)을 최신 종가로 자동 갱신
  */
-function triggerGitHubScreener() {
+function triggerGitHubBacktestUpdate() {
   const githubToken = PropertiesService.getScriptProperties().getProperty("GITHUB_TOKEN");
   if (!githubToken) {
     const msg = "GITHUB_TOKEN이 스크립트 속성(Script Properties)에 설정되지 않았습니다.";
-    Logger.log("[triggerGitHubScreener] " + msg);
+    Logger.log("[triggerGitHubBacktestUpdate] " + msg);
     logTriggerResult("FAILED", msg);
-    return;
+    return { success: false, message: msg };
   }
 
-  const url = "https://api.github.com/repos/ktm9898/asset-signal/actions/workflows/screener.yml/dispatches";
+  const url = "https://api.github.com/repos/ktm9898/asset-signal/actions/workflows/update_backtest.yml/dispatches";
   const options = {
     method: "post",
     contentType: "application/json",
     headers: {
       "Accept": "application/vnd.github+json",
-      "Authorization": "Bearer " + githubToken,
+      "Authorization": "Bearer " + githubToken.trim(),
       "User-Agent": "GoogleAppsScript"
     },
     payload: JSON.stringify({ ref: "main" }),
@@ -641,22 +650,114 @@ function triggerGitHubScreener() {
   try {
     const response = UrlFetchApp.fetch(url, options);
     const code = response.getResponseCode();
-    if (code === 204) {
-      Logger.log("[triggerGitHubScreener] GitHub Actions screener.yml 원격 트리거 성공 (HTTP 204)");
-      logTriggerResult("SUCCESS", "GitHub Actions screener.yml 원격 트리거 완료 (정상 204)");
+    if (code === 204 || code === 200) {
+      Logger.log("[triggerGitHubBacktestUpdate] update_backtest.yml 원격 트리거 성공 (HTTP " + code + ")");
+      logTriggerResult("SUCCESS", "update_backtest.yml 원격 트리거 완료 (정상 " + code + ")");
+      return { success: true, message: "update_backtest.yml 트리거 성공" };
     } else {
       const errBody = response.getContentText();
-      Logger.log(`[triggerGitHubScreener] 트리거 실패 (HTTP ${code}): ${errBody}`);
-      logTriggerResult("FAILED", `HTTP ${code}: ${errBody}`);
+      Logger.log(`[triggerGitHubBacktestUpdate] 트리거 실패 (HTTP ${code}): ${errBody}`);
+      logTriggerResult("FAILED", `update_backtest.yml HTTP ${code}: ${errBody}`);
+      return { success: false, message: `HTTP ${code}: ${errBody}` };
     }
   } catch (err) {
-    Logger.log("[triggerGitHubScreener] 예외 발생: " + err.toString());
-    logTriggerResult("ERROR", err.toString());
+    Logger.log("[triggerGitHubBacktestUpdate] 예외: " + err.toString());
+    logTriggerResult("ERROR", "update_backtest.yml: " + err.toString());
+    return { success: false, message: err.toString() };
   }
 }
 
 /**
- * 트리거 실행 결과를 별도의 Trigger_Logs 시트에 기록 (포트폴리오 리밸런싱 신호 이력과 분리)
+ * 🚀 2. GitHub Actions 'screener.yml' 원격 트리거
+ * - 당일 시장 지표(ATH/MDD) 계산 및 포트폴리오 리밸런싱 신호 산출
+ */
+function triggerGitHubScreener() {
+  const githubToken = PropertiesService.getScriptProperties().getProperty("GITHUB_TOKEN");
+  if (!githubToken) {
+    const msg = "GITHUB_TOKEN이 스크립트 속성(Script Properties)에 설정되지 않았습니다.";
+    Logger.log("[triggerGitHubScreener] " + msg);
+    logTriggerResult("FAILED", msg);
+    return { success: false, message: msg };
+  }
+
+  const url = "https://api.github.com/repos/ktm9898/asset-signal/actions/workflows/screener.yml/dispatches";
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer " + githubToken.trim(),
+      "User-Agent": "GoogleAppsScript"
+    },
+    payload: JSON.stringify({ ref: "main" }),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const code = response.getResponseCode();
+    if (code === 204 || code === 200) {
+      Logger.log("[triggerGitHubScreener] screener.yml 원격 트리거 성공 (HTTP " + code + ")");
+      logTriggerResult("SUCCESS", "screener.yml 원격 트리거 완료 (정상 " + code + ")");
+      return { success: true, message: "screener.yml 트리거 성공" };
+    } else {
+      const errBody = response.getContentText();
+      Logger.log(`[triggerGitHubScreener] 트리거 실패 (HTTP ${code}): ${errBody}`);
+      logTriggerResult("FAILED", `screener.yml HTTP ${code}: ${errBody}`);
+      return { success: false, message: `HTTP ${code}: ${errBody}` };
+    }
+  } catch (err) {
+    Logger.log("[triggerGitHubScreener] 예외: " + err.toString());
+    logTriggerResult("ERROR", "screener.yml: " + err.toString());
+    return { success: false, message: err.toString() };
+  }
+}
+
+/**
+ * ⏰ 3. 매일 아침 자동 실행 통합 작업
+ * - ① ETF 백테스트 데이터셋 갱신 (update_backtest.yml)
+ * - ② 5초 후 포트폴리오 리밸런싱 신호 산출 (screener.yml)
+ */
+function runDailyAutomation() {
+  const nowStr = Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd HH:mm:ss");
+  Logger.log(`[runDailyAutomation] 에셋시그널 일일 자동화 시작: ${nowStr}`);
+
+  // 1. 백테스트 데이터셋 갱신 호출
+  triggerGitHubBacktestUpdate();
+
+  // 2. 잠시 대기 후 스크리너 신호 산출 호출
+  Utilities.sleep(5000);
+  triggerGitHubScreener();
+}
+
+/**
+ * ⏰ 4. 매일 아침 06:45 KST 자동 실행 시간 트리거 등록 함수
+ */
+function setupDailyTrigger() {
+  // 기존 중복 트리거 정리
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    const fn = triggers[i].getHandlerFunction();
+    if (fn === "triggerGitHubScreener" || fn === "runDailyAutomation" || fn === "triggerGitHubBacktestUpdate") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  // 매일 오전 06:45경 자동 실행 타이머 등록
+  ScriptApp.newTrigger("runDailyAutomation")
+    .timeBased()
+    .atHour(6)
+    .nearMinute(45)
+    .everyDays(1)
+    .inTimezone("Asia/Seoul")
+    .create();
+
+  Logger.log("매일 아침 06:45 에셋시그널 통합 자동화 트리거 등록 완료!");
+  runDailyAutomation(); // 즉시 1회 테스트 실행
+}
+
+/**
+ * 📝 트리거 실행 결과를 Trigger_Logs 시트에 기록
  */
 function logTriggerResult(status, message) {
   try {
@@ -674,4 +775,3 @@ function logTriggerResult(status, message) {
     Logger.log("logTriggerResult error: " + e.toString());
   }
 }
-
